@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Work Detail Test</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="GridView" name="view">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <attribute name="headerStretchLastSection">
+       <bool>false</bool>
+      </attribute>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="connection_menu">
+    <property name="title">
+     <string>Dwarf Fortress</string>
+    </property>
+    <addaction name="connect_action"/>
+    <addaction name="advanced_connection_action"/>
+    <addaction name="separator"/>
+    <addaction name="update_action"/>
+    <addaction name="separator"/>
+    <addaction name="disconnect_action"/>
+   </widget>
+   <widget class="QMenu" name="view_menu">
+    <property name="title">
+     <string>View</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="settings_menu">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="preferences_action"/>
+   </widget>
+   <widget class="QMenu" name="help_menu">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="about_action"/>
+   </widget>
+   <addaction name="connection_menu"/>
+   <addaction name="settings_menu"/>
+   <addaction name="view_menu"/>
+   <addaction name="help_menu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolbar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="connect_action"/>
+   <addaction name="disconnect_action"/>
+   <addaction name="update_action"/>
+   <addaction name="preferences_action"/>
+  </widget>
+  <action name="connect_action">
+   <property name="text">
+    <string>Connect</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="advanced_connection_action">
+   <property name="text">
+    <string>Advanced connection...</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="disconnect_action">
+   <property name="text">
+    <string>Disconnect</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="update_action">
+   <property name="text">
+    <string>Update</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="preferences_action">
+   <property name="text">
+    <string>Preferences...</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::PreferencesRole</enum>
+   </property>
+  </action>
+  <action name="about_action">
+   <property name="icon">
+    <iconset theme="help-about">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>About...</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GridView</class>
+   <extends>QTreeView</extends>
+   <header>GridView.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

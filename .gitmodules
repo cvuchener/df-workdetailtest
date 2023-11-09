@@ -1,0 +1,15 @@
+[submodule "external/dfs"]
+	path = external/dfs
+	url = ../../cvuchener/libdfs.git
+[submodule "external/dfhack-client-qt"]
+	path = external/dfhack-client-qt
+	url = ../../cvuchener/dfhack-client-qt.git
+[submodule "data/structures/50.11"]
+	path = data/structures/50.11
+	url = ../../DFHack/df-structures.git
+[submodule "dfhack/llmemreader"]
+	path = dfhack/llmemreader
+	url = ../../cvuchener/dfhack-plugin-llmemreader.git
+[submodule "dfhack/workdetailtest"]
+	path = dfhack/workdetailtest
+	url = ../../cvuchener/dfhack-plugin-workdetailtest.git
