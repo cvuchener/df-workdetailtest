@@ -1,17 +1,22 @@
 cmake_minimum_required(VERSION 3.5)
 project(workdetailtest)
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+	include(GNUInstallDirs)
+	set(CMAKE_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/workdetailtest)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+	# TODO
+endif()
+
 option(USE_EXTERNAL_DFS "Use dfs from external subdirectory" ON)
 if (${USE_EXTERNAL_DFS})
 	add_subdirectory(external/dfs)
-	add_library(dfs::dfs ALIAS dfs)
 else()
 	find_package(dfs REQUIRED)
 endif()
 option(USE_EXTERNAL_DFHACK_CLIENT "Use dfhack-client from external subdirectory" ON)
 if (${USE_EXTERNAL_DFHACK_CLIENT})
 	add_subdirectory(external/dfhack-client-qt)
-	add_library(DFHackClientQt::dfhack-client-qt ALIAS dfhack-client-qt)
 else()
 	find_package(DFHackClientQt REQUIRED)
 endif()
@@ -81,7 +86,7 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 else()
 	target_sources(workdetailtest PRIVATE src/DwarfFortress_unsupported_platform.cpp)
 endif()
-generate_df_types(TARGET workdetailtest
+dfs_generate_df_types(TARGET workdetailtest
 	STRUCTURES ${CMAKE_CURRENT_SOURCE_DIR}/data/structures/50.11
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/DFEnums
 	NAMESPACE df
@@ -137,3 +142,18 @@ target_link_libraries(workdetailtest
 	protobuf::libprotobuf
 )
 
+install(TARGETS workdetailtest
+	COMPONENT Runtime)
+install(DIRECTORY data/structures
+	TYPE DATA
+	COMPONENT Runtime
+	FILES_MATCHING
+	PATTERN df.*.xml
+	PATTERN symbols.xml
+	PATTERN .* EXCLUDE
+	PATTERN tools EXCLUDE
+)
+install(DIRECTORY data/icons
+	TYPE DATA
+	COMPONENT Runtime
+)

@@ -24,7 +24,11 @@
 Application::Application(int &argc, char **argv):
 	QApplication(argc, argv)
 {
+#ifdef Q_OS_LINUX
+	setApplicationName("workdetailtest");
+#else
 	setApplicationName("WorkDetailTest");
+#endif
 	//setOrganizationName("WorkDetailTest");
 	setApplicationVersion("0.1");
 
