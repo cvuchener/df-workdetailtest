@@ -25,6 +25,8 @@ class QMenu;
 class DwarfFortress;
 class AbstractColumn;
 class UnitFilterProxyModel;
+class GroupBy;
+class Unit;
 
 class GridViewModel: public QAbstractItemModel
 {
@@ -35,6 +37,7 @@ public:
 
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &index) const override;
+	QModelIndex sibling(int row, int column, const QModelIndex &index) const override;
 	int rowCount(const QModelIndex &parent = {}) const override;
 	int columnCount(const QModelIndex &parent = {}) const override;
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
@@ -48,16 +51,48 @@ public:
 	void makeCellMenu(const QModelIndex &index, QMenu *menu, QWidget *parent);
 
 private slots:
-	void unitDataChanged(const QModelIndex &first, const QModelIndex &last, const QList<int> &roles);
 	void cellDataChanged(int first, int last, int unit_id);
+
+	void unitDataChanged(const QModelIndex &first, const QModelIndex &last, const QList<int> &roles);
+
+	void unitBeginReset();
+	void unitEndReset();
+
+	void unitBeginInsert(const QModelIndex &, int first, int last);
+	void unitEndInsert(const QModelIndex &, int first, int last);
+
+	void unitBeginRemove(const QModelIndex &, int first, int last);
+	void unitEndRemove(const QModelIndex &, int first, int last);
+
 	void columnDataChanged(int first, int last);
+
 	void columnBeginInsert(int first, int last);
+	void columnEndInsert(int first, int last);
+
 	void columnBeginRemove(int first, int last);
+	void columnEndRemove(int first, int last);
+
+	void columnBeginReset();
 	void columnEndReset();
 private:
 	DwarfFortress &_df;
 	std::unique_ptr<UnitFilterProxyModel> _unit_filter;
 	std::vector<std::unique_ptr<AbstractColumn>> _columns;
+	std::unique_ptr<GroupBy> _group_by;
+	struct group_t {
+		quint64 id;
+		std::vector<Unit *> units; // sorted by id
+	};
+	std::vector<group_t> _groups; // sorted by id
+	std::map<int, quint64> _unit_group; // unit id -> group id
+
+	QModelIndex unitIndex(int unit_id) const;
+	void addUnitToGroup(Unit &unit, quint64 group_id, bool reseting = false);
+	void removeFromGroup(const QModelIndex &index);
+	void rebuildGroups();
+
+	template <typename Model, typename UnitAction, typename GroupAction, typename... Args>
+	static auto applyToIndex(Model &&model, const QModelIndex &index, UnitAction &&unit_action, GroupAction &&group_action, Args &&...args);
 
 	std::pair<const AbstractColumn *, int> getColumn(int col) const;
 	std::pair<AbstractColumn *, int> getColumn(int col);

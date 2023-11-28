@@ -16,30 +16,28 @@
  *
  */
 
-#ifndef SPECIALIST_COLUMN_H
-#define SPECIALIST_COLUMN_H
+#ifndef NAME_COLUMN_H
+#define NAME_COLUMN_H
 
 #include "AbstractColumn.h"
 
-class DwarfFortress;
-
-class SpecialistColumn: public AbstractColumn
+class NameColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	SpecialistColumn(DwarfFortress &df, QObject *parent = nullptr);
-	~SpecialistColumn() override;
+	NameColumn(QObject *parent = nullptr);
+	~NameColumn() override;
 
 	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
 	QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const override;
 	QVariant groupData(int section, const QString &group_name, std::span<const Unit *> units, int role = Qt::DisplayRole) const override;
 	bool setUnitData(int section, Unit &unit, const QVariant &value, int role = Qt::EditRole) override;
-	bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole) override;
 	Qt::ItemFlags unitFlags(int section, const Unit &unit) const override;
 	Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const override;
 
+	void makeUnitMenu(int section, Unit &unit, QMenu *menu, QWidget *parent) override;
+
 private:
-	DwarfFortress &_df;
 };
 
 #endif

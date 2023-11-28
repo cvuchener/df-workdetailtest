@@ -16,30 +16,21 @@
  *
  */
 
-#ifndef GRID_VIEW_H
-#define GRID_VIEW_H
+#ifndef GROUP_BY_H
+#define GROUP_BY_H
 
-#include <QTreeView>
+#include <QString>
 
-class GridView: public QTreeView
+class Unit;
+
+class GroupBy
 {
-	Q_OBJECT
 public:
-	GridView(QWidget *parent = nullptr);
-	~GridView() override;
+	GroupBy() = default;
+	virtual ~GroupBy() = default;
 
-	void setModel(QAbstractItemModel *model) override;
-
-signals:
-	void contextMenuRequestedForHeader(int section, const QPoint &pos);
-	void contextMenuRequestedForCell(QModelIndex, const QPoint &pos);
-
-protected:
-	void rowsInserted(const QModelIndex &index, int start, int end) override;
-
-private:
-	std::unique_ptr<QStyle> _style;
-	std::unique_ptr<QAbstractItemDelegate> _delegate;
+	virtual quint64 unitGroup(const Unit &unit) const = 0;
+	virtual QString groupName(quint64 group_id) const = 0;
 };
 
 #endif

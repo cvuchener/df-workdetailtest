@@ -54,6 +54,15 @@ GridView::~GridView()
 void GridView::setModel(QAbstractItemModel *model)
 {
 	QTreeView::setModel(model);
+	Q_ASSERT(model->columnCount() > 0);
 	header()->setSectionResizeMode(QHeaderView::Fixed);
 	header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+}
+
+void GridView::rowsInserted(const QModelIndex &index, int start, int end)
+{
+	QTreeView::rowsInserted(index, start, end);
+	if (model())
+		for (int i = start; i <= end; ++i)
+			expand(model()->index(i, 0, index));
 }

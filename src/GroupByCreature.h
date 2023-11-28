@@ -16,30 +16,24 @@
  *
  */
 
-#ifndef GRID_VIEW_H
-#define GRID_VIEW_H
+#ifndef GROUP_BY_CREATURE_H
+#define GROUP_BY_CREATURE_H
 
-#include <QTreeView>
+#include "GroupBy.h"
 
-class GridView: public QTreeView
+class DwarfFortress;
+
+class GroupByCreature: public GroupBy
 {
-	Q_OBJECT
 public:
-	GridView(QWidget *parent = nullptr);
-	~GridView() override;
+	GroupByCreature(const DwarfFortress &df);
+	~GroupByCreature() override;
 
-	void setModel(QAbstractItemModel *model) override;
-
-signals:
-	void contextMenuRequestedForHeader(int section, const QPoint &pos);
-	void contextMenuRequestedForCell(QModelIndex, const QPoint &pos);
-
-protected:
-	void rowsInserted(const QModelIndex &index, int start, int end) override;
+	quint64 unitGroup(const Unit &unit) const override;
+	QString groupName(quint64 group_id) const override;
 
 private:
-	std::unique_ptr<QStyle> _style;
-	std::unique_ptr<QAbstractItemDelegate> _delegate;
+	const DwarfFortress &_df;
 };
 
 #endif

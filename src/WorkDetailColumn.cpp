@@ -132,7 +132,7 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 			return NotWorking;
 		}
 	case Qt::ToolTipRole: {
-		auto tooltip = tr("<strong>%1 - %2</strong>")
+		auto tooltip = tr("<h3>%1 - %2</h3>")
 			.arg(unit.displayName())
 			.arg(wd->displayName());
 		if (!skills.empty()) {
@@ -161,6 +161,49 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 	}
 }
 
+QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std::span<const Unit *> units, int role) const
+{
+	static const QBrush Working = QColor(0, 255, 0, 64);
+	static const QBrush NotWorking = QColor(255, 0, 0, 64);
+
+	auto wd = _df.workDetails().get(section);
+	Q_ASSERT(wd);
+
+	auto is_assigned = [wd](const Unit *unit) { return wd->isAssigned((*unit)->id); };
+
+	switch (role) {
+	case Qt::DisplayRole: {
+		return int(std::ranges::count_if(units, is_assigned));
+	}
+	case Qt::CheckStateRole:
+		return std::ranges::all_of(units, is_assigned)
+			? Qt::Checked
+			: std::ranges::none_of(units, is_assigned)
+				? Qt::Unchecked
+				: Qt::PartiallyChecked;
+	case Qt::ToolTipRole: {
+		auto tooltip = tr("<h3>%1 - %2</h3>")
+			.arg(group_name)
+			.arg(wd->displayName());
+		auto count = std::ranges::count_if(units, is_assigned);
+		if (count > 0) {
+			tooltip.append(tr("<p>%1 assigned</p>").arg(count));
+			tooltip.append("<ul>");
+			for (auto unit: units)
+				if (is_assigned(unit))
+					tooltip.append(tr("<li>%1</li>")
+							.arg(unit->displayName()));
+			tooltip.append("</ul>");
+		}
+		else
+			tooltip.append(tr("<p>No one is assigned</p>"));
+		return tooltip;
+	}
+	default:
+		return {};
+	}
+}
+
 bool WorkDetailColumn::setUnitData(int section, Unit &unit, const QVariant &value, int role)
 {
 	if (role != Qt::CheckStateRole)
@@ -172,9 +215,30 @@ bool WorkDetailColumn::setUnitData(int section, Unit &unit, const QVariant &valu
 	return true;
 }
 
-Qt::ItemFlags WorkDetailColumn::flags(int section, const Unit &unit) const
+bool WorkDetailColumn::setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role)
+{
+	if (role != Qt::CheckStateRole)
+		return false;
+	auto work_detail = _df.workDetails().get(section);
+	for (auto unit: units) {
+		if (!unit->canAssignWork())
+			continue;
+		work_detail->assign((*unit)->id, value.toBool());
+	}
+	return true;
+}
+
+Qt::ItemFlags WorkDetailColumn::unitFlags(int section, const Unit &unit) const
 {
 	if (unit.canAssignWork())
+		return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
+	else
+		return {};
+}
+
+Qt::ItemFlags WorkDetailColumn::groupFlags(int section, std::span<const Unit *> units) const
+{
+	if (std::ranges::any_of(units, [](const Unit *unit) { return unit->canAssignWork(); }))
 		return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
 	else
 		return {};

@@ -119,7 +119,8 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 			// Check indicator
 			QPalette content_palette = option->palette;
 			if (item->features & QStyleOptionViewItem::HasCheckIndicator) {
-				if (item->checkState == Qt::Checked) {
+				switch (item->checkState) {
+				case Qt::Checked:
 					painter->fillRect(
 							option->rect.adjusted(ItemMargin, ItemMargin, -ItemMargin, -ItemMargin),
 							option->palette.text());
@@ -128,6 +129,13 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 						content_palette.setBrush(group, QPalette::Base, option->palette.brush(group, QPalette::Text));
 						content_palette.setBrush(group, QPalette::Text, oldbase);
 					}
+					break;
+				case Qt::PartiallyChecked:
+					painter->drawRect(option->rect.adjusted(ItemMargin, ItemMargin, -ItemMargin, -ItemMargin));
+
+					break;
+				default:
+					break;
 				}
 			}
 

@@ -16,30 +16,28 @@
  *
  */
 
-#ifndef GRID_VIEW_H
-#define GRID_VIEW_H
+#include "GroupByCreature.h"
 
-#include <QTreeView>
+#include "CP437.h"
+#include "DwarfFortress.h"
+#include "Unit.h"
 
-class GridView: public QTreeView
+GroupByCreature::GroupByCreature(const DwarfFortress &df):
+	_df(df)
 {
-	Q_OBJECT
-public:
-	GridView(QWidget *parent = nullptr);
-	~GridView() override;
+}
 
-	void setModel(QAbstractItemModel *model) override;
+GroupByCreature::~GroupByCreature()
+{
+}
 
-signals:
-	void contextMenuRequestedForHeader(int section, const QPoint &pos);
-	void contextMenuRequestedForCell(QModelIndex, const QPoint &pos);
+quint64 GroupByCreature::unitGroup(const Unit &unit) const
+{
+	return unit->race;
+}
 
-protected:
-	void rowsInserted(const QModelIndex &index, int start, int end) override;
-
-private:
-	std::unique_ptr<QStyle> _style;
-	std::unique_ptr<QAbstractItemDelegate> _delegate;
-};
-
-#endif
+QString GroupByCreature::groupName(quint64 race_id) const
+{
+	Q_ASSERT(race_id < _df.raws().creatures.all.size());
+	return fromCP437(_df.raws().creatures.all[race_id]->name[0]);
+}

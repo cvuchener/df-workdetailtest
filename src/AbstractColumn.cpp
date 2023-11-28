@@ -18,6 +18,8 @@
 
 #include "AbstractColumn.h"
 
+#include <QVariant>
+
 AbstractColumn::AbstractColumn(QObject *parent):
 	QObject(parent)
 {
@@ -32,17 +34,32 @@ int AbstractColumn::count() const
 	return 1;
 }
 
+QVariant AbstractColumn::groupData(int, const QString &, std::span<const Unit *>, int) const
+{
+	return {};
+}
+
 bool AbstractColumn::setUnitData(int, Unit &, const QVariant &, int)
 {
 	return false;
 }
 
-Qt::ItemFlags AbstractColumn::flags(int, const Unit &) const
+bool AbstractColumn::setGroupData(int, std::span<Unit *>, const QVariant &, int)
+{
+	return false;
+}
+
+Qt::ItemFlags AbstractColumn::unitFlags(int, const Unit &) const
 {
 	return Qt::ItemIsEnabled;
 }
 
-void AbstractColumn::makeUnitMenu(int, const Unit &, QMenu *, QWidget *)
+Qt::ItemFlags AbstractColumn::groupFlags(int, std::span<const Unit *>) const
+{
+	return Qt::ItemIsEnabled;
+}
+
+void AbstractColumn::makeUnitMenu(int, Unit &, QMenu *, QWidget *)
 {
 }
 

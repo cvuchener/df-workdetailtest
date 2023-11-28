@@ -34,13 +34,14 @@ public:
 	virtual int count() const;
 	virtual QVariant headerData(int section, int role = Qt::DisplayRole) const = 0;
 	virtual QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const = 0;
+	virtual QVariant groupData(int section, const QString &group_name, std::span<const Unit *> units, int role = Qt::DisplayRole) const;
 	virtual bool setUnitData(int section, Unit &unit, const QVariant &value, int role = Qt::EditRole);
-	virtual Qt::ItemFlags flags(int section, const Unit &unit) const;
+	virtual bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole);
+	virtual Qt::ItemFlags unitFlags(int section, const Unit &unit) const;
+	virtual Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const;
 
-	virtual void makeUnitMenu(int section, const Unit &unit, QMenu *menu, QWidget *parent);
+	virtual void makeUnitMenu(int section, Unit &unit, QMenu *menu, QWidget *parent);
 	virtual void makeHeaderMenu(int section, QMenu *menu, QWidget *parent);
-
-	int begin_column, end_column;
 
 signals:
 	void unitDataChanged(int first, int last, int unit_id);
@@ -53,7 +54,9 @@ signals:
 	void columnsReset();
 
 private:
-	int _offset;
+	// First and after-last column index, managed by GridViewModel
+	int begin_column, end_column;
+	friend class GridViewModel;
 };
 
 #endif
