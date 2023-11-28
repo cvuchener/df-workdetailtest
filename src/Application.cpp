@@ -36,6 +36,8 @@ Application::Application(int &argc, char **argv):
 
 	{ // Open log file
 		QDir log_dir = StandardPaths::log_location();
+		if (!log_dir.exists())
+			log_dir.mkpath(".");
 		static constexpr std::size_t log_count = 5;
 		static const QString log_file = "log.txt";
 		static const QString rotated_log_file = "log.txt.%1";
