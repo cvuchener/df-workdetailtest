@@ -36,10 +36,12 @@ signals:
 
 protected:
 	void rowsInserted(const QModelIndex &index, int start, int end) override;
+	bool edit(const QModelIndex &index, EditTrigger trigger, QEvent *event) override;
+	QItemSelectionModel::SelectionFlags selectionCommand(const QModelIndex &index, const QEvent *event = nullptr) const override;
 
 private:
 	std::unique_ptr<QStyle> _style;
-	std::unique_ptr<QAbstractItemDelegate> _delegate;
+	QPersistentModelIndex _last_index;
 };
 
 #endif

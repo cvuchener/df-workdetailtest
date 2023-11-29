@@ -20,6 +20,9 @@
       <property name="mouseTracking">
        <bool>true</bool>
       </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::ExtendedSelection</enum>
+      </property>
       <property name="sortingEnabled">
        <bool>true</bool>
       </property>
@@ -130,8 +133,7 @@
   </action>
   <action name="about_action">
    <property name="icon">
-    <iconset theme="help-about">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="help-about"/>
    </property>
    <property name="text">
     <string>About...</string>

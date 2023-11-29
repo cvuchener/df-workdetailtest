@@ -57,7 +57,6 @@ add_executable(workdetailtest
 	src/DwarfFortress.cpp
 	src/DwarfFortress_read.cpp
 	src/GridView.cpp
-	src/GridViewDelegate.cpp
 	src/GridViewModel.cpp
 	src/GridViewStyle.cpp
 	src/GroupByCreature.cpp

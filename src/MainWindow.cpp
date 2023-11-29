@@ -33,8 +33,6 @@
 #include <QCoroCore>
 
 #include "Application.h"
-#include "GridViewStyle.h"
-#include "GridViewDelegate.h"
 #include "UnitDetailsDock.h"
 #include "ObjectList.h"
 #include "Unit.h"
