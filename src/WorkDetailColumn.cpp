@@ -220,12 +220,24 @@ bool WorkDetailColumn::setGroupData(int section, std::span<Unit *> units, const 
 	if (role != Qt::CheckStateRole)
 		return false;
 	auto work_detail = _df.workDetails().get(section);
+	std::vector<int> unit_ids;
 	for (auto unit: units) {
-		if (!unit->canAssignWork())
-			continue;
-		work_detail->assign((*unit)->id, value.toBool());
+		if (unit->canAssignWork())
+			unit_ids.push_back((*unit)->id);
 	}
+	work_detail->assign(std::move(unit_ids), value.toBool());
 	return true;
+}
+
+void WorkDetailColumn::toggleUnits(int section, std::span<Unit *> units)
+{
+	auto work_detail = _df.workDetails().get(section);
+	std::vector<int> unit_ids;
+	for (auto unit: units) {
+		if (unit->canAssignWork())
+			unit_ids.push_back((*unit)->id);
+	}
+	work_detail->toggle(std::move(unit_ids));
 }
 
 Qt::ItemFlags WorkDetailColumn::unitFlags(int section, const Unit &unit) const

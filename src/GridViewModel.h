@@ -50,6 +50,8 @@ public:
 	void makeColumnMenu(int section, QMenu *menu, QWidget *parent);
 	void makeCellMenu(const QModelIndex &index, QMenu *menu, QWidget *parent);
 
+	void toggleCells(const QModelIndexList &indexes);
+
 private slots:
 	void cellDataChanged(int first, int last, int unit_id);
 

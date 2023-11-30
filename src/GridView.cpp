@@ -20,7 +20,9 @@
 
 #include <QHeaderView>
 #include <QMouseEvent>
+#include <QAbstractProxyModel>
 
+#include "GridViewModel.h"
 #include "GridViewStyle.h"
 
 GridView::GridView(QWidget *parent):
@@ -68,13 +70,50 @@ bool GridView::edit(const QModelIndex &index, EditTrigger trigger, QEvent *event
 {
 	// Implement toggling the whole selection and toggling bt dragging the
 	// mouse over cells.
-	auto toggle = [this](const QModelIndex &index) {
-		auto checked = index.data(Qt::CheckStateRole).value<Qt::CheckState>();
-		model()->setData(index,
-				checked == Qt::Checked
-					? Qt::Unchecked
-					: Qt::Checked,
-				Qt::CheckStateRole);
+	auto toggle_cells = [this](const QModelIndex &index) {
+		auto toggle_cell = [this](const QModelIndex &index) {
+			auto checked = index.data(Qt::CheckStateRole).value<Qt::CheckState>();
+			model()->setData(index,
+					checked == Qt::Checked
+						? Qt::Unchecked
+						: Qt::Checked,
+					Qt::CheckStateRole);
+		};
+		auto selection = selectionModel();
+		if (selection->selectedRows().size() <= 1
+				|| !selection->isRowSelected(index.row(), index.parent())) {
+			// If clicking outside the selection or single
+			// selection, only toggle the cell under the cursor
+			toggle_cell(index);
+		}
+		else { // Toggle all cells from this column in the selection
+			// Find the GridViewModel
+			std::vector<QAbstractProxyModel *> proxies;
+			GridViewModel *gv_model = nullptr;
+			auto m = model();
+			while (!(gv_model = qobject_cast<GridViewModel *>(m))) {
+				if (auto proxy = qobject_cast<QAbstractProxyModel *>(m)) {
+					proxies.push_back(proxy);
+					m = proxy->sourceModel();
+				}
+				else
+					break;
+			}
+			if (gv_model) {
+				// Toggle all at once if possible
+				QModelIndexList indexes;
+				for (auto row: selection->selectedRows()) {
+					auto idx = row.siblingAtColumn(index.column());
+					for (auto proxy: proxies)
+						idx = proxy->mapToSource(idx);
+					indexes.push_back(idx);
+				}
+				gv_model->toggleCells(indexes);
+			}
+			else for (auto row: selection->selectedRows()) // ...or individually
+				toggle_cell(row.siblingAtColumn(index.column()));
+		}
+
 	};
 	if (auto mouse = dynamic_cast<QMouseEvent *>(event)) {
 		bool enter = false;
@@ -89,13 +128,7 @@ bool GridView::edit(const QModelIndex &index, EditTrigger trigger, QEvent *event
 		switch (mouse->type()) {
 		case QEvent::MouseButtonPress:
 			if (mouse->button() == Qt::LeftButton && index.flags() & Qt::ItemIsUserCheckable) {
-				if (!selectionModel()->isRowSelected(index.row(), index.parent())) {
-					toggle(index);
-				}
-				else {
-					for (auto row: selectionModel()->selectedRows())
-						toggle(row.siblingAtColumn(index.column()));
-				}
+				toggle_cells(index);
 				return false;
 			}
 			break;
@@ -107,13 +140,7 @@ bool GridView::edit(const QModelIndex &index, EditTrigger trigger, QEvent *event
 			break;
 		case QEvent::MouseMove:
 			if (enter && index.flags() & Qt::ItemIsUserCheckable) {
-				if (!selectionModel()->isRowSelected(index.row(), index.parent())) {
-					toggle(index);
-				}
-				else {
-					for (auto row: selectionModel()->selectedRows())
-						toggle(row.siblingAtColumn(index.column()));
-				}
+				toggle_cells(index);
 				return false;
 			}
 		default:

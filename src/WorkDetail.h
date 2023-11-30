@@ -67,6 +67,8 @@ public:
 		std::optional<df::work_detail_icon_t> icon;
 	};
 	QCoro::Task<> assign(int unit_id, bool assign);
+	QCoro::Task<> assign(std::vector<int> units, bool assign);
+	QCoro::Task<> toggle(std::vector<int> units);
 	QCoro::Task<> edit(Properties properties);
 
 signals:
@@ -76,6 +78,9 @@ signals:
 
 private:
 	void refresh();
+	template<typename F>
+	QCoro::Task<> changeAssignments(std::vector<int> units, F assign);
+	void setAssignment(int unit_id, bool assign, ChangeStatus status);
 
 	std::unique_ptr<df::work_detail> _wd;
 	DwarfFortress &_df;

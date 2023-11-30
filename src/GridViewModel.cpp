@@ -174,7 +174,7 @@ auto GridViewModel::applyToIndex(Model &&model, const QModelIndex &index, UnitAc
 	}
 }
 
-static std::span<const Unit *> as_const(const std::vector<Unit *> &units)
+static std::span<const Unit *> as_const_span(const std::vector<Unit *> &units)
 {
 	return std::span<const Unit *>((const Unit **)units.data(), units.size());
 }
@@ -188,7 +188,7 @@ QVariant GridViewModel::data(const QModelIndex &index, int role) const
 		},
 		[this, role](const group_t &group, int column) -> QVariant {
 			auto [col, section] = getColumn(column);
-			return col->groupData(section, _group_by->groupName(group.id), as_const(group.units), role);
+			return col->groupData(section, _group_by->groupName(group.id), as_const_span(group.units), role);
 		});
 }
 
@@ -214,7 +214,7 @@ Qt::ItemFlags GridViewModel::flags(const QModelIndex &index) const
 		},
 		[this](const group_t &group, int column) -> Qt::ItemFlags {
 			auto [col, section] = getColumn(column);
-			return col->groupFlags(section, as_const(group.units));
+			return col->groupFlags(section, as_const_span(group.units));
 		});
 }
 
@@ -247,6 +247,46 @@ void GridViewModel::makeCellMenu(const QModelIndex &index, QMenu *menu, QWidget 
 		},
 		[](group_t &group, int column) {
 		});
+}
+
+void GridViewModel::toggleCells(const QModelIndexList &indexes)
+{
+	// Sort indexes by column and type
+	struct targets_t {
+		std::vector<group_t *> groups;
+		std::vector<Unit *> units;
+	};
+	std::vector<targets_t> targets(columnCount());
+	for (auto index: indexes) {
+		applyToIndex(*this, index,
+			[&](Unit &unit, int column) {
+				targets[column].units.push_back(&unit);
+			},
+			[&](group_t &group, int column) {
+				targets[column].groups.push_back(&group);
+			});
+	}
+	for (std::size_t i = 0; i < targets.size(); ++i) {
+		auto &[groups, units] = targets[i];
+		auto [col, sec] = getColumn(i);
+		if (units.empty()) {
+			// Only toggle groups if no units are selected
+			for (auto g: groups) {
+				auto state = col->groupData(sec,
+						_group_by->groupName(g->id),
+						as_const_span(g->units),
+						Qt::CheckStateRole).value<Qt::CheckState>();
+				col->setGroupData(sec,
+						g->units,
+						state == Qt::Checked
+							? Qt::Unchecked
+							: Qt::Checked,
+						Qt::CheckStateRole);
+			}
+		}
+		else
+			col->toggleUnits(sec, units);
+	}
 }
 
 void GridViewModel::cellDataChanged(int first, int last, int unit_id)

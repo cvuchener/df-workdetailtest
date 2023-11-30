@@ -49,6 +49,14 @@ bool AbstractColumn::setGroupData(int, std::span<Unit *>, const QVariant &, int)
 	return false;
 }
 
+void AbstractColumn::toggleUnits(int section, std::span<Unit *> units)
+{
+	for (auto u: units) {
+		auto state = unitData(section, *u, Qt::CheckStateRole).value<Qt::CheckState>();
+		setUnitData(section, *u, state == Qt::Checked ? Qt::Unchecked : Qt::Checked, Qt::CheckStateRole);
+	}
+}
+
 Qt::ItemFlags AbstractColumn::unitFlags(int, const Unit &) const
 {
 	return Qt::ItemIsEnabled;
