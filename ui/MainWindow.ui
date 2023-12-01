@@ -28,6 +28,16 @@
        <widget class="QComboBox" name="filter_cb"/>
       </item>
       <item>
+       <widget class="QLabel" name="group_by_label">
+        <property name="text">
+         <string>Group by:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="group_by_cb"/>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

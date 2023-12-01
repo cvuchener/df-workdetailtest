@@ -37,14 +37,7 @@ GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
 	_columns.push_back(std::make_unique<WorkDetailColumn>(df));
 	_columns.push_back(std::make_unique<SpecialistColumn>(df));
 
-	_group_by = std::make_unique<GroupByCreature>(_df);
-
-	_unit_filter->setUnitFilter(&Unit::isFortControlled);
 	_unit_filter->setSourceModel(&_df.units());
-	connect(_unit_filter.get(), &QAbstractItemModel::modelAboutToBeReset,
-		this, &GridViewModel::unitBeginReset);
-	connect(_unit_filter.get(), &QAbstractItemModel::modelReset,
-		this, &GridViewModel::unitEndReset);
 	connect(_unit_filter.get(), &QAbstractItemModel::dataChanged,
 		this, &GridViewModel::unitDataChanged);
 	connect(_unit_filter.get(), &QAbstractItemModel::rowsAboutToBeInserted,
@@ -60,10 +53,6 @@ GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
 	for (auto &col: _columns) {
 		col->begin_column = count;
 		col->end_column = (count += col->count());
-		connect(col.get(), &AbstractColumn::columnsAboutToBeReset,
-			this, &GridViewModel::columnBeginReset);
-		connect(col.get(), &AbstractColumn::columnsReset,
-			this, &GridViewModel::columnEndReset);
 		connect(col.get(), &AbstractColumn::unitDataChanged,
 			this, &GridViewModel::cellDataChanged);
 		connect(col.get(), &AbstractColumn::columnDataChanged,
@@ -81,18 +70,6 @@ GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
 
 GridViewModel::~GridViewModel()
 {
-}
-
-void GridViewModel::setFilter(BaseFilter filter)
-{
-	switch (filter) {
-	case BaseFilter::FortControlled:
-		_unit_filter->setUnitFilter(&Unit::isFortControlled);
-		break;
-	case BaseFilter::Worker:
-		_unit_filter->setUnitFilter(&Unit::canAssignWork);
-		break;
-	}
 }
 
 /*
@@ -301,6 +278,49 @@ void GridViewModel::toggleCells(const QModelIndexList &indexes)
 	}
 }
 
+void GridViewModel::setFilter(BaseFilter filter)
+{
+	switch (filter) {
+	case BaseFilter::FortControlled:
+		_unit_filter->setUnitFilter(&Unit::isFortControlled);
+		break;
+	case BaseFilter::Worker:
+		_unit_filter->setUnitFilter(&Unit::canAssignWork);
+		break;
+	}
+}
+
+void GridViewModel::setGroupBy(Group group)
+{
+	layoutAboutToBeChanged();
+	// Keep the unit id for each persistent index (or -1 for groups)
+	QModelIndexList old_indexes = persistentIndexList();
+	std::vector<int> units;
+	units.reserve(old_indexes.size());
+	for (auto index: old_indexes)
+		units.push_back(applyToIndex(*this, index,
+			[](const Unit &unit, int) { return unit->id; },
+			[](const group_t &, int) { return -1; }));
+	// Change grouping method
+	switch (group) {
+	case Group::NoGroup:
+		_group_by = nullptr;
+		break;
+	case Group::Creature:
+		_group_by = std::make_unique<GroupByCreature>(_df);
+		break;
+	}
+	rebuildGroups();
+	// Rebuild indexes from unit ids
+	QModelIndexList new_indexes(old_indexes.size());
+	for (int i = 0; i < old_indexes.size(); ++i) {
+		if (units[i] != -1)
+			new_indexes[i] = unitIndex(units[i]).siblingAtColumn(old_indexes[i].column());
+	}
+	changePersistentIndexList(old_indexes, new_indexes);
+	layoutChanged();
+}
+
 void GridViewModel::cellDataChanged(int first, int last, int unit_id)
 {
 	auto col = qobject_cast<AbstractColumn *>(sender());
@@ -345,17 +365,6 @@ void GridViewModel::unitDataChanged(const QModelIndex &first, const QModelIndex 
 			index(first.row(), 0),
 			index(last.row(), columnCount()-1));
 	}
-}
-
-void GridViewModel::unitBeginReset()
-{
-	beginResetModel();
-}
-
-void GridViewModel::unitEndReset()
-{
-	rebuildGroups();
-	endResetModel();
 }
 
 void GridViewModel::unitBeginInsert(const QModelIndex &, int first, int last)
@@ -446,11 +455,12 @@ void GridViewModel::addUnitToGroup(Unit &unit, quint64 group_id, bool reseting)
 			beginInsertRows(group_index, row, row);
 		}
 		new_group_it->units.insert(insert_pos, &unit);
-		if (!reseting)
+		if (!reseting) {
 			endInsertRows();
-		dataChanged(
-			group_index.siblingAtColumn(0),
-			group_index.siblingAtColumn(columnCount()-1));
+			dataChanged(
+				group_index.siblingAtColumn(0),
+				group_index.siblingAtColumn(columnCount()-1));
+		}
 	}
 }
 
@@ -500,8 +510,10 @@ void GridViewModel::columnBeginInsert(int first, int last)
 {
 	auto col = qobject_cast<AbstractColumn *>(sender());
 	Q_ASSERT(col);
-	layoutAboutToBeChanged();
 	beginInsertColumns({}, col->begin_column+first, col->begin_column+last);
+	if (_group_by)
+		for (std::size_t i = 0; i < _groups.size(); ++i)
+			beginInsertColumns(createIndex(i, 0, NoParent), col->begin_column+first, col->begin_column+last);
 	int count = last-first+1;
 	auto it = _columns.rbegin();
 	while (it->get() != col) {
@@ -515,16 +527,19 @@ void GridViewModel::columnBeginInsert(int first, int last)
 void GridViewModel::columnEndInsert(int first, int last)
 {
 	endInsertColumns();
-	layoutChanged();
+	if (_group_by)
+		for (std::size_t i = 0; i < _groups.size(); ++i)
+			endInsertColumns();
 }
 
 void GridViewModel::columnBeginRemove(int first, int last)
 {
 	auto col = qobject_cast<AbstractColumn *>(sender());
 	Q_ASSERT(col);
-	if (_group_by)
-		layoutAboutToBeChanged();
 	beginRemoveColumns({}, col->begin_column+first, col->begin_column+last);
+	if (_group_by)
+		for (std::size_t i = 0; i < _groups.size(); ++i)
+			beginRemoveColumns(createIndex(i, 0, NoParent), col->begin_column+first, col->begin_column+last);
 	int count = last-first+1;
 	auto it = _columns.rbegin();
 	while (it->get() != col) {
@@ -539,26 +554,8 @@ void GridViewModel::columnEndRemove(int first, int last)
 {
 	endRemoveColumns();
 	if (_group_by)
-		layoutChanged();
-}
-
-void GridViewModel::columnBeginReset()
-{
-	beginResetModel();
-}
-
-void GridViewModel::columnEndReset()
-{
-	auto col = qobject_cast<AbstractColumn *>(sender());
-	Q_ASSERT(col);
-	col->end_column = col->begin_column + col->count();
-	auto it = std::ranges::find(_columns, col, &std::unique_ptr<AbstractColumn>::get);
-	Q_ASSERT(it != _columns.end());
-	for (++it; it != _columns.end(); ++it) {
-		(*it)->begin_column = (*prev(it))->end_column;
-		(*it)->end_column = (*it)->begin_column + (*it)->count();
-	}
-	endResetModel();
+		for (std::size_t i = 0; i < _groups.size(); ++i)
+			endRemoveColumns();
 }
 
 std::pair<const AbstractColumn *, int> GridViewModel::getColumn(int col) const

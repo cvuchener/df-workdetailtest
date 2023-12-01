@@ -51,8 +51,6 @@ signals:
 	void columnsRemoved(int first, int last);
 	void columnsAboutToBeInserted(int first, int last);
 	void columnsInserted(int first, int last);
-	void columnsAboutToBeReset();
-	void columnsReset();
 
 private:
 	// First and after-last column index, managed by GridViewModel

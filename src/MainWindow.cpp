@@ -101,6 +101,16 @@ MainWindow::MainWindow(QWidget *parent):
 	connect(_ui->filter_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
 		_model->setFilter(_ui->filter_cb->itemData(index).value<GridViewModel::BaseFilter>());
 	});
+	_model->setFilter(GridViewModel::BaseFilter::FortControlled);
+
+	_ui->group_by_cb->addItem(tr("No group"),
+			QVariant::fromValue(GridViewModel::Group::NoGroup));
+	_ui->group_by_cb->addItem(tr("Creature"),
+			QVariant::fromValue(GridViewModel::Group::Creature));
+	connect(_ui->group_by_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
+		_model->setGroupBy(_ui->group_by_cb->itemData(index).value<GridViewModel::Group>());
+	});
+	_model->setGroupBy(GridViewModel::Group::NoGroup);
 
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
 		QMessageBox::critical(this, tr("Connection error"), msg);

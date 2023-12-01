@@ -52,7 +52,19 @@ GridView::~GridView()
 
 void GridView::setModel(QAbstractItemModel *model)
 {
+	if (auto old_model = GridView::model())
+		disconnect(old_model);
 	QTreeView::setModel(model);
+	connect(model, &QAbstractItemModel::layoutChanged, this, [this](const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint) {
+		if (hint == QAbstractItemModel::NoLayoutChangeHint) { // ignore sorting changes
+			if (!parents.empty()) {
+				for(auto parent: parents)
+					expandRecursively(parent);
+			}
+			else
+				expandAll();
+		}
+	});
 	Q_ASSERT(model->columnCount() > 0);
 	header()->setSectionResizeMode(QHeaderView::Fixed);
 	header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);

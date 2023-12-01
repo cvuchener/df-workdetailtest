@@ -34,10 +34,6 @@ WorkDetailColumn::WorkDetailColumn(DwarfFortress &df, QObject *parent):
 	_df(df)
 {
 	auto &list = _df.workDetails();
-	connect(&list, &QAbstractItemModel::modelAboutToBeReset,
-		this, &AbstractColumn::columnsAboutToBeReset);
-	connect(&list, &QAbstractItemModel::modelReset,
-		this, &AbstractColumn::columnsReset);
 	connect(&list, &QAbstractItemModel::rowsAboutToBeInserted,
 		this, [this](const QModelIndex &, int first, int last) {
 			columnsAboutToBeInserted(first, last);
@@ -163,9 +159,6 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 
 QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std::span<const Unit *> units, int role) const
 {
-	static const QBrush Working = QColor(0, 255, 0, 64);
-	static const QBrush NotWorking = QColor(255, 0, 0, 64);
-
 	auto wd = _df.workDetails().get(section);
 	Q_ASSERT(wd);
 

@@ -201,9 +201,9 @@ public:
 
 	void clear()
 	{
-		beginResetModel();
+		beginRemoveRows({}, 0, _objects.size()-1);
 		_objects.clear();
-		endResetModel();
+		endRemoveRows();
 	}
 
 	int rowCount(const QModelIndex &parent = {}) const override

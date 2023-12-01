@@ -39,8 +39,13 @@ public:
 		FortControlled,
 		Worker,
 	};
-
 	void setFilter(BaseFilter filter);
+
+	enum class Group {
+		NoGroup,
+		Creature,
+	};
+	void setGroupBy(Group group);
 
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &index) const override;
@@ -64,9 +69,6 @@ private slots:
 
 	void unitDataChanged(const QModelIndex &first, const QModelIndex &last, const QList<int> &roles);
 
-	void unitBeginReset();
-	void unitEndReset();
-
 	void unitBeginInsert(const QModelIndex &, int first, int last);
 	void unitEndInsert(const QModelIndex &, int first, int last);
 
@@ -81,8 +83,6 @@ private slots:
 	void columnBeginRemove(int first, int last);
 	void columnEndRemove(int first, int last);
 
-	void columnBeginReset();
-	void columnEndReset();
 private:
 	DwarfFortress &_df;
 	std::unique_ptr<UnitFilterProxyModel> _unit_filter;
