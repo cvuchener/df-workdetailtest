@@ -35,6 +35,13 @@ public:
 	GridViewModel(DwarfFortress &df, QObject *parent = nullptr);
 	~GridViewModel() override;
 
+	enum class BaseFilter {
+		FortControlled,
+		Worker,
+	};
+
+	void setFilter(BaseFilter filter);
+
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &index) const override;
 	QModelIndex sibling(int row, int column, const QModelIndex &index) const override;

@@ -33,7 +33,11 @@ public:
 	~UnitFilterProxyModel() override;
 
 	template <std::predicate<const Unit &> Filter>
-	void setUnitFilter(Filter &&filter) { _unit_filter = std::forward<Filter>(filter); }
+	void setUnitFilter(Filter &&filter)
+	{
+		_unit_filter = std::forward<Filter>(filter);
+		invalidateRowsFilter();
+	}
 
 	void setSourceModel(QAbstractItemModel *source_model) override;
 

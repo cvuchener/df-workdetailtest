@@ -94,6 +94,14 @@ MainWindow::MainWindow(QWidget *parent):
 			menu.exec(pos);
 	});
 
+	_ui->filter_cb->addItem(tr("Fort controlled"),
+			QVariant::fromValue(GridViewModel::BaseFilter::FortControlled));
+	_ui->filter_cb->addItem(tr("Worker"),
+			QVariant::fromValue(GridViewModel::BaseFilter::Worker));
+	connect(_ui->filter_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
+		_model->setFilter(_ui->filter_cb->itemData(index).value<GridViewModel::BaseFilter>());
+	});
+
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
 		QMessageBox::critical(this, tr("Connection error"), msg);
 	});

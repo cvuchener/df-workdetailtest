@@ -83,6 +83,18 @@ GridViewModel::~GridViewModel()
 {
 }
 
+void GridViewModel::setFilter(BaseFilter filter)
+{
+	switch (filter) {
+	case BaseFilter::FortControlled:
+		_unit_filter->setUnitFilter(&Unit::isFortControlled);
+		break;
+	case BaseFilter::Worker:
+		_unit_filter->setUnitFilter(&Unit::canAssignWork);
+		break;
+	}
+}
+
 /*
  * QModelIndex internal id is used for the parent row. Top-level index has
  * NoParent as internal id.
