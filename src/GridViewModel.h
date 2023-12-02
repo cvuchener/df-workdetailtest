@@ -58,7 +58,7 @@ public:
 	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
 
-	QModelIndex sourceUnitIndex(const QModelIndex &index) const;
+	const Unit *unit(const QModelIndex &index) const;
 
 	void makeColumnMenu(int section, QMenu *menu, QWidget *parent);
 	void makeCellMenu(const QModelIndex &index, QMenu *menu, QWidget *parent);
@@ -99,6 +99,7 @@ private:
 	QModelIndex unitIndex(int unit_id) const;
 	void addUnitToGroup(Unit &unit, quint64 group_id, bool reseting = false);
 	void removeFromGroup(const QModelIndex &index);
+	void updateGroupedUnit(Unit &unit, int first_col, int last_col);
 	void rebuildGroups();
 
 	template <typename Model, typename UnitAction, typename GroupAction, typename... Args>

@@ -49,6 +49,11 @@ Unit *UnitFilterProxyModel::get(int row)
 	return _units->get(source.row());
 }
 
+QModelIndex UnitFilterProxyModel::find(int unit_id) const
+{
+	return mapFromSource(_units->find(unit_id));
+}
+
 bool UnitFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
 	if (source_parent.isValid())

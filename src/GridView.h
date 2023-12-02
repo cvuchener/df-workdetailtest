@@ -36,12 +36,18 @@ signals:
 
 protected:
 	void rowsInserted(const QModelIndex &index, int start, int end) override;
-	bool edit(const QModelIndex &index, EditTrigger trigger, QEvent *event) override;
 	QItemSelectionModel::SelectionFlags selectionCommand(const QModelIndex &index, const QEvent *event = nullptr) const override;
+
+	// For cell painting
+	void mousePressEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
+	void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
 	std::unique_ptr<QStyle> _style;
-	QPersistentModelIndex _last_index;
+	QPersistentModelIndex _last_index; // only valid when cell painting
+
+	void toggleCells(const QModelIndex &index);
 };
 
 #endif

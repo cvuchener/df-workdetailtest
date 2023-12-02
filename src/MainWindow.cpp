@@ -130,14 +130,12 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
 
 	connect(_ui->view->selectionModel(), &QItemSelectionModel::currentChanged, this, [this, unit_details](const QModelIndex &current, const QModelIndex &prev) {
-		auto unit_index = _model->sourceUnitIndex(_sort_model->mapToSource(current));
+		auto unit = _model->unit(_sort_model->mapToSource(current));
+		auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
 		if (unit_index == _current_unit)
 			return;
 		_current_unit = unit_index;
-		if (_current_unit.isValid())
-			unit_details->setUnit(_df->units().get(_current_unit.row()));
-		else
-			unit_details->setUnit(nullptr);
+		unit_details->setUnit(unit);
 	});
 
 	if (settings.autoconnect())

@@ -44,6 +44,8 @@ public:
 	const Unit *get(int row) const;
 	Unit *get(int row);
 
+	QModelIndex find(int unit_id) const;
+
 protected:
 	bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 

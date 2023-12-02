@@ -97,6 +97,7 @@ public:
 
 	ObjectList<Unit> &units() { return *_units; }
 	ObjectList<WorkDetail> &workDetails() { return *_work_details; }
+	const ObjectList<WorkDetail> &workDetails() const { return *_work_details; }
 	int currentCivId() const { return _current_civ_id; }
 	int currentGroupId() const { return _current_group_id; }
 

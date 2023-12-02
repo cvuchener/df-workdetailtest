@@ -208,18 +208,19 @@ Qt::ItemFlags GridViewModel::flags(const QModelIndex &index) const
 		});
 }
 
-QModelIndex GridViewModel::sourceUnitIndex(const QModelIndex &index) const
+const Unit *GridViewModel::unit(const QModelIndex &index) const
 {
+	if (!index.isValid())
+		return nullptr;
 	if (_group_by) {
 		if (index.internalId() == NoParent)
-			return {};
+			return nullptr;
 		else {
-			auto unit = _groups[index.internalId()].units[index.row()];
-			return _df.units().find(*unit);
+			return _groups[index.internalId()].units[index.row()];
 		}
 	}
 	else
-		return _unit_filter->mapToSource(_unit_filter->index(index.row(), 0));
+		return _unit_filter->get(index.row());
 }
 
 void GridViewModel::makeColumnMenu(int section, QMenu *menu, QWidget *parent)
@@ -331,45 +332,22 @@ void GridViewModel::cellDataChanged(int first, int last, int unit_id)
 	Q_ASSERT(col);
 	auto index = unitIndex(unit_id);
 	Q_ASSERT(index.isValid());
-	dataChanged(
-		index.siblingAtColumn(col->begin_column+first),
-		index.siblingAtColumn(col->begin_column+last));
 	if (_group_by) {
-		auto group_index = createIndex(index.internalId(), 0, NoParent);
 		auto unit = _df.units().get(_df.units().find(unit_id).row());
-		auto new_group_id = _group_by->unitGroup(*unit);
-		if (new_group_id != _groups[index.internalId()].id) {
-			removeFromGroup(index);
-			addUnitToGroup(*unit, new_group_id);
-		}
-		else
-			dataChanged(
-				group_index.siblingAtColumn(col->begin_column+first),
-				group_index.siblingAtColumn(col->begin_column+last));
+		updateGroupedUnit(*unit, col->begin_column+first, col->begin_column+last);
+	}
+	else {
+		dataChanged(
+			index.siblingAtColumn(col->begin_column+first),
+			index.siblingAtColumn(col->begin_column+last));
 	}
 }
 
 void GridViewModel::unitDataChanged(const QModelIndex &first, const QModelIndex &last, const QList<int> &roles)
 {
 	if (_group_by) {
-		for (int unit_index = first.row(); unit_index <= last.row(); ++unit_index) {
-			auto &unit = *_unit_filter->get(unit_index);
-			auto current_index = unitIndex(unit->id);
-			auto new_group_id = _group_by->unitGroup(unit);
-			if (_groups[current_index.internalId()].id != new_group_id) {
-				removeFromGroup(current_index);
-				addUnitToGroup(unit, new_group_id);
-			}
-			else {
-				dataChanged(
-					current_index.siblingAtColumn(0),
-					current_index.siblingAtColumn(columnCount()-1));
-				auto group_index = createIndex(current_index.internalId(), 0, NoParent);
-				dataChanged(
-					group_index.siblingAtColumn(0),
-					group_index.siblingAtColumn(columnCount()-1));
-			}
-		}
+		for (int unit_index = first.row(); unit_index <= last.row(); ++unit_index)
+			updateGroupedUnit(*_unit_filter->get(unit_index), 0, columnCount()-1);
 	}
 	else {
 		dataChanged(
@@ -436,7 +414,7 @@ QModelIndex GridViewModel::unitIndex(int unit_id) const
 		);
 	}
 	else {
-		auto index = _unit_filter->mapFromSource(_df.units().find(unit_id));
+		auto index = _unit_filter->find(unit_id);
 		Q_ASSERT(index.isValid());
 		return createIndex(index.row(), 0, NoParent);
 	}
@@ -492,6 +470,61 @@ void GridViewModel::removeFromGroup(const QModelIndex &index)
 		dataChanged(
 			group_index.siblingAtColumn(0),
 			group_index.siblingAtColumn(columnCount()-1));
+	}
+}
+
+void GridViewModel::updateGroupedUnit(Unit &unit, int first_col, int last_col)
+{
+	auto unit_index = unitIndex(unit->id);
+	auto group_index = createIndex(unit_index.internalId(), 0, NoParent);
+	auto new_group_id = _group_by->unitGroup(unit);
+	if (new_group_id != _groups[group_index.row()].id) {
+		QPersistentModelIndex old_group_index = group_index; // old group index may be modified by the new group insertion
+		auto new_group_it = std::ranges::lower_bound( _groups, new_group_id, {}, &group_t::id);
+		QModelIndex new_group_index = createIndex(distance(_groups.begin(), new_group_it), 0, NoParent);
+		if (new_group_it == _groups.end() || new_group_it->id != new_group_id) {
+			// Add new group
+			beginInsertRows({}, new_group_index.row(), new_group_index.row());
+			new_group_it = _groups.insert(new_group_it, {new_group_id, {}});
+			endInsertRows();
+		}
+		auto old_group_it = next(_groups.begin(), old_group_index.row());
+
+		// Move row
+		auto insert_pos = std::ranges::lower_bound(new_group_it->units, unit->id, {},
+				[](Unit *unit){ return (*unit)->id; });
+		auto insert_row = distance(new_group_it->units.begin(), insert_pos);
+		beginMoveRows(old_group_index, unit_index.row(), unit_index.row(), new_group_index, insert_row);
+		_unit_group[unit->id] = new_group_id;
+		old_group_it->units.erase(next(old_group_it->units.begin(), unit_index.row()));
+		new_group_it->units.insert(insert_pos, &unit);
+		endMoveRows();
+
+		// Update new group
+		dataChanged(
+			new_group_index.siblingAtColumn(0),
+			new_group_index.siblingAtColumn(columnCount()-1));
+		if (old_group_it->units.size() == 0) {
+			// Remove empty old group
+			beginRemoveRows({}, old_group_index.row(), old_group_index.row());
+			_groups.erase(old_group_it);
+			endRemoveRows();
+		}
+		else {
+			// Update old group
+			dataChanged(
+				QModelIndex(old_group_index).siblingAtColumn(0),
+				QModelIndex(old_group_index).siblingAtColumn(columnCount()-1));
+		}
+	}
+	else {
+		// group has not changed, only update data
+		dataChanged(
+			unit_index.siblingAtColumn(first_col),
+			unit_index.siblingAtColumn(last_col));
+		dataChanged(
+			group_index.siblingAtColumn(first_col),
+			group_index.siblingAtColumn(last_col));
 	}
 }
 
