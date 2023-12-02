@@ -60,6 +60,7 @@ add_executable(workdetailtest
 	src/GridViewModel.cpp
 	src/GridViewStyle.cpp
 	src/GroupByCreature.cpp
+	src/GroupByWorkDetailAssigned.cpp
 	src/IconProvider.cpp
 	src/MainWindow.cpp
 	src/MessageHandler.cpp

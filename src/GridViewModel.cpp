@@ -27,6 +27,7 @@
 #include "WorkDetailColumn.h"
 #include "SpecialistColumn.h"
 #include "GroupByCreature.h"
+#include "GroupByWorkDetailAssigned.h"
 
 GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
 	QAbstractItemModel(parent),
@@ -309,6 +310,9 @@ void GridViewModel::setGroupBy(Group group)
 	case Group::Creature:
 		_group_by = std::make_unique<GroupByCreature>(_df);
 		break;
+	case Group::WorkDetailAssigned:
+		_group_by = std::make_unique<GroupByWorkDetailAssigned>(_df);
+		break;
 	}
 	rebuildGroups();
 	// Rebuild indexes from unit ids
@@ -332,9 +336,16 @@ void GridViewModel::cellDataChanged(int first, int last, int unit_id)
 		index.siblingAtColumn(col->begin_column+last));
 	if (_group_by) {
 		auto group_index = createIndex(index.internalId(), 0, NoParent);
-		dataChanged(
-			group_index.siblingAtColumn(col->begin_column+first),
-			group_index.siblingAtColumn(col->begin_column+last));
+		auto unit = _df.units().get(_df.units().find(unit_id).row());
+		auto new_group_id = _group_by->unitGroup(*unit);
+		if (new_group_id != _groups[index.internalId()].id) {
+			removeFromGroup(index);
+			addUnitToGroup(*unit, new_group_id);
+		}
+		else
+			dataChanged(
+				group_index.siblingAtColumn(col->begin_column+first),
+				group_index.siblingAtColumn(col->begin_column+last));
 	}
 }
 

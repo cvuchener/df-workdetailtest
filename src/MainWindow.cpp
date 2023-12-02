@@ -109,6 +109,8 @@ MainWindow::MainWindow(QWidget *parent):
 			QVariant::fromValue(GridViewModel::Group::NoGroup));
 	_ui->group_by_cb->addItem(tr("Creature"),
 			QVariant::fromValue(GridViewModel::Group::Creature));
+	_ui->group_by_cb->addItem(tr("Work detail assigned"),
+			QVariant::fromValue(GridViewModel::Group::WorkDetailAssigned));
 	connect(_ui->group_by_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
 		_model->setGroupBy(_ui->group_by_cb->itemData(index).value<GridViewModel::Group>());
 	});
