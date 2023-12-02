@@ -38,6 +38,7 @@
 #include "Unit.h"
 #include "GridViewModel.h"
 #include "PreferencesDialog.h"
+#include "DataRole.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -80,6 +81,7 @@ MainWindow::MainWindow(QWidget *parent):
 	const auto &settings = Application::settings();
 
 	_sort_model->setSourceModel(_model.get());
+	_sort_model->setSortRole(DataRole::SortRole);
 	_ui->view->setModel(_sort_model.get());
 	connect(_ui->view, &GridView::contextMenuRequestedForHeader, this, [this](int section, const QPoint &pos) {
 		QMenu menu;

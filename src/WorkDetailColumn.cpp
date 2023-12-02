@@ -31,7 +31,10 @@
 
 WorkDetailColumn::WorkDetailColumn(DwarfFortress &df, QObject *parent):
 	AbstractColumn(parent),
-	_df(df)
+	_df(df),
+	_sort{*this, SortBy::Skill, {
+			{SortBy::Skill, tr("skill")},
+			{SortBy::Assigned, tr("assigned")}}}
 {
 	auto &list = _df.workDetails();
 	connect(&list, &QAbstractItemModel::rowsAboutToBeInserted,
@@ -152,6 +155,18 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 			return {};
 		}
 	}
+	case DataRole::SortRole:
+		switch (_sort.option) {
+		case SortBy::Skill: {
+			auto best_skill = std::ranges::max_element(skills, std::less{}, [](auto skill){return skill->rating;});
+			if (best_skill == skills.end())
+				return -1;
+			else
+				return static_cast<int>((*best_skill)->rating);
+		}
+		case SortBy::Assigned:
+			return wd->isAssigned(unit->id);
+		}
 	default:
 		return {};
 	}
@@ -164,9 +179,11 @@ QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std
 
 	auto is_assigned = [wd](const Unit *unit) { return wd->isAssigned((*unit)->id); };
 
+	int count = std::ranges::count_if(units, is_assigned);
+
 	switch (role) {
 	case Qt::DisplayRole: {
-		return int(std::ranges::count_if(units, is_assigned));
+		return count;
 	}
 	case Qt::CheckStateRole:
 		return std::ranges::all_of(units, is_assigned)
@@ -178,7 +195,6 @@ QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std
 		auto tooltip = tr("<h3>%1 - %2</h3>")
 			.arg(group_name)
 			.arg(wd->displayName());
-		auto count = std::ranges::count_if(units, is_assigned);
 		if (count > 0) {
 			tooltip.append(tr("<p>%1 assigned</p>").arg(count));
 			tooltip.append("<ul>");
@@ -192,6 +208,23 @@ QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std
 			tooltip.append(tr("<p>No one is assigned</p>"));
 		return tooltip;
 	}
+	case DataRole::SortRole:
+		switch (_sort.option) {
+		case SortBy::Skill: {
+			auto best_rating = std::numeric_limits<int>::min();
+			for (auto unit: units) {
+				if (auto soul = (*unit)->current_soul.get())
+					for (const auto &skill: soul->skills)
+						if (labor(skill->id) != df::unit_labor::NONE
+								&& (*wd)->allowed_labors.at(labor(skill->id))
+								&& skill->rating > best_rating)
+							best_rating = skill->rating;
+			}
+			return best_rating;
+		}
+		case SortBy::Assigned:
+			return count;
+		}
 	default:
 		return {};
 	}
@@ -275,6 +308,8 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 			});
 		}
 	});
+
+	_sort.makeSortMenu(menu);
 
 	auto make_mode_action = [menu, wd]<work_detail_mode Mode>(const QString &name) {
 		auto action = new QAction(name, menu);

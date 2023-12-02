@@ -20,6 +20,7 @@
 #define WORK_DETAIL_COLUMN_H
 
 #include "AbstractColumn.h"
+#include "ColumnSortOptions.h"
 
 class DwarfFortress;
 
@@ -44,6 +45,12 @@ public:
 
 private:
 	DwarfFortress &_df;
+	enum class SortBy {
+		Skill,
+		Assigned,
+	};
+	ColumnSortOptions<WorkDetailColumn, SortBy> _sort;
+
 };
 
 #endif

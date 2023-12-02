@@ -16,21 +16,34 @@
  *
  */
 
-#ifndef DATA_ROLE_H
-#define DATA_ROLE_H
+#ifndef COLUMN_SORT_OPTIONS_H
+#define COLUMN_SORT_OPTIONS_H
 
-#include <Qt>
-#include <QMetaType>
+#include <QMenu>
+#include <QAction>
+#include <QCoreApplication>
 
-namespace DataRole
+template <typename T, typename Enum>
+struct ColumnSortOptions
 {
-Q_NAMESPACE
+	T &parent;
+	Enum option;
+	std::map<Enum, QString> names;
 
-enum {
-	SortRole = Qt::UserRole,
-	BorderRole,
+	void makeSortMenu(QMenu *menu)
+	{
+		menu->addSection(QCoreApplication::translate("sort menu", "Sort by"));
+		for (const auto &[value, name]: names) {
+			auto action = new QAction(name, menu);
+			action->setCheckable(true);
+			action->setChecked(option == value);
+			menu->addAction(action);
+			QObject::connect(action, &QAction::triggered, [this, value]() {
+				option = value;
+				parent.columnDataChanged(0, parent.count());
+			});
+		}
+	}
 };
-
-}
 
 #endif
