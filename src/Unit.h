@@ -46,6 +46,8 @@ public:
 	const df::creature_raw &creature_raw() const;
 	const df::caste_raw &caste_raw() const;
 
+	df::time age() const;
+
 	bool isFortControlled() const;
 	bool isCrazed() const;
 	bool isOpposedToLife() const;

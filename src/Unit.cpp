@@ -91,6 +91,11 @@ const df::caste_raw &Unit::caste_raw() const
 	return *creature_raw().caste.at(_u->caste);
 }
 
+df::time Unit::age() const
+{
+	return _df.currentTime() - _u->birth_year - _u->birth_tick;
+}
+
 bool Unit::isFortControlled() const
 {
 	// if (gamemode != DWARF) return false;

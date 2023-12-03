@@ -30,6 +30,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QLabel" name="unit_age">
+      <property name="text">
+       <string>Age</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTreeView" name="inventory_view"/>
     </item>
    </layout>

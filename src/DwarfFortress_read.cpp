@@ -152,6 +152,8 @@ void DwarfFortress::loadRaws(ReadSession &session)
 struct df_game_data {
 	int current_civ_id;
 	int current_group_id;
+	df::year current_year;
+	df::tick current_tick;
 	std::vector<std::unique_ptr<df::unit>> units;
 	std::vector<std::unique_ptr<df::historical_entity>> entities;
 	std::vector<std::unique_ptr<df::historical_figure>> histfigs;
@@ -164,6 +166,8 @@ struct df_game_data {
 		GlobalRead<"gview.view", &df_game_data::viewscreen>,
 		GlobalRead<"plotinfo.civ_id", &df_game_data::current_civ_id>,
 		GlobalRead<"plotinfo.group_id", &df_game_data::current_group_id>,
+		GlobalRead<"cur_year", &df_game_data::current_year>,
+		GlobalRead<"cur_year_tick", &df_game_data::current_tick>,
 		GlobalRead<"world.units.all", &df_game_data::units>,
 		GlobalRead<"world.entities.all", &df_game_data::entities>,
 		GlobalRead<"world.history.figures", &df_game_data::histfigs>,
@@ -192,6 +196,7 @@ void DwarfFortress::loadGameData(ReadSession &session)
 		}
 		_current_civ_id = data->current_civ_id;
 		_current_group_id = data->current_group_id;
+		_current_time = df::time(data->current_year) + data->current_tick;
 		_entities = std::move(data->entities);
 		_histfigs = std::move(data->histfigs);
 		_identities = std::move(data->identities);

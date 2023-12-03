@@ -20,11 +20,15 @@
 
 #include "CP437.h"
 #include "Unit.h"
+#include "DataRole.h"
 
 #include <QVariant>
 
 NameColumn::NameColumn(QObject *parent):
-	AbstractColumn(parent)
+	AbstractColumn(parent),
+	_sort{*this, SortBy::Name, {
+		{SortBy::Name, tr("name")},
+		{SortBy::Age, tr("age")}}}
 {
 }
 
@@ -49,6 +53,13 @@ QVariant NameColumn::unitData(int section, const Unit &unit, int role) const
 		return unit.displayName();
 	case Qt::EditRole:
 		return fromCP437(unit->name.nickname);
+	case DataRole::SortRole:
+		switch (_sort.option) {
+		case SortBy::Name:
+			return unit.displayName();
+		case SortBy::Age:
+			return qlonglong(unit.age().count());
+		}
 	default:
 		return {};
 	}
@@ -84,6 +95,11 @@ Qt::ItemFlags NameColumn::groupFlags(int section, std::span<const Unit *> units)
 
 #include <QMenu>
 #include <QInputDialog>
+
+void NameColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
+{
+	_sort.makeSortMenu(menu);
+}
 
 void NameColumn::makeUnitMenu(int section, Unit &unit, QMenu *menu, QWidget *parent)
 {

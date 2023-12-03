@@ -31,6 +31,8 @@
 
 #include <dfs/Reader.h>
 
+#include "DFTime.h"
+
 namespace dfs {
 class Structures;
 class Process;
@@ -100,6 +102,7 @@ public:
 	const ObjectList<WorkDetail> &workDetails() const { return *_work_details; }
 	int currentCivId() const { return _current_civ_id; }
 	int currentGroupId() const { return _current_group_id; }
+	df::time currentTime() const { return _current_time; }
 
 	const df::historical_figure *findHistoricalFigure(int id) const;
 	const df::historical_entity *findHistoricalEntity(int id) const;
@@ -163,6 +166,7 @@ private:
 
 	int _current_civ_id;
 	int _current_group_id;
+	df::time _current_time;
 	std::vector<std::unique_ptr<df::historical_entity>> _entities;
 	std::vector<std::unique_ptr<df::historical_figure>> _histfigs;
 	std::vector<std::unique_ptr<df::identity>> _identities;

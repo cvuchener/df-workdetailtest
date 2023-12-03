@@ -37,6 +37,7 @@ public slots:
 
 private:
 	std::unique_ptr<Ui::UnitDetailsDock> _ui;
+	const DwarfFortress &_df;
 	UnitInventoryModel _inventory_model;
 	QMetaObject::Connection _current_unit_destroyed;
 };

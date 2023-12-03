@@ -20,6 +20,7 @@
 #define NAME_COLUMN_H
 
 #include "AbstractColumn.h"
+#include "ColumnSortOptions.h"
 
 class NameColumn: public AbstractColumn
 {
@@ -35,9 +36,15 @@ public:
 	Qt::ItemFlags unitFlags(int section, const Unit &unit) const override;
 	Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const override;
 
+	void makeHeaderMenu(int section, QMenu *menu, QWidget *parent) override;
 	void makeUnitMenu(int section, Unit &unit, QMenu *menu, QWidget *parent) override;
 
 private:
+	enum class SortBy {
+		Name,
+		Age,
+	};
+	ColumnSortOptions<NameColumn, SortBy> _sort;
 };
 
 #endif

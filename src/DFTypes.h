@@ -25,6 +25,7 @@
 
 #include "DFEnums.h"
 #include "DFRaws.h"
+#include "DFTime.h"
 
 namespace df {
 
@@ -98,6 +99,9 @@ struct unit
 	std::vector<std::unique_ptr<occupation>> occupations;
 	std::unique_ptr<unit_soul> current_soul;
 	std::vector<std::unique_ptr<unit_inventory_item>> inventory;
+	year birth_year;
+	tick birth_tick;
+	time time_on_site;
 
 	using reader_type = StructureReader<unit, "unit",
 		Field<&unit::name, "name">,
@@ -117,7 +121,10 @@ struct unit
 		Field<&unit::hist_figure_id, "hist_figure_id">,
 		Field<&unit::occupations, "occupations">,
 		Field<&unit::current_soul, "status.current_soul">,
-		Field<&unit::inventory, "inventory">
+		Field<&unit::inventory, "inventory">,
+		Field<&unit::birth_year, "birth_year">,
+		Field<&unit::birth_tick, "birth_time">,
+		Field<&unit::time_on_site, "curse.time_on_site">
 	>;
 };
 
