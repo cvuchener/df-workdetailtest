@@ -20,6 +20,7 @@
 
 #include "Unit.h"
 #include "DwarfFortress.h"
+#include "DataRole.h"
 
 #include <QVariant>
 
@@ -42,11 +43,15 @@ QVariant SpecialistColumn::headerData(int section, int role) const
 
 QVariant SpecialistColumn::unitData(int section, const Unit &unit, int role) const
 {
-	if (role != Qt::CheckStateRole)
+	switch (role) {
+	case Qt::CheckStateRole:
+	case DataRole::SortRole:
+		return unit->flags4.bits.only_do_assigned_jobs
+			? Qt::Checked
+			: Qt::Unchecked;
+	default:
 		return {};
-	return unit->flags4.bits.only_do_assigned_jobs
-		? Qt::Checked
-		: Qt::Unchecked;
+	}
 }
 
 QVariant SpecialistColumn::groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role) const
@@ -80,6 +85,8 @@ QVariant SpecialistColumn::groupData(int section, GroupBy::Group group, std::spa
 			tooltip.append(tr("<p>There is no specialist</p>"));
 		return tooltip;
 	}
+	case DataRole::SortRole:
+		return int(std::ranges::count_if(units, is_specialist));
 	default:
 		return {};
 	}
