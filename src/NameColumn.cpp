@@ -65,11 +65,13 @@ QVariant NameColumn::unitData(int section, const Unit &unit, int role) const
 	}
 }
 
-QVariant NameColumn::groupData(int section, const QString &group_name, std::span<const Unit *> units, int role) const
+QVariant NameColumn::groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role) const
 {
 	switch (role) {
 	case Qt::DisplayRole:
-		return group_name;
+		return group.name();
+	case DataRole::SortRole:
+		return group.sortValue();
 	default:
 		return {};
 	}

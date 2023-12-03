@@ -44,6 +44,7 @@ public:
 	enum class Group {
 		NoGroup,
 		Creature,
+		Migration,
 		WorkDetailAssigned,
 	};
 	void setGroupBy(Group group);

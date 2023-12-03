@@ -49,7 +49,7 @@ QVariant SpecialistColumn::unitData(int section, const Unit &unit, int role) con
 		: Qt::Unchecked;
 }
 
-QVariant SpecialistColumn::groupData(int section, const QString &group_name, std::span<const Unit *> units, int role) const
+QVariant SpecialistColumn::groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role) const
 {
 	auto is_specialist = [](const Unit *unit) -> bool {
 		return (*unit)->flags4.bits.only_do_assigned_jobs;
@@ -65,7 +65,7 @@ QVariant SpecialistColumn::groupData(int section, const QString &group_name, std
 				? Qt::Unchecked
 				: Qt::PartiallyChecked;
 	case Qt::ToolTipRole: {
-		auto tooltip = tr("<h2>%1</h2>").arg(group_name);
+		auto tooltip = tr("<h2>%1</h2>").arg(group.name());
 		auto count = std::ranges::count_if(units, is_specialist);
 		if (count > 0) {
 			tooltip.append(tr("<p>%1 specialists</p>").arg(count));

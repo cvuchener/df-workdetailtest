@@ -34,7 +34,7 @@ int AbstractColumn::count() const
 	return 1;
 }
 
-QVariant AbstractColumn::groupData(int, const QString &, std::span<const Unit *>, int) const
+QVariant AbstractColumn::groupData(int, GroupBy::Group, std::span<const Unit *>, int) const
 {
 	return {};
 }

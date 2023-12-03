@@ -16,25 +16,18 @@
  *
  */
 
-#ifndef GROUP_BY_WORK_DETAIL_ASSIGNED_H
-#define GROUP_BY_WORK_DETAIL_ASSIGNED_H
-
 #include "GroupBy.h"
 
-class DwarfFortress;
-
-class GroupByWorkDetailAssigned: public GroupBy
+GroupBy::GroupBy()
 {
-public:
-	GroupByWorkDetailAssigned(const DwarfFortress &df);
-	~GroupByWorkDetailAssigned() override;
+}
 
-	quint64 unitGroup(const Unit &unit) const override;
-	QString groupName(quint64 group_id) const override;
-	QVariant sortValue(quint64 group_id) const override;
+GroupBy::~GroupBy()
+{
+}
 
-private:
-	const DwarfFortress &_df;
-};
+QVariant GroupBy::sortValue(quint64 group_id) const
+{
+	return groupName(group_id);
+}
 
-#endif

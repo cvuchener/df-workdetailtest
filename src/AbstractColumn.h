@@ -21,6 +21,8 @@
 
 #include <QObject>
 
+#include "GroupBy.h"
+
 class QMenu;
 class Unit;
 
@@ -34,7 +36,7 @@ public:
 	virtual int count() const;
 	virtual QVariant headerData(int section, int role = Qt::DisplayRole) const = 0;
 	virtual QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const = 0;
-	virtual QVariant groupData(int section, const QString &group_name, std::span<const Unit *> units, int role = Qt::DisplayRole) const;
+	virtual QVariant groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role = Qt::DisplayRole) const;
 	virtual bool setUnitData(int section, Unit &unit, const QVariant &value, int role = Qt::EditRole);
 	virtual bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole);
 	virtual void toggleUnits(int section, std::span<Unit *> units);

@@ -16,18 +16,18 @@
  *
  */
 
-#ifndef GROUP_BY_WORK_DETAIL_ASSIGNED_H
-#define GROUP_BY_WORK_DETAIL_ASSIGNED_H
+#ifndef GROUP_BY_MIGRATION_H
+#define GROUP_BY_MIGRATION_H
 
 #include "GroupBy.h"
 
 class DwarfFortress;
 
-class GroupByWorkDetailAssigned: public GroupBy
+class GroupByMigration: public GroupBy
 {
 public:
-	GroupByWorkDetailAssigned(const DwarfFortress &df);
-	~GroupByWorkDetailAssigned() override;
+	GroupByMigration(const DwarfFortress &df);
+	~GroupByMigration() override;
 
 	quint64 unitGroup(const Unit &unit) const override;
 	QString groupName(quint64 group_id) const override;

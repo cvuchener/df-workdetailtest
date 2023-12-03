@@ -27,6 +27,7 @@
 #include "WorkDetailColumn.h"
 #include "SpecialistColumn.h"
 #include "GroupByCreature.h"
+#include "GroupByMigration.h"
 #include "GroupByWorkDetailAssigned.h"
 
 GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
@@ -178,7 +179,7 @@ QVariant GridViewModel::data(const QModelIndex &index, int role) const
 		},
 		[this, role](const group_t &group, int column) -> QVariant {
 			auto [col, section] = getColumn(column);
-			return col->groupData(section, _group_by->groupName(group.id), as_const_span(group.units), role);
+			return col->groupData(section, {_group_by.get(), group.id}, as_const_span(group.units), role);
 		});
 }
 
@@ -264,7 +265,7 @@ void GridViewModel::toggleCells(const QModelIndexList &indexes)
 			// Only toggle groups if no units are selected
 			for (auto g: groups) {
 				auto state = col->groupData(sec,
-						_group_by->groupName(g->id),
+						{_group_by.get(), g->id},
 						as_const_span(g->units),
 						Qt::CheckStateRole).value<Qt::CheckState>();
 				col->setGroupData(sec,
@@ -310,6 +311,9 @@ void GridViewModel::setGroupBy(Group group)
 		break;
 	case Group::Creature:
 		_group_by = std::make_unique<GroupByCreature>(_df);
+		break;
+	case Group::Migration:
+		_group_by = std::make_unique<GroupByMigration>(_df);
 		break;
 	case Group::WorkDetailAssigned:
 		_group_by = std::make_unique<GroupByWorkDetailAssigned>(_df);

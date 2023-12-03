@@ -172,7 +172,7 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 	}
 }
 
-QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std::span<const Unit *> units, int role) const
+QVariant WorkDetailColumn::groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role) const
 {
 	auto wd = _df.workDetails().get(section);
 	Q_ASSERT(wd);
@@ -193,7 +193,7 @@ QVariant WorkDetailColumn::groupData(int section, const QString &group_name, std
 				: Qt::PartiallyChecked;
 	case Qt::ToolTipRole: {
 		auto tooltip = tr("<h3>%1 - %2</h3>")
-			.arg(group_name)
+			.arg(group.name())
 			.arg(wd->displayName());
 		if (count > 0) {
 			tooltip.append(tr("<p>%1 assigned</p>").arg(count));

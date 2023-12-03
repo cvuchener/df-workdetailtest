@@ -20,17 +20,27 @@
 #define GROUP_BY_H
 
 #include <QString>
+#include <QVariant>
 
 class Unit;
 
 class GroupBy
 {
 public:
-	GroupBy() = default;
-	virtual ~GroupBy() = default;
+	GroupBy();
+	virtual ~GroupBy();
 
 	virtual quint64 unitGroup(const Unit &unit) const = 0;
 	virtual QString groupName(quint64 group_id) const = 0;
+	virtual QVariant sortValue(quint64 group_id) const;
+
+	struct Group {
+		const GroupBy *group_by;
+		quint64 id;
+
+		inline QString name() const { return group_by->groupName(id); }
+		inline QVariant sortValue() const { return group_by->sortValue(id); }
+	};
 };
 
 #endif

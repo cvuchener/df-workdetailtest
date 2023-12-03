@@ -46,3 +46,8 @@ QString GroupByWorkDetailAssigned::groupName(quint64 count) const
 {
 	return QCoreApplication::translate("GroupByWorkDetailAssigned", "assigned to %1 work details").arg(count);
 }
+
+QVariant GroupByWorkDetailAssigned::sortValue(quint64 count) const
+{
+	return count;
+}

@@ -32,7 +32,7 @@ public:
 
 	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
 	QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const override;
-	QVariant groupData(int section, const QString &group_name, std::span<const Unit *> units, int role = Qt::DisplayRole) const override;
+	QVariant groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role = Qt::DisplayRole) const override;
 	bool setUnitData(int section, Unit &unit, const QVariant &value, int role = Qt::EditRole) override;
 	bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole) override;
 	Qt::ItemFlags unitFlags(int section, const Unit &unit) const override;
