@@ -39,6 +39,7 @@
 #include "GridViewModel.h"
 #include "PreferencesDialog.h"
 #include "DataRole.h"
+#include "ScriptManager.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -102,11 +103,18 @@ MainWindow::MainWindow(QWidget *parent):
 	connect(_ui->filter_text, &QLineEdit::textChanged, this, &MainWindow::updateTemporaryFilter);
 	{
 		auto filter_menu = new QMenu(_ui->filter_add_button);
-		auto worker_filter = new QAction(filter_menu);
-		worker_filter->setText(tr("Worker"));
-		worker_filter->setData(QVariant::fromValue(BuiltinFilter::Worker));
-		connect(worker_filter, &QAction::triggered, this, &MainWindow::addFilter);
-		filter_menu->addAction(worker_filter);
+		auto make_add_filter_action = [&, this](const QString &name, auto data) {
+			auto action = new QAction(filter_menu);
+			action->setText(name);
+			action->setData(QVariant::fromValue(data));
+			connect(action, &QAction::triggered, this, &MainWindow::addFilter);
+			filter_menu->addAction(action);
+		};
+		make_add_filter_action(tr("Workers"), BuiltinFilter::Worker);
+		filter_menu->addSeparator();
+		for (const auto &[name, filter]: Application::scripts().scripts()) {
+			make_add_filter_action(name, filter);
+		}
 		_ui->filter_add_button->setMenu(filter_menu);
 	}
 	_ui->filter_view->setModel(&_model->filterList());
@@ -213,11 +221,17 @@ void MainWindow::updateTemporaryFilter()
 void MainWindow::addFilter()
 {
 	if (auto action = qobject_cast<QAction *>(sender())) {
-		switch (action->data().value<BuiltinFilter>()) {
-		case BuiltinFilter::Worker:
-			_model->filterList().addFilter(action->text(), &Unit::canAssignWork);
-			break;
+		if (action->data().metaType() == QMetaType::fromType<QJSValue>()) {
+			_model->filterList().addFilter(action->text(), action->data().value<QJSValue>());
 		}
+		else if (action->data().metaType() == QMetaType::fromType<BuiltinFilter>()) {
+			switch (action->data().value<BuiltinFilter>()) {
+			case BuiltinFilter::Worker:
+				_model->filterList().addFilter(action->text(), &Unit::canAssignWork);
+			}
+		}
+		else
+			qFatal() << "Invalid filter";
 	}
 }
 

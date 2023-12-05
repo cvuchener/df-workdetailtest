@@ -20,7 +20,7 @@ if (${USE_EXTERNAL_DFHACK_CLIENT})
 else()
 	find_package(DFHackClientQt REQUIRED)
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Concurrent Qml)
 find_package(QCoro6 REQUIRED COMPONENTS Core)
 find_package(Protobuf REQUIRED)
 
@@ -71,6 +71,7 @@ add_executable(workdetailtest
 	src/ObjectList.cpp
 	src/PreferencesDialog.cpp
 	src/ProcessStats.cpp
+	src/ScriptManager.cpp
 	src/Settings.cpp
 	src/SpecialistColumn.cpp
 	src/StandardPaths.cpp
@@ -78,6 +79,7 @@ add_executable(workdetailtest
 	src/UnitDetailsDock.cpp
 	src/UnitFilterProxyModel.cpp
 	src/UnitInventoryModel.cpp
+	src/UnitScriptWrapper.cpp
 	src/WorkDetail.cpp
 	src/WorkDetailColumn.cpp
 	src/WorkDetailEditor.cpp
@@ -142,6 +144,7 @@ target_link_libraries(workdetailtest
 	dfs::dfs
 	Qt6::Widgets
 	Qt6::Concurrent
+	Qt6::Qml
 	QCoro::Core
 	DFHackClientQt::dfhack-client-qt
 	protobuf::libprotobuf

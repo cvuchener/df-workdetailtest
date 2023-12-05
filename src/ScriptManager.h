@@ -16,35 +16,31 @@
  *
  */
 
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#ifndef SCRIPT_MANAGER_H
+#define SCRIPT_MANAGER_H
 
-#include <QApplication>
+#include <QJSEngine>
+#include <QLoggingCategory>
 
-#include "Settings.h"
+Q_DECLARE_LOGGING_CATEGORY(ScriptLog);
 
-class IconProvider;
-class ScriptManager;
+class Unit;
 
-class Application: public QApplication
+class ScriptManager
 {
-	Q_OBJECT
 public:
-	Application(int &argc, char **argv);
-	~Application() override;
+	ScriptManager();
+	~ScriptManager();
 
-	static Application *instance() {
-		return static_cast<Application *>(QCoreApplication::instance());
-	}
+	const std::vector<std::pair<QString, QJSValue>> &scripts() const { return _scripts; }
 
-	static Settings &settings() { return *instance()->_settings; }
-	static const IconProvider &icons() { return *instance()->_icons; }
-	static ScriptManager &scripts() { return *instance()->_scripts; }
+	QJSValue makeUnit(const Unit &unit);
+	QJSValue makeScript(const QString &expression);
 
 private:
-	std::unique_ptr<Settings> _settings;
-	std::unique_ptr<IconProvider> _icons;
-	std::unique_ptr<ScriptManager> _scripts;
+	QJSEngine _js;
+	QJSValue _test_dummy;
+	std::vector<std::pair<QString, QJSValue>> _scripts;
 };
 
 #endif

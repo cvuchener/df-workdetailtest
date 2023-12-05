@@ -20,6 +20,7 @@
 #include "StandardPaths.h"
 #include "MessageHandler.h"
 #include "IconProvider.h"
+#include "ScriptManager.h"
 
 Application::Application(int &argc, char **argv):
 	QApplication(argc, argv)
@@ -49,8 +50,8 @@ Application::Application(int &argc, char **argv):
 	}
 
 	_settings = std::make_unique<Settings>();
-
 	_icons = std::make_unique<IconProvider>();
+	_scripts = std::make_unique<ScriptManager>();
 }
 
 Application::~Application()

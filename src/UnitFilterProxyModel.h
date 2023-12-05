@@ -21,12 +21,13 @@
 
 #include <QSortFilterProxyModel>
 #include <QAbstractListModel>
+#include <QJSValue>
 
 class Unit;
 template <typename T>
 class ObjectList;
 
-using UnitFilter = std::function<bool(const Unit &)>;
+using UnitFilter = std::variant<std::function<bool(const Unit &)>, QJSValue>;
 
 struct AllUnits
 {
@@ -43,6 +44,15 @@ public:
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	bool removeRows(int row, int count, const QModelIndex &parent = {}) override;
 
+	template <std::predicate<const Unit &> Filter>
+	void addFilter(const QString &name, Filter &&filter) {
+		addFilter(name, UnitFilter(
+				std::in_place_type<std::function<bool(const Unit &)>>,
+				std::forward<Filter>(filter)));
+	}
+	void addFilter(const QString &name, QJSValue filter) {
+		addFilter(name, UnitFilter(filter));
+	}
 	void addFilter(const QString &name, UnitFilter &&filter);
 	void clear();
 private:
@@ -64,14 +74,14 @@ public:
 	template <std::predicate<const Unit &> Filter>
 	void setBaseFilter(Filter &&filter)
 	{
-		_base_filter = std::forward<Filter>(filter);
+		_base_filter.emplace<std::function<bool(const Unit &)>>(std::forward<Filter>(filter));
 		invalidateRowsFilter();
 	}
 
 	template <std::predicate<const Unit &> Filter>
 	void setTemporaryFilter(Filter &&filter)
 	{
-		_temporary_filter = std::forward<Filter>(filter);
+		_temporary_filter.emplace<std::function<bool(const Unit &)>>(std::forward<Filter>(filter));
 		invalidateRowsFilter();
 	}
 
