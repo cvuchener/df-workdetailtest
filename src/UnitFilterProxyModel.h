@@ -20,10 +20,39 @@
 #define UNIT_FILTER_PROXY_MODEL_H
 
 #include <QSortFilterProxyModel>
+#include <QAbstractListModel>
 
 class Unit;
 template <typename T>
 class ObjectList;
+
+using UnitFilter = std::function<bool(const Unit &)>;
+
+struct AllUnits
+{
+	bool operator()(const Unit &) const noexcept { return true; }
+};
+
+class UnitFilterProxyModel;
+
+class UnitFilterList: public QAbstractListModel
+{
+	Q_OBJECT
+public:
+	int rowCount(const QModelIndex &parent) const override;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+	bool removeRows(int row, int count, const QModelIndex &parent = {}) override;
+
+	void addFilter(const QString &name, UnitFilter &&filter);
+	void clear();
+private:
+	UnitFilterList(UnitFilterProxyModel &parent);
+	~UnitFilterList() override;
+
+	UnitFilterProxyModel &_parent;
+	std::vector<std::pair<QString, UnitFilter>> _filters;
+	friend class UnitFilterProxyModel;
+};
 
 class UnitFilterProxyModel: public QSortFilterProxyModel
 {
@@ -33,25 +62,38 @@ public:
 	~UnitFilterProxyModel() override;
 
 	template <std::predicate<const Unit &> Filter>
-	void setUnitFilter(Filter &&filter)
+	void setBaseFilter(Filter &&filter)
 	{
-		_unit_filter = std::forward<Filter>(filter);
+		_base_filter = std::forward<Filter>(filter);
 		invalidateRowsFilter();
 	}
 
-	void setSourceModel(QAbstractItemModel *source_model) override;
+	template <std::predicate<const Unit &> Filter>
+	void setTemporaryFilter(Filter &&filter)
+	{
+		_temporary_filter = std::forward<Filter>(filter);
+		invalidateRowsFilter();
+	}
+
+	UnitFilterList &filterList() { return _filter_list; }
 
 	const Unit *get(int row) const;
 	Unit *get(int row);
 
 	QModelIndex find(int unit_id) const;
 
+	void setSourceModel(QAbstractItemModel *source_model) override;
+
 protected:
 	bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 
 private:
 	ObjectList<Unit> *_units;
-	std::function<bool(const Unit &)> _unit_filter;
+	UnitFilter _base_filter;
+	UnitFilterList _filter_list;
+	UnitFilter _temporary_filter;
+
+	friend class UnitFilterList;
 };
 
 #endif

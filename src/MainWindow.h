@@ -39,6 +39,8 @@ public:
 
 private slots:
 	void onStateChanged(DwarfFortress::State state);
+	void updateTemporaryFilter();
+	void addFilter();
 
 	// auto-connected slots
 	void on_connect_action_triggered();
@@ -49,6 +51,14 @@ private slots:
 	void on_about_action_triggered();
 
 private:
+	enum class FilterType {
+		Simple,
+		Regex,
+	};
+	enum class BuiltinFilter {
+		Worker,
+	};
+
 	std::unique_ptr<Ui::MainWindow> _ui;
 	struct StatusBarUi;
 	std::unique_ptr<StatusBarUi> _sb_ui;

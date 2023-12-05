@@ -32,23 +32,23 @@
 
 GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
 	QAbstractItemModel(parent),
-	_df(df),
-	_unit_filter(std::make_unique<UnitFilterProxyModel>())
+	_df(df)
 {
 	_columns.push_back(std::make_unique<NameColumn>());
 	_columns.push_back(std::make_unique<WorkDetailColumn>(df));
 	_columns.push_back(std::make_unique<SpecialistColumn>(df));
+	_unit_filter.setBaseFilter(&Unit::isFortControlled);
 
-	_unit_filter->setSourceModel(&_df.units());
-	connect(_unit_filter.get(), &QAbstractItemModel::dataChanged,
+	_unit_filter.setSourceModel(&_df.units());
+	connect(&_unit_filter, &QAbstractItemModel::dataChanged,
 		this, &GridViewModel::unitDataChanged);
-	connect(_unit_filter.get(), &QAbstractItemModel::rowsAboutToBeInserted,
+	connect(&_unit_filter, &QAbstractItemModel::rowsAboutToBeInserted,
 		this, &GridViewModel::unitBeginInsert);
-	connect(_unit_filter.get(), &QAbstractItemModel::rowsInserted,
+	connect(&_unit_filter, &QAbstractItemModel::rowsInserted,
 		this, &GridViewModel::unitEndInsert);
-	connect(_unit_filter.get(), &QAbstractItemModel::rowsAboutToBeRemoved,
+	connect(&_unit_filter, &QAbstractItemModel::rowsAboutToBeRemoved,
 		this, &GridViewModel::unitBeginRemove);
-	connect(_unit_filter.get(), &QAbstractItemModel::rowsRemoved,
+	connect(&_unit_filter, &QAbstractItemModel::rowsRemoved,
 		this, &GridViewModel::unitEndRemove);
 
 	int count = 0;
@@ -125,7 +125,7 @@ int GridViewModel::rowCount(const QModelIndex &parent) const
 		if (parent.isValid()) // unit
 			return 0;
 		else // root
-			return _unit_filter->rowCount();
+			return _unit_filter.rowCount();
 	}
 }
 
@@ -159,7 +159,7 @@ auto GridViewModel::applyToIndex(Model &&model, const QModelIndex &index, UnitAc
 		}
 	}
 	else {
-		auto unit = model._unit_filter->get(index.row());
+		auto unit = model._unit_filter.get(index.row());
 		Q_ASSERT(unit);
 		return unit_action(*unit, index.column(), std::forward<Args>(args)...);
 	}
@@ -221,7 +221,7 @@ const Unit *GridViewModel::unit(const QModelIndex &index) const
 		}
 	}
 	else
-		return _unit_filter->get(index.row());
+		return _unit_filter.get(index.row());
 }
 
 void GridViewModel::makeColumnMenu(int section, QMenu *menu, QWidget *parent)
@@ -278,18 +278,6 @@ void GridViewModel::toggleCells(const QModelIndexList &indexes)
 		}
 		else
 			col->toggleUnits(sec, units);
-	}
-}
-
-void GridViewModel::setFilter(BaseFilter filter)
-{
-	switch (filter) {
-	case BaseFilter::FortControlled:
-		_unit_filter->setUnitFilter(&Unit::isFortControlled);
-		break;
-	case BaseFilter::Worker:
-		_unit_filter->setUnitFilter(&Unit::canAssignWork);
-		break;
 	}
 }
 
@@ -351,7 +339,7 @@ void GridViewModel::unitDataChanged(const QModelIndex &first, const QModelIndex 
 {
 	if (_group_by) {
 		for (int unit_index = first.row(); unit_index <= last.row(); ++unit_index)
-			updateGroupedUnit(*_unit_filter->get(unit_index), 0, columnCount()-1);
+			updateGroupedUnit(*_unit_filter.get(unit_index), 0, columnCount()-1);
 	}
 	else {
 		dataChanged(
@@ -370,7 +358,7 @@ void GridViewModel::unitEndInsert(const QModelIndex &, int first, int last)
 {
 	if (_group_by) {
 		for (int unit_index = first; unit_index <= last; ++unit_index) {
-			auto &unit = *_unit_filter->get(unit_index);
+			auto &unit = *_unit_filter.get(unit_index);
 			addUnitToGroup(unit, _group_by->unitGroup(unit));
 		}
 	}
@@ -382,7 +370,7 @@ void GridViewModel::unitBeginRemove(const QModelIndex &, int first, int last)
 {
 	if (_group_by) {
 		for (int unit_index = first; unit_index <= last; ++unit_index) {
-			auto &unit = *_unit_filter->get(unit_index);
+			auto &unit = *_unit_filter.get(unit_index);
 			auto index = unitIndex(unit->id);
 			removeFromGroup(index);
 			_unit_group.erase(unit->id);
@@ -418,7 +406,7 @@ QModelIndex GridViewModel::unitIndex(int unit_id) const
 		);
 	}
 	else {
-		auto index = _unit_filter->find(unit_id);
+		auto index = _unit_filter.find(unit_id);
 		Q_ASSERT(index.isValid());
 		return createIndex(index.row(), 0, NoParent);
 	}
@@ -537,8 +525,8 @@ void GridViewModel::rebuildGroups()
 	_groups.clear();
 	_unit_group.clear();
 	if (_group_by)
-		for (int unit_index = 0; unit_index < _unit_filter->rowCount(); ++unit_index) {
-			auto &unit = *_unit_filter->get(unit_index);
+		for (int unit_index = 0; unit_index < _unit_filter.rowCount(); ++unit_index) {
+			auto &unit = *_unit_filter.get(unit_index);
 			addUnitToGroup(unit, _group_by->unitGroup(unit), true);
 		}
 }

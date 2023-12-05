@@ -18,16 +18,6 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLabel" name="filter_label">
-        <property name="text">
-         <string>Filter:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="filter_cb"/>
-      </item>
-      <item>
        <widget class="QLabel" name="group_by_label">
         <property name="text">
          <string>Group by:</string>
@@ -36,6 +26,45 @@
       </item>
       <item>
        <widget class="QComboBox" name="group_by_cb"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="filter_label">
+        <property name="text">
+         <string>Filter:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="filter_type_cb"/>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="filter_text">
+        <property name="placeholderText">
+         <string>Filter</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="FilterView" name="filter_view" native="true"/>
+      </item>
+      <item>
+       <widget class="QToolButton" name="filter_add_button">
+        <property name="toolTip">
+         <string>Add a new filter</string>
+        </property>
+        <property name="text">
+         <string>Add filter</string>
+        </property>
+        <property name="icon">
+         <iconset theme="list-add"/>
+        </property>
+        <property name="popupMode">
+         <enum>QToolButton::InstantPopup</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <spacer name="horizontalSpacer">
@@ -185,6 +214,12 @@
    <class>GridView</class>
    <extends>QTreeView</extends>
    <header>GridView.h</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterView</class>
+   <extends>QWidget</extends>
+   <header>FilterView.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

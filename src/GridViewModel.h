@@ -21,10 +21,11 @@
 
 #include <QAbstractItemModel>
 
+#include "UnitFilterProxyModel.h"
+
 class QMenu;
 class DwarfFortress;
 class AbstractColumn;
-class UnitFilterProxyModel;
 class GroupBy;
 class Unit;
 
@@ -35,11 +36,13 @@ public:
 	GridViewModel(DwarfFortress &df, QObject *parent = nullptr);
 	~GridViewModel() override;
 
-	enum class BaseFilter {
-		FortControlled,
-		Worker,
-	};
-	void setFilter(BaseFilter filter);
+	template <std::predicate<const Unit &> Filter>
+	void setTemporaryFilter(Filter &&filter)
+	{
+		_unit_filter.setTemporaryFilter(std::forward<Filter>(filter));
+	}
+
+	UnitFilterList &filterList() { return _unit_filter.filterList(); }
 
 	enum class Group {
 		NoGroup,
@@ -87,7 +90,7 @@ private slots:
 
 private:
 	DwarfFortress &_df;
-	std::unique_ptr<UnitFilterProxyModel> _unit_filter;
+	UnitFilterProxyModel _unit_filter;
 	std::vector<std::unique_ptr<AbstractColumn>> _columns;
 	std::unique_ptr<GroupBy> _group_by;
 	struct group_t {

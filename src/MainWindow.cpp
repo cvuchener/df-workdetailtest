@@ -96,14 +96,20 @@ MainWindow::MainWindow(QWidget *parent):
 			menu.exec(pos);
 	});
 
-	_ui->filter_cb->addItem(tr("Fort controlled"),
-			QVariant::fromValue(GridViewModel::BaseFilter::FortControlled));
-	_ui->filter_cb->addItem(tr("Worker"),
-			QVariant::fromValue(GridViewModel::BaseFilter::Worker));
-	connect(_ui->filter_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
-		_model->setFilter(_ui->filter_cb->itemData(index).value<GridViewModel::BaseFilter>());
-	});
-	_model->setFilter(GridViewModel::BaseFilter::FortControlled);
+	_ui->filter_type_cb->addItem(tr("Simple"), QVariant::fromValue(FilterType::Simple));
+	_ui->filter_type_cb->addItem(tr("Regex"), QVariant::fromValue(FilterType::Regex));
+	connect(_ui->filter_type_cb, &QComboBox::currentIndexChanged, this, &MainWindow::updateTemporaryFilter);
+	connect(_ui->filter_text, &QLineEdit::textChanged, this, &MainWindow::updateTemporaryFilter);
+	{
+		auto filter_menu = new QMenu(_ui->filter_add_button);
+		auto worker_filter = new QAction(filter_menu);
+		worker_filter->setText(tr("Worker"));
+		worker_filter->setData(QVariant::fromValue(BuiltinFilter::Worker));
+		connect(worker_filter, &QAction::triggered, this, &MainWindow::addFilter);
+		filter_menu->addAction(worker_filter);
+		_ui->filter_add_button->setMenu(filter_menu);
+	}
+	_ui->filter_view->setModel(&_model->filterList());
 
 	_ui->group_by_cb->addItem(tr("No group"),
 			QVariant::fromValue(GridViewModel::Group::NoGroup));
@@ -181,6 +187,37 @@ void MainWindow::onStateChanged(DwarfFortress::State state)
 				.arg(_df->getDFVersion())
 				.arg(_df->getDFHackVersion()));
 		break;
+	}
+}
+
+void MainWindow::updateTemporaryFilter()
+{
+	if (_ui->filter_text->text().isEmpty())
+		_model->setTemporaryFilter(AllUnits{});
+	else {
+		switch (_ui->filter_type_cb->currentData().value<FilterType>()) {
+		case FilterType::Simple:
+			_model->setTemporaryFilter([text = _ui->filter_text->text()](const Unit &unit) {
+				return unit.displayName().contains(text);
+			});
+			break;
+		case FilterType::Regex:
+			_model->setTemporaryFilter([re = QRegularExpression(_ui->filter_text->text())](const Unit &unit) {
+				return re.match(unit.displayName()).hasMatch();
+			});
+			break;
+		}
+	}
+}
+
+void MainWindow::addFilter()
+{
+	if (auto action = qobject_cast<QAction *>(sender())) {
+		switch (action->data().value<BuiltinFilter>()) {
+		case BuiltinFilter::Worker:
+			_model->filterList().addFilter(action->text(), &Unit::canAssignWork);
+			break;
+		}
 	}
 }
 

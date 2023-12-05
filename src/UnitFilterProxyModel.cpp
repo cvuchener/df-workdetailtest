@@ -21,9 +21,59 @@
 #include "Unit.h"
 #include "ObjectList.h"
 
-UnitFilterProxyModel::UnitFilterProxyModel(QObject *parent)
-	: QSortFilterProxyModel(parent)
-	, _units(nullptr)
+UnitFilterList::UnitFilterList(UnitFilterProxyModel &parent):
+	_parent(parent)
+{
+}
+
+UnitFilterList::~UnitFilterList()
+{
+}
+
+int UnitFilterList::rowCount(const QModelIndex &parent) const
+{
+	return _filters.size();
+}
+
+QVariant UnitFilterList::data(const QModelIndex &index, int role) const
+{
+	switch (role) {
+	case Qt::DisplayRole:
+		return _filters[index.row()].first;
+	default:
+		return {};
+	}
+}
+
+bool UnitFilterList::removeRows(int row, int count, const QModelIndex &parent)
+{
+	beginRemoveRows(parent, row, row+count-1);
+	_filters.erase(next(_filters.begin(), row), next(_filters.begin(), row+count));
+	endRemoveRows();
+	_parent.invalidateRowsFilter();
+	return true;
+}
+
+void UnitFilterList::addFilter(const QString &name, UnitFilter &&filter)
+{
+	beginInsertRows({}, _filters.size(), _filters.size());
+	_filters.emplace_back(name, std::move(filter));
+	endInsertRows();
+	_parent.invalidateRowsFilter();
+}
+
+void UnitFilterList::clear()
+{
+	beginRemoveRows({}, 0, _filters.size()-1);
+	_filters.clear();
+	endRemoveRows();
+	_parent.invalidateRowsFilter();
+}
+
+UnitFilterProxyModel::UnitFilterProxyModel(QObject *parent):
+	QSortFilterProxyModel(parent),
+	_units(nullptr),
+	_filter_list(*this)
 {
 }
 
@@ -59,7 +109,11 @@ bool UnitFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex &s
 	if (source_parent.isValid())
 		return true;
 	if (auto unit = _units->get(source_row)) {
-		return _unit_filter(*unit);
+		for (const auto &[name, filter]: _filter_list._filters)
+			if (!filter(*unit))
+				return false;
+		return (!_base_filter || _base_filter(*unit))
+			&& (!_temporary_filter || _temporary_filter(*unit));
 	}
 	else
 		return true;
