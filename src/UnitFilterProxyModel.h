@@ -84,6 +84,11 @@ public:
 		_temporary_filter.emplace<std::function<bool(const Unit &)>>(std::forward<Filter>(filter));
 		invalidateRowsFilter();
 	}
+	void setTemporaryFilter(QJSValue filter)
+	{
+		_temporary_filter = filter;
+		invalidateRowsFilter();
+	}
 
 	UnitFilterList &filterList() { return _filter_list; }
 

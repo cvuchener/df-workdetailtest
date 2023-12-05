@@ -54,6 +54,7 @@ private:
 	enum class FilterType {
 		Simple,
 		Regex,
+		Script,
 	};
 	enum class BuiltinFilter {
 		Worker,

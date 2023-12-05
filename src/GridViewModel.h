@@ -36,7 +36,7 @@ public:
 	GridViewModel(DwarfFortress &df, QObject *parent = nullptr);
 	~GridViewModel() override;
 
-	template <std::predicate<const Unit &> Filter>
+	template <typename Filter>
 	void setTemporaryFilter(Filter &&filter)
 	{
 		_unit_filter.setTemporaryFilter(std::forward<Filter>(filter));

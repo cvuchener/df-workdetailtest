@@ -99,6 +99,7 @@ MainWindow::MainWindow(QWidget *parent):
 
 	_ui->filter_type_cb->addItem(tr("Simple"), QVariant::fromValue(FilterType::Simple));
 	_ui->filter_type_cb->addItem(tr("Regex"), QVariant::fromValue(FilterType::Regex));
+	_ui->filter_type_cb->addItem(tr("Script"), QVariant::fromValue(FilterType::Script));
 	connect(_ui->filter_type_cb, &QComboBox::currentIndexChanged, this, &MainWindow::updateTemporaryFilter);
 	connect(_ui->filter_text, &QLineEdit::textChanged, this, &MainWindow::updateTemporaryFilter);
 	{
@@ -213,6 +214,9 @@ void MainWindow::updateTemporaryFilter()
 			_model->setTemporaryFilter([re = QRegularExpression(_ui->filter_text->text())](const Unit &unit) {
 				return re.match(unit.displayName()).hasMatch();
 			});
+			break;
+		case FilterType::Script:
+			_model->setTemporaryFilter(Application::scripts().makeScript(_ui->filter_text->text()));
 			break;
 		}
 	}
