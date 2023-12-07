@@ -28,45 +28,6 @@
        <widget class="QComboBox" name="group_by_cb"/>
       </item>
       <item>
-       <widget class="QLabel" name="filter_label">
-        <property name="text">
-         <string>Filter:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="filter_type_cb"/>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="filter_text">
-        <property name="placeholderText">
-         <string>Filter</string>
-        </property>
-        <property name="clearButtonEnabled">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="FilterView" name="filter_view" native="true"/>
-      </item>
-      <item>
-       <widget class="QToolButton" name="filter_add_button">
-        <property name="toolTip">
-         <string>Add a new filter</string>
-        </property>
-        <property name="text">
-         <string>Add filter</string>
-        </property>
-        <property name="icon">
-         <iconset theme="list-add"/>
-        </property>
-        <property name="popupMode">
-         <enum>QToolButton::InstantPopup</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -144,7 +105,10 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolbar">
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>Main tool bar</string>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonTextUnderIcon</enum>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -182,6 +146,9 @@
    </property>
   </action>
   <action name="update_action">
+   <property name="icon">
+    <iconset theme="view-refresh"/>
+   </property>
    <property name="text">
     <string>Update</string>
    </property>
@@ -190,6 +157,9 @@
    </property>
   </action>
   <action name="preferences_action">
+   <property name="icon">
+    <iconset theme="configure"/>
+   </property>
    <property name="text">
     <string>Preferences...</string>
    </property>
@@ -214,12 +184,6 @@
    <class>GridView</class>
    <extends>QTreeView</extends>
    <header>GridView.h</header>
-  </customwidget>
-  <customwidget>
-   <class>FilterView</class>
-   <extends>QWidget</extends>
-   <header>FilterView.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

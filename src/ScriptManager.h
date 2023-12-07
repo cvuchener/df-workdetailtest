@@ -32,7 +32,7 @@ public:
 	ScriptManager();
 	~ScriptManager();
 
-	const std::vector<std::pair<QString, QJSValue>> &scripts() const { return _scripts; }
+	const std::vector<std::pair<QString, QJSValue>> &filters() const { return _scripts; }
 
 	QJSValue makeUnit(const Unit &unit);
 	QJSValue makeScript(const QString &expression);

@@ -27,11 +27,29 @@ class Unit;
 template <typename T>
 class ObjectList;
 
-using UnitFilter = std::variant<std::function<bool(const Unit &)>, QJSValue>;
+using UnitFilter = std::function<bool(const Unit &)>;
 
 struct AllUnits
 {
 	bool operator()(const Unit &) const noexcept { return true; }
+};
+
+struct UnitNameFilter
+{
+	QString text;
+	bool operator()(const Unit &) const;
+};
+
+struct UnitNameRegexFilter
+{
+	QRegularExpression regex;
+	bool operator()(const Unit &) const;
+};
+
+struct ScriptedUnitFilter
+{
+	QJSValue script;
+	bool operator()(const Unit &) const;
 };
 
 class UnitFilterProxyModel;
@@ -40,19 +58,10 @@ class UnitFilterList: public QAbstractListModel
 {
 	Q_OBJECT
 public:
-	int rowCount(const QModelIndex &parent) const override;
+	int rowCount(const QModelIndex &parent = {}) const override;
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	bool removeRows(int row, int count, const QModelIndex &parent = {}) override;
 
-	template <std::predicate<const Unit &> Filter>
-	void addFilter(const QString &name, Filter &&filter) {
-		addFilter(name, UnitFilter(
-				std::in_place_type<std::function<bool(const Unit &)>>,
-				std::forward<Filter>(filter)));
-	}
-	void addFilter(const QString &name, QJSValue filter) {
-		addFilter(name, UnitFilter(filter));
-	}
 	void addFilter(const QString &name, UnitFilter &&filter);
 	void clear();
 private:
@@ -74,19 +83,14 @@ public:
 	template <std::predicate<const Unit &> Filter>
 	void setBaseFilter(Filter &&filter)
 	{
-		_base_filter.emplace<std::function<bool(const Unit &)>>(std::forward<Filter>(filter));
+		_base_filter = UnitFilter(std::forward<Filter>(filter));
 		invalidateRowsFilter();
 	}
 
 	template <std::predicate<const Unit &> Filter>
 	void setTemporaryFilter(Filter &&filter)
 	{
-		_temporary_filter.emplace<std::function<bool(const Unit &)>>(std::forward<Filter>(filter));
-		invalidateRowsFilter();
-	}
-	void setTemporaryFilter(QJSValue filter)
-	{
-		_temporary_filter = filter;
+		_temporary_filter = UnitFilter(std::forward<Filter>(filter));
 		invalidateRowsFilter();
 	}
 

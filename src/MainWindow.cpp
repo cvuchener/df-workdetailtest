@@ -40,6 +40,7 @@
 #include "PreferencesDialog.h"
 #include "DataRole.h"
 #include "ScriptManager.h"
+#include "FilterBar.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -97,28 +98,10 @@ MainWindow::MainWindow(QWidget *parent):
 			menu.exec(pos);
 	});
 
-	_ui->filter_type_cb->addItem(tr("Simple"), QVariant::fromValue(FilterType::Simple));
-	_ui->filter_type_cb->addItem(tr("Regex"), QVariant::fromValue(FilterType::Regex));
-	_ui->filter_type_cb->addItem(tr("Script"), QVariant::fromValue(FilterType::Script));
-	connect(_ui->filter_type_cb, &QComboBox::currentIndexChanged, this, &MainWindow::updateTemporaryFilter);
-	connect(_ui->filter_text, &QLineEdit::textChanged, this, &MainWindow::updateTemporaryFilter);
-	{
-		auto filter_menu = new QMenu(_ui->filter_add_button);
-		auto make_add_filter_action = [&, this](const QString &name, auto data) {
-			auto action = new QAction(filter_menu);
-			action->setText(name);
-			action->setData(QVariant::fromValue(data));
-			connect(action, &QAction::triggered, this, &MainWindow::addFilter);
-			filter_menu->addAction(action);
-		};
-		make_add_filter_action(tr("Workers"), BuiltinFilter::Worker);
-		filter_menu->addSeparator();
-		for (const auto &[name, filter]: Application::scripts().scripts()) {
-			make_add_filter_action(name, filter);
-		}
-		_ui->filter_add_button->setMenu(filter_menu);
-	}
-	_ui->filter_view->setModel(&_model->filterList());
+	auto filter_bar = new FilterBar(this);
+	filter_bar->setFilterModel(&_model->filterList());
+	connect(filter_bar, &FilterBar::filterChanged, this, &MainWindow::updateTemporaryFilter);
+	addToolBar(filter_bar);
 
 	_ui->group_by_cb->addItem(tr("No group"),
 			QVariant::fromValue(GridViewModel::Group::NoGroup));
@@ -199,43 +182,28 @@ void MainWindow::onStateChanged(DwarfFortress::State state)
 	}
 }
 
-void MainWindow::updateTemporaryFilter()
+void MainWindow::updateTemporaryFilter(FilterType type, const QString &text)
 {
-	if (_ui->filter_text->text().isEmpty())
+	if (text.isEmpty())
 		_model->setTemporaryFilter(AllUnits{});
 	else {
-		switch (_ui->filter_type_cb->currentData().value<FilterType>()) {
+		switch (type) {
 		case FilterType::Simple:
-			_model->setTemporaryFilter([text = _ui->filter_text->text()](const Unit &unit) {
-				return unit.displayName().contains(text);
+			_model->setTemporaryFilter(UnitNameFilter{
+				text
 			});
 			break;
 		case FilterType::Regex:
-			_model->setTemporaryFilter([re = QRegularExpression(_ui->filter_text->text())](const Unit &unit) {
-				return re.match(unit.displayName()).hasMatch();
+			_model->setTemporaryFilter(UnitNameRegexFilter{
+				QRegularExpression(text)
 			});
 			break;
 		case FilterType::Script:
-			_model->setTemporaryFilter(Application::scripts().makeScript(_ui->filter_text->text()));
+			_model->setTemporaryFilter(ScriptedUnitFilter{
+				Application::scripts().makeScript(text)
+			});
 			break;
 		}
-	}
-}
-
-void MainWindow::addFilter()
-{
-	if (auto action = qobject_cast<QAction *>(sender())) {
-		if (action->data().metaType() == QMetaType::fromType<QJSValue>()) {
-			_model->filterList().addFilter(action->text(), action->data().value<QJSValue>());
-		}
-		else if (action->data().metaType() == QMetaType::fromType<BuiltinFilter>()) {
-			switch (action->data().value<BuiltinFilter>()) {
-			case BuiltinFilter::Worker:
-				_model->filterList().addFilter(action->text(), &Unit::canAssignWork);
-			}
-		}
-		else
-			qFatal() << "Invalid filter";
 	}
 }
 

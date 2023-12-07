@@ -56,7 +56,7 @@ add_executable(workdetailtest
 	src/DataRole.h
 	src/DwarfFortress.cpp
 	src/DwarfFortress_read.cpp
-	src/FilterView.cpp
+	src/FilterBar.cpp
 	src/GridView.cpp
 	src/GridViewModel.cpp
 	src/GridViewStyle.cpp

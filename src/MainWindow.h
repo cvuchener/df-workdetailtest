@@ -22,6 +22,7 @@
 #include <QMainWindow>
 #include <QPersistentModelIndex>
 #include "DwarfFortress.h"
+#include "FilterBar.h"
 
 class GridViewModel;
 class QSortFilterProxyModel;
@@ -39,8 +40,7 @@ public:
 
 private slots:
 	void onStateChanged(DwarfFortress::State state);
-	void updateTemporaryFilter();
-	void addFilter();
+	void updateTemporaryFilter(FilterType type, const QString &text);
 
 	// auto-connected slots
 	void on_connect_action_triggered();
@@ -51,15 +51,6 @@ private slots:
 	void on_about_action_triggered();
 
 private:
-	enum class FilterType {
-		Simple,
-		Regex,
-		Script,
-	};
-	enum class BuiltinFilter {
-		Worker,
-	};
-
 	std::unique_ptr<Ui::MainWindow> _ui;
 	struct StatusBarUi;
 	std::unique_ptr<StatusBarUi> _sb_ui;

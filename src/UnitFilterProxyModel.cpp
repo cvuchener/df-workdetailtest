@@ -24,6 +24,26 @@
 #include "ObjectList.h"
 #include "UnitScriptWrapper.h"
 
+bool UnitNameFilter::operator()(const Unit &unit) const
+{
+	return unit.displayName().contains(text);
+}
+
+bool UnitNameRegexFilter::operator()(const Unit &unit) const
+{
+	return regex.match(unit.displayName()).hasMatch();
+}
+
+bool ScriptedUnitFilter::operator()(const Unit &unit) const
+{
+	auto result = script.call({Application::scripts().makeUnit(unit)});
+	if (result.isError()) {
+		qCCritical(ScriptLog) << "Filter script failed:" << result.property("message").toString();
+		return false;
+	}
+	return result.toBool();
+}
+
 UnitFilterList::UnitFilterList(UnitFilterProxyModel &parent):
 	_parent(parent)
 {
@@ -107,35 +127,19 @@ QModelIndex UnitFilterProxyModel::find(int unit_id) const
 	return mapFromSource(_units->find(unit_id));
 }
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-static bool applyFilter(const UnitFilter &filter, const Unit &unit)
-{
-	return visit(overloaded{
-		[&unit](const std::function<bool(const Unit &unit)> &filter) {
-			return !filter || filter(unit);
-		},
-		[unit = Application::scripts().makeUnit(unit)](const QJSValue &filter) {
-			auto result = filter.call({unit});
-			if (result.isError()) {
-				qCCritical(ScriptLog) << "Filter script failed:" << result.property("message").toString();
-				return false;
-			}
-			return result.toBool();
-		}}, filter);
-}
-
 bool UnitFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
 	if (source_parent.isValid())
 		return true;
 	if (auto unit = _units->get(source_row)) {
+		auto apply = [](const auto &filter, const Unit &unit) {
+			return !filter || filter(unit); // empty function accepts all units
+		};
 		for (const auto &[name, filter]: _filter_list._filters)
-			if (!applyFilter(filter, *unit))
+			if (!apply(filter, *unit))
 				return false;
-		return applyFilter(_base_filter, *unit)
-			&& applyFilter(_temporary_filter, *unit);
+		return apply(_base_filter, *unit)
+			&& apply(_temporary_filter, *unit);
 	}
 	else
 		return true;
