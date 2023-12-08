@@ -102,11 +102,11 @@ MainWindow::MainWindow(QWidget *parent):
 	addToolBarBreak();
 
 	auto group_bar = new GroupBar(this);
-	connect(group_bar, &GroupBar::groupChanged, this, [this](GridViewModel::Group group) {
-		_model->setGroupBy(group);
+	connect(group_bar, &GroupBar::groupChanged, this, [this](int index) {
+		_model->setGroupBy(index);
 	});
-	_model->setGroupBy(GridViewModel::Group::NoGroup);
-	group_bar->setGroup(GridViewModel::Group::NoGroup);
+	_model->setGroupBy(0);
+	group_bar->setGroup(0);
 	addToolBar(group_bar);
 
 	auto filter_bar = new FilterBar(this);

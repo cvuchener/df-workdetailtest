@@ -31,3 +31,24 @@ QVariant GroupBy::sortValue(quint64 group_id) const
 	return groupName(group_id);
 }
 
+#include "GroupByCreature.h"
+#include "GroupByMigration.h"
+#include "GroupByWorkDetailAssigned.h"
+
+static std::unique_ptr<GroupBy> null_factory(const DwarfFortress &)
+{
+	return nullptr;
+}
+
+template <std::derived_from<GroupBy> T>
+static std::unique_ptr<GroupBy> factory(const DwarfFortress &df)
+{
+	return std::make_unique<T>(df);
+}
+
+const std::vector<std::pair<const char *, GroupBy::GroupByFactory>> GroupBy::AllMethods = {
+	{ QT_TRANSLATE_NOOP("GroupBy", "No group"), null_factory },
+	{ QT_TRANSLATE_NOOP("GroupBy", "Creature"), factory<GroupByCreature> },
+	{ QT_TRANSLATE_NOOP("GroupBy", "Migration wave"), factory<GroupByMigration> },
+	{ QT_TRANSLATE_NOOP("GroupBy", "Work detail assigned"), factory<GroupByWorkDetailAssigned> },
+};

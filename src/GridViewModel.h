@@ -44,13 +44,7 @@ public:
 
 	UnitFilterList &filterList() { return _unit_filter.filterList(); }
 
-	enum class Group {
-		NoGroup,
-		Creature,
-		Migration,
-		WorkDetailAssigned,
-	};
-	void setGroupBy(Group group);
+	void setGroupBy(int index);
 
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &index) const override;

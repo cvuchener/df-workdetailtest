@@ -281,7 +281,7 @@ void GridViewModel::toggleCells(const QModelIndexList &indexes)
 	}
 }
 
-void GridViewModel::setGroupBy(Group group)
+void GridViewModel::setGroupBy(int index)
 {
 	layoutAboutToBeChanged();
 	// Keep the unit id for each persistent index (or -1 for groups)
@@ -293,20 +293,7 @@ void GridViewModel::setGroupBy(Group group)
 			[](const Unit &unit, int) { return unit->id; },
 			[](const group_t &, int) { return -1; }));
 	// Change grouping method
-	switch (group) {
-	case Group::NoGroup:
-		_group_by = nullptr;
-		break;
-	case Group::Creature:
-		_group_by = std::make_unique<GroupByCreature>(_df);
-		break;
-	case Group::Migration:
-		_group_by = std::make_unique<GroupByMigration>(_df);
-		break;
-	case Group::WorkDetailAssigned:
-		_group_by = std::make_unique<GroupByWorkDetailAssigned>(_df);
-		break;
-	}
+	_group_by = GroupBy::AllMethods.at(index).second(_df);
 	rebuildGroups();
 	// Rebuild indexes from unit ids
 	QModelIndexList new_indexes(old_indexes.size());

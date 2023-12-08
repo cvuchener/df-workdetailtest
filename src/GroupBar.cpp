@@ -21,6 +21,9 @@
 #include <QWidgetAction>
 #include <QComboBox>
 #include <QLabel>
+#include <QCoreApplication>
+
+#include "GroupBy.h"
 
 struct GroupBar::Ui
 {
@@ -37,14 +40,8 @@ struct GroupBar::Ui
 
 		group_by_action = new QWidgetAction(parent);
 		group_by_cb = new QComboBox;
-		group_by_cb->addItem(tr("No group"),
-				QVariant::fromValue(GridViewModel::Group::NoGroup));
-		group_by_cb->addItem(tr("Creature"),
-				QVariant::fromValue(GridViewModel::Group::Creature));
-		group_by_cb->addItem(tr("Migration wave"),
-				QVariant::fromValue(GridViewModel::Group::Migration));
-		group_by_cb->addItem(tr("Work detail assigned"),
-				QVariant::fromValue(GridViewModel::Group::WorkDetailAssigned));
+		for (const auto &[name, factory]: GroupBy::AllMethods)
+			group_by_cb->addItem(QCoreApplication::translate("GroupBy", name));
 		group_by_action->setDefaultWidget(group_by_cb);
 		parent->addAction(group_by_action);
 	}
@@ -56,7 +53,7 @@ GroupBar::GroupBar(QWidget *parent):
 {
 	_ui->setupUi(this);
 	connect(_ui->group_by_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
-		groupChanged(_ui->group_by_cb->itemData(index).value<GridViewModel::Group>());
+		groupChanged(index);
 	});
 }
 
@@ -64,7 +61,7 @@ GroupBar::~GroupBar()
 {
 }
 
-void GroupBar::setGroup(GridViewModel::Group group)
+void GroupBar::setGroup(int index)
 {
-	_ui->group_by_cb->setCurrentIndex(_ui->group_by_cb->findData(QVariant::fromValue(group)));
+	_ui->group_by_cb->setCurrentIndex(index);
 }

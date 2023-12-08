@@ -21,8 +21,6 @@
 
 #include <QToolBar>
 
-#include "GridViewModel.h"
-
 class GroupBar: public QToolBar
 {
 	Q_OBJECT
@@ -30,10 +28,10 @@ public:
 	GroupBar(QWidget *parent);
 	~GroupBar() override;
 
-	void setGroup(GridViewModel::Group group);
+	void setGroup(int index);
 
 signals:
-	void groupChanged(GridViewModel::Group group);
+	void groupChanged(int index);
 
 private:
 	struct Ui;

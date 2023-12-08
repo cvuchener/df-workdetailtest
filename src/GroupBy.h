@@ -22,6 +22,7 @@
 #include <QString>
 #include <QVariant>
 
+class DwarfFortress;
 class Unit;
 
 class GroupBy
@@ -41,6 +42,9 @@ public:
 		inline QString name() const { return group_by->groupName(id); }
 		inline QVariant sortValue() const { return group_by->sortValue(id); }
 	};
+
+	using GroupByFactory = std::function<std::unique_ptr<GroupBy>(const DwarfFortress &)>;
+	static const std::vector<std::pair<const char *, GroupByFactory>> AllMethods;
 };
 
 #endif
