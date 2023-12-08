@@ -50,6 +50,8 @@ struct ScriptedUnitFilter
 	bool operator()(const Unit &) const;
 };
 
+extern const std::vector<std::pair<const char *, UnitFilter>> BuiltinUnitFilters;
+
 class UserUnitFilters: public QAbstractListModel
 {
 	Q_OBJECT
@@ -61,7 +63,7 @@ public:
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	bool removeRows(int row, int count, const QModelIndex &parent = {}) override;
 
-	void addFilter(const QString &name, UnitFilter &&filter);
+	void addFilter(const QString &name, UnitFilter filter);
 	void clear();
 
 	template <std::predicate<const Unit &> Filter>

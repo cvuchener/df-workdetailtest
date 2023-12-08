@@ -43,6 +43,11 @@ bool ScriptedUnitFilter::operator()(const Unit &unit) const
 	return result.toBool();
 }
 
+const std::vector<std::pair<const char *, UnitFilter>> BuiltinUnitFilters = {
+	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "FortControlled"), &Unit::isFortControlled},
+	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "Workers"), &Unit::canAssignWork},
+};
+
 UserUnitFilters::UserUnitFilters(QObject *parent):
 	QAbstractListModel(parent)
 {
@@ -76,7 +81,7 @@ bool UserUnitFilters::removeRows(int row, int count, const QModelIndex &parent)
 	return true;
 }
 
-void UserUnitFilters::addFilter(const QString &name, UnitFilter &&filter)
+void UserUnitFilters::addFilter(const QString &name, UnitFilter filter)
 {
 	beginInsertRows({}, _filters.size(), _filters.size());
 	_filters.emplace_back(name, std::move(filter));

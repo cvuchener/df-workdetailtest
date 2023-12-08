@@ -100,9 +100,6 @@ FilterBar::FilterBar(QWidget *parent):
 	});
 	updateFilterUi();
 
-	enum class BuiltinFilter {
-		Workers
-	};
 	auto make_add_filter_action = [&, this](const QString &name, auto data) {
 		auto action = new QAction(_ui->add_filter_menu);
 		action->setText(name);
@@ -112,18 +109,19 @@ FilterBar::FilterBar(QWidget *parent):
 			if (action->data().metaType() == QMetaType::fromType<QJSValue>()) {
 				_filters->addFilter(action->text(), ScriptedUnitFilter{action->data().value<QJSValue>()});
 			}
-			else if (action->data().metaType() == QMetaType::fromType<BuiltinFilter>()) {
-				switch (action->data().value<BuiltinFilter>()) {
-				case BuiltinFilter::Workers:
-					_filters->addFilter(action->text(), &Unit::canAssignWork);
-				}
+			else if (action->data().metaType() == QMetaType::fromType<std::size_t>()) {
+				const auto &[name, filter] = BuiltinUnitFilters[action->data().value<std::size_t>()];
+				_filters->addFilter(action->text(), filter);
 			}
 			else
 				qFatal() << "Invalid filter";
 		});
 		_ui->add_filter_menu->addAction(action);
 	};
-	make_add_filter_action(tr("Workers"), BuiltinFilter::Workers);
+	for (std::size_t i = 0; i < BuiltinUnitFilters.size(); ++i) {
+		const auto &[name, filter] = BuiltinUnitFilters[i];
+		make_add_filter_action(QCoreApplication::translate("BuiltinUnitFilters", name), i);
+	}
 	_ui->add_filter_menu->addSeparator();
 	for (const auto &[name, filter]: Application::scripts().filters())
 		make_add_filter_action(name, filter);
