@@ -20,90 +20,11 @@
 #define FILTER_BAR_H
 
 #include <QToolBar>
-#include <QWidgetAction>
-
-enum class BuiltinFilter {
-	Workers
-};
 
 enum class FilterType {
 	Simple,
 	Regex,
 	Script,
-};
-
-class LabelAction: public QWidgetAction
-{
-	Q_OBJECT
-public:
-	LabelAction(const QString &text, QObject *parent = nullptr);
-	~LabelAction();
-
-protected:
-	QWidget *createWidget(QWidget *parent) override;
-};
-
-class FilterTypeAction: public QWidgetAction
-{
-	Q_OBJECT
-public:
-	FilterTypeAction(QObject *parent = nullptr);
-	~FilterTypeAction();
-
-	FilterType currentType() const { return _type; }
-
-signals:
-	void currentChanged(FilterType);
-
-protected:
-	QWidget *createWidget(QWidget *parent) override;
-
-private:
-	FilterType _type;
-};
-
-class FilterTextAction: public QWidgetAction
-{
-	Q_OBJECT
-public:
-	FilterTextAction(QObject *parent = nullptr);
-	~FilterTextAction() override;
-
-	const QString &text() const { return _text; }
-
-signals:
-	void textChanged(const QString &);
-
-protected:
-	QWidget *createWidget(QWidget *parent) override;
-
-private:
-	QString _text;
-};
-
-class RemoveFilterAction: public QWidgetAction
-{
-	Q_OBJECT
-public:
-	RemoveFilterAction(const QString &text, QObject *parent = nullptr);
-	~RemoveFilterAction() override;
-
-protected:
-	QWidget *createWidget(QWidget *parent) override;
-};
-
-class FilterMenuAction: public QWidgetAction
-{
-	Q_OBJECT
-public:
-	FilterMenuAction(QObject *parent = nullptr);
-	~FilterMenuAction();
-
-signals:
-	void triggered(const QAction *);
-
-protected:
-	QWidget *createWidget(QWidget *parent) override;
 };
 
 class UnitFilterList;
@@ -125,11 +46,11 @@ private:
 	void filterInserted(const QModelIndex &parent, int first, int last);
 	void filterRemoved(const QModelIndex &parent, int first, int last);
 
-	FilterTypeAction *_filter_type;
-	FilterTextAction *_filter_text;
+	void updateFilterUi();
+
+	struct Ui;
+	std::unique_ptr<Ui> _ui;
 	UnitFilterList *_filters;
-	std::vector<std::unique_ptr<QAction>> _remove_filter_actions;
-	FilterMenuAction *_add_filter_menu;
 };
 
 #endif

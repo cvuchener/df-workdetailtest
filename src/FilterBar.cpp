@@ -18,162 +18,108 @@
 
 #include "FilterBar.h"
 
-#include <QToolButton>
-#include <QMenu>
-#include <QLabel>
 #include <QComboBox>
+#include <QLabel>
 #include <QLineEdit>
+#include <QMenu>
+#include <QToolButton>
+#include <QWidgetAction>
 
 #include "Application.h"
 #include "ScriptManager.h"
 #include "UnitFilterProxyModel.h"
 #include "Unit.h"
 
-LabelAction::LabelAction(const QString &text, QObject *parent):
-	QWidgetAction(parent)
+struct FilterBar::Ui
 {
-	setText(text);
-}
+	QWidgetAction *filter_type_action;
+	QComboBox *filter_type_cb;
+	QWidgetAction *filter_text_action;
+	QLineEdit *filter_text;
+	std::vector<std::unique_ptr<QAction>> remove_filter_actions;
+	QWidgetAction *add_filter_action;
+	QMenu *add_filter_menu;
 
-LabelAction::~LabelAction()
-{
-}
+	void setupUi(QToolBar *parent)
+	{
+		parent->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
-QWidget *LabelAction::createWidget(QWidget *parent)
-{
-	return new QLabel(text(), parent);
-}
+		auto title_action = new QWidgetAction(parent);
+		title_action->setDefaultWidget(new QLabel(tr("Filters: ")));
+		parent->addAction(title_action);
 
-FilterTypeAction::FilterTypeAction(QObject *parent):
-	QWidgetAction(parent),
-	_type(FilterType::Simple)
-{
-}
+		filter_type_action = new QWidgetAction(parent);
+		filter_type_cb = new QComboBox;
+		filter_type_cb->addItem(tr("Simple"), QVariant::fromValue(FilterType::Simple));
+		filter_type_cb->addItem(tr("Regex"), QVariant::fromValue(FilterType::Regex));
+		filter_type_cb->addItem(tr("Script"), QVariant::fromValue(FilterType::Script));
+		filter_type_action->setDefaultWidget(filter_type_cb);
+		parent->addAction(filter_type_action);
 
-FilterTypeAction::~FilterTypeAction()
-{
-}
+		filter_text_action = new QWidgetAction(parent);
+		filter_text = new QLineEdit;
+		filter_text->setClearButtonEnabled(true);
+		filter_text_action->setDefaultWidget(filter_text);
+		parent->addAction(filter_text_action);
 
-QWidget *FilterTypeAction::createWidget(QWidget *parent)
-{
-	auto cb = new QComboBox(parent);
-	cb->addItem(tr("Simple"), QVariant::fromValue(FilterType::Simple));
-	cb->addItem(tr("Regex"), QVariant::fromValue(FilterType::Regex));
-	cb->addItem(tr("Script"), QVariant::fromValue(FilterType::Script));
-	connect(cb, &QComboBox::currentIndexChanged, this, [this, cb](int index) {
-		_type = cb->itemData(index).value<FilterType>();
-		currentChanged(_type);
-	});
-	cb->setCurrentIndex(cb->findData(QVariant::fromValue(_type)));
-	return cb;
-}
-
-FilterTextAction::FilterTextAction(QObject *parent):
-	QWidgetAction(parent)
-{
-}
-
-FilterTextAction::~FilterTextAction()
-{
-}
-
-QWidget *FilterTextAction::createWidget(QWidget *parent)
-{
-	auto line = new QLineEdit(parent);
-	connect(line, &QLineEdit::textChanged, this, [this](const QString &text) {
-		_text = text;
-		textChanged(text);
-	});
-	line->setText(_text);
-	return line;
-}
-
-RemoveFilterAction::RemoveFilterAction(const QString &text, QObject *parent):
-	QWidgetAction(parent)
-{
-	setText(text);
-	setIcon(QIcon::fromTheme("edit-delete"));
-}
-
-RemoveFilterAction::~RemoveFilterAction()
-{
-}
-
-QWidget *RemoveFilterAction::createWidget(QWidget *parent)
-{
-	auto button = new QToolButton(parent);
-	button->setDefaultAction(this);
-	button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	return button;
-}
-
-FilterMenuAction::FilterMenuAction(QObject *parent):
-	QWidgetAction(parent)
-{
-	setText(tr("Add"));
-	setIcon(QIcon::fromTheme("list-add"));
-}
-
-FilterMenuAction::~FilterMenuAction()
-{
-}
-
-QWidget *FilterMenuAction::createWidget(QWidget *parent)
-{
-	auto button = new QToolButton(parent);
-	button->setDefaultAction(this);
-	auto menu = new QMenu(button);
-	auto make_add_filter_action = [&, this](const QString &name, auto data) {
-		auto action = new QAction(menu);
-		action->setText(name);
-		action->setData(QVariant::fromValue(data));
-		connect(action, &QAction::triggered, this, [this, action]() {
-				triggered(action);
-		});
-		menu->addAction(action);
-	};
-	make_add_filter_action(tr("Workers"), BuiltinFilter::Workers);
-	menu->addSeparator();
-	for (const auto &[name, filter]: Application::scripts().filters())
-		make_add_filter_action(name, filter);
-	button->setMenu(menu);
-	button->setPopupMode(QToolButton::InstantPopup);
-	return button;
-}
-
+		add_filter_action = new QWidgetAction(parent);
+		auto add_filter_button = new QToolButton;
+		add_filter_menu = new QMenu(add_filter_button);
+		add_filter_button->setMenu(add_filter_menu);
+		add_filter_action->setText(tr("Add"));
+		add_filter_action->setIcon(QIcon::fromTheme("list-add"));
+		add_filter_button->setDefaultAction(add_filter_action);
+		add_filter_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+		add_filter_button->setPopupMode(QToolButton::InstantPopup);
+		add_filter_action->setDefaultWidget(add_filter_button);
+		parent->addAction(add_filter_action);
+	}
+};
 
 FilterBar::FilterBar(QWidget *parent):
 	QToolBar(tr("Filters"), parent),
+	_ui(std::make_unique<FilterBar::Ui>()),
 	_filters(nullptr)
 {
-	addAction(new LabelAction(tr("Filters: "), this));
-	_filter_type = new FilterTypeAction(this);
-	addAction(_filter_type);
-	connect(_filter_type, &FilterTypeAction::currentChanged, this, [this](FilterType type) {
-		filterChanged(type, _filter_text->text());
+	_ui->setupUi(this);
+	connect(_ui->filter_type_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
+		updateFilterUi();
+		filterChanged(_ui->filter_type_cb->itemData(index).value<FilterType>(), _ui->filter_text->text());
 	});
-	_filter_text = new FilterTextAction(this);
-	addAction(_filter_text);
-	connect(_filter_text, &FilterTextAction::textChanged, this, [this](const QString &text) {
-		filterChanged(_filter_type->currentType(), text);
+	connect(_ui->filter_text, &QLineEdit::textChanged, this, [this](const QString &text) {
+		filterChanged(_ui->filter_type_cb->currentData().value<FilterType>(), text);
 	});
-	_add_filter_menu = new FilterMenuAction(this);
-	_add_filter_menu->setEnabled(_filters != nullptr);
-	addAction(_add_filter_menu);
-	connect(_add_filter_menu, &FilterMenuAction::triggered, this, [this](const QAction *action) {
-		Q_ASSERT(_filters);
-		if (action->data().metaType() == QMetaType::fromType<QJSValue>()) {
-			_filters->addFilter(action->text(), ScriptedUnitFilter{action->data().value<QJSValue>()});
-		}
-		else if (action->data().metaType() == QMetaType::fromType<BuiltinFilter>()) {
-			switch (action->data().value<BuiltinFilter>()) {
-			case BuiltinFilter::Workers:
-				_filters->addFilter(action->text(), &Unit::canAssignWork);
+	updateFilterUi();
+
+	_ui->add_filter_action->setEnabled(_filters != nullptr);
+
+	enum class BuiltinFilter {
+		Workers
+	};
+	auto make_add_filter_action = [&, this](const QString &name, auto data) {
+		auto action = new QAction(_ui->add_filter_menu);
+		action->setText(name);
+		action->setData(QVariant::fromValue(data));
+		connect(action, &QAction::triggered, this, [this, action]() {
+			Q_ASSERT(_filters);
+			if (action->data().metaType() == QMetaType::fromType<QJSValue>()) {
+				_filters->addFilter(action->text(), ScriptedUnitFilter{action->data().value<QJSValue>()});
 			}
-		}
-		else
-			qFatal() << "Invalid filter";
-	});
+			else if (action->data().metaType() == QMetaType::fromType<BuiltinFilter>()) {
+				switch (action->data().value<BuiltinFilter>()) {
+				case BuiltinFilter::Workers:
+					_filters->addFilter(action->text(), &Unit::canAssignWork);
+				}
+			}
+			else
+				qFatal() << "Invalid filter";
+		});
+		_ui->add_filter_menu->addAction(action);
+	};
+	make_add_filter_action(tr("Workers"), BuiltinFilter::Workers);
+	_ui->add_filter_menu->addSeparator();
+	for (const auto &[name, filter]: Application::scripts().filters())
+		make_add_filter_action(name, filter);
 }
 
 FilterBar::~FilterBar()
@@ -184,9 +130,9 @@ void FilterBar::setFilterModel(UnitFilterList *model)
 {
 	if (_filters)
 		disconnect(_filters);
-	_remove_filter_actions.clear();
+	_ui->remove_filter_actions.clear();
 	_filters = model;
-	_add_filter_menu->setEnabled(_filters != nullptr);
+	_ui->add_filter_action->setEnabled(_filters != nullptr);
 	if (_filters) {
 		connect(_filters, &QAbstractItemModel::rowsInserted, this, &FilterBar::filterInserted);
 		connect(_filters, &QAbstractItemModel::rowsAboutToBeRemoved, this, &FilterBar::filterRemoved);
@@ -196,21 +142,23 @@ void FilterBar::setFilterModel(UnitFilterList *model)
 
 void FilterBar::insertFilterButtons(int first, int last)
 {
-	QAction *before = unsigned(first) < _remove_filter_actions.size()
-		? _remove_filter_actions[first].get()
-		: _add_filter_menu;
+	QAction *before = unsigned(first) < _ui->remove_filter_actions.size()
+		? _ui->remove_filter_actions[first].get()
+		: _ui->add_filter_action;
 	for (int i = first; i <= last; ++i) {
 		auto index = _filters->index(i);
-		auto &action = _remove_filter_actions.emplace_back(std::make_unique<RemoveFilterAction>(index.data().toString()));
+		auto &action = _ui->remove_filter_actions.emplace_back(std::make_unique<QAction>(this));
+		action->setText(index.data().toString());
+		action->setIcon(QIcon::fromTheme("edit-delete"));
 		connect(action.get(), &QAction::triggered, this, [this, index = QPersistentModelIndex(index)]() {
 			_filters->removeRows(index.row(), 1, index.parent());
 		});
 		insertAction(before, action.get());
 	}
 	// Move all the new elements added at the back to their proper position
-	std::rotate(next(_remove_filter_actions.begin(), first),
-		prev(_remove_filter_actions.end(), last-first+1),
-		_remove_filter_actions.end());
+	std::rotate(next(_ui->remove_filter_actions.begin(), first),
+		prev(_ui->remove_filter_actions.end(), last-first+1),
+		_ui->remove_filter_actions.end());
 }
 
 void FilterBar::filterInserted(const QModelIndex &parent, int first, int last)
@@ -220,8 +168,24 @@ void FilterBar::filterInserted(const QModelIndex &parent, int first, int last)
 
 void FilterBar::filterRemoved(const QModelIndex &parent, int first, int last)
 {
-	_remove_filter_actions.erase(
-			next(_remove_filter_actions.begin(), first),
-			next(_remove_filter_actions.begin(), last+1)
+	_ui->remove_filter_actions.erase(
+			next(_ui->remove_filter_actions.begin(), first),
+			next(_ui->remove_filter_actions.begin(), last+1)
 	);
+}
+
+void FilterBar::updateFilterUi()
+{
+	auto type = _ui->filter_type_cb->currentData().value<FilterType>();
+	switch (type) {
+	case FilterType::Simple:
+		_ui->filter_text->setPlaceholderText(tr("Name filter"));
+		break;
+	case FilterType::Regex:
+		_ui->filter_text->setPlaceholderText(tr("Name regex filter"));
+		break;
+	case FilterType::Script:
+		_ui->filter_text->setPlaceholderText(tr("Script filter"));
+		break;
+	}
 }
