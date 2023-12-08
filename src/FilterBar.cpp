@@ -27,8 +27,14 @@
 
 #include "Application.h"
 #include "ScriptManager.h"
-#include "UnitFilterProxyModel.h"
+#include "UserUnitFilters.h"
 #include "Unit.h"
+
+enum class FilterType {
+	Simple,
+	Regex,
+	Script,
+};
 
 struct FilterBar::Ui
 {
@@ -79,19 +85,20 @@ struct FilterBar::Ui
 FilterBar::FilterBar(QWidget *parent):
 	QToolBar(tr("Filters"), parent),
 	_ui(std::make_unique<FilterBar::Ui>()),
-	_filters(nullptr)
+	_filters(std::make_shared<UserUnitFilters>())
 {
+	connect(_filters.get(), &QAbstractItemModel::rowsInserted, this, &FilterBar::filterInserted);
+	connect(_filters.get(), &QAbstractItemModel::rowsAboutToBeRemoved, this, &FilterBar::filterRemoved);
+
 	_ui->setupUi(this);
 	connect(_ui->filter_type_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
 		updateFilterUi();
-		filterChanged(_ui->filter_type_cb->itemData(index).value<FilterType>(), _ui->filter_text->text());
+		updateTemporaryFilter();
 	});
 	connect(_ui->filter_text, &QLineEdit::textChanged, this, [this](const QString &text) {
-		filterChanged(_ui->filter_type_cb->currentData().value<FilterType>(), text);
+		updateTemporaryFilter();
 	});
 	updateFilterUi();
-
-	_ui->add_filter_action->setEnabled(_filters != nullptr);
 
 	enum class BuiltinFilter {
 		Workers
@@ -126,18 +133,19 @@ FilterBar::~FilterBar()
 {
 }
 
-void FilterBar::setFilterModel(UnitFilterList *model)
+void FilterBar::setFilters(std::shared_ptr<UserUnitFilters> filters)
 {
-	if (_filters)
-		disconnect(_filters);
+	Q_ASSERT(filters);
+
+	// clean up old filters
+	disconnect(_filters.get());
 	_ui->remove_filter_actions.clear();
-	_filters = model;
-	_ui->add_filter_action->setEnabled(_filters != nullptr);
-	if (_filters) {
-		connect(_filters, &QAbstractItemModel::rowsInserted, this, &FilterBar::filterInserted);
-		connect(_filters, &QAbstractItemModel::rowsAboutToBeRemoved, this, &FilterBar::filterRemoved);
-		insertFilterButtons(0, _filters->rowCount()-1);
-	}
+
+	_filters = std::move(filters);
+	// connect and setup new filters
+	connect(_filters.get(), &QAbstractItemModel::rowsInserted, this, &FilterBar::filterInserted);
+	connect(_filters.get(), &QAbstractItemModel::rowsAboutToBeRemoved, this, &FilterBar::filterRemoved);
+	insertFilterButtons(0, _filters->rowCount()-1);
 }
 
 void FilterBar::insertFilterButtons(int first, int last)
@@ -187,5 +195,32 @@ void FilterBar::updateFilterUi()
 	case FilterType::Script:
 		_ui->filter_text->setPlaceholderText(tr("Script filter"));
 		break;
+	}
+}
+
+void FilterBar::updateTemporaryFilter()
+{
+	auto filter_type = _ui->filter_type_cb->currentData().value<FilterType>();
+	auto text = _ui->filter_text->text();
+	if (text.isEmpty())
+		_filters->setTemporaryFilter(AllUnits{});
+	else {
+		switch (filter_type) {
+		case FilterType::Simple:
+			_filters->setTemporaryFilter(UnitNameFilter{
+				text
+			});
+			break;
+		case FilterType::Regex:
+			_filters->setTemporaryFilter(UnitNameRegexFilter{
+				QRegularExpression(text)
+			});
+			break;
+		case FilterType::Script:
+			_filters->setTemporaryFilter(ScriptedUnitFilter{
+				Application::scripts().makeScript(text)
+			});
+			break;
+		}
 	}
 }

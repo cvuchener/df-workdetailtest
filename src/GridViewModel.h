@@ -36,13 +36,8 @@ public:
 	GridViewModel(DwarfFortress &df, QObject *parent = nullptr);
 	~GridViewModel() override;
 
-	template <typename Filter>
-	void setTemporaryFilter(Filter &&filter)
-	{
-		_unit_filter.setTemporaryFilter(std::forward<Filter>(filter));
-	}
-
-	UnitFilterList &filterList() { return _unit_filter.filterList(); }
+	const std::shared_ptr<UserUnitFilters> &userFilters() const { return _user_filters; }
+	void setUserFilters(std::shared_ptr<UserUnitFilters> user_filters);
 
 	void setGroupBy(int index);
 
@@ -85,6 +80,7 @@ private slots:
 private:
 	DwarfFortress &_df;
 	UnitFilterProxyModel _unit_filter;
+	std::shared_ptr<UserUnitFilters> _user_filters;
 	std::vector<std::unique_ptr<AbstractColumn>> _columns;
 	std::unique_ptr<GroupBy> _group_by;
 	struct group_t {

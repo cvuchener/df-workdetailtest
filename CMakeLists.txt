@@ -81,6 +81,7 @@ add_executable(workdetailtest
 	src/UnitFilterProxyModel.cpp
 	src/UnitInventoryModel.cpp
 	src/UnitScriptWrapper.cpp
+	src/UserUnitFilters.cpp
 	src/WorkDetail.cpp
 	src/WorkDetailColumn.cpp
 	src/WorkDetailEditor.cpp

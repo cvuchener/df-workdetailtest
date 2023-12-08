@@ -40,7 +40,6 @@ public:
 
 private slots:
 	void onStateChanged(DwarfFortress::State state);
-	void updateTemporaryFilter(FilterType type, const QString &text);
 
 	// auto-connected slots
 	void on_connect_action_triggered();

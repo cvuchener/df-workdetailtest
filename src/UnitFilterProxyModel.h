@@ -20,58 +20,11 @@
 #define UNIT_FILTER_PROXY_MODEL_H
 
 #include <QSortFilterProxyModel>
-#include <QAbstractListModel>
-#include <QJSValue>
 
-class Unit;
+#include "UserUnitFilters.h"
+
 template <typename T>
 class ObjectList;
-
-using UnitFilter = std::function<bool(const Unit &)>;
-
-struct AllUnits
-{
-	bool operator()(const Unit &) const noexcept { return true; }
-};
-
-struct UnitNameFilter
-{
-	QString text;
-	bool operator()(const Unit &) const;
-};
-
-struct UnitNameRegexFilter
-{
-	QRegularExpression regex;
-	bool operator()(const Unit &) const;
-};
-
-struct ScriptedUnitFilter
-{
-	QJSValue script;
-	bool operator()(const Unit &) const;
-};
-
-class UnitFilterProxyModel;
-
-class UnitFilterList: public QAbstractListModel
-{
-	Q_OBJECT
-public:
-	int rowCount(const QModelIndex &parent = {}) const override;
-	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-	bool removeRows(int row, int count, const QModelIndex &parent = {}) override;
-
-	void addFilter(const QString &name, UnitFilter &&filter);
-	void clear();
-private:
-	UnitFilterList(UnitFilterProxyModel &parent);
-	~UnitFilterList() override;
-
-	UnitFilterProxyModel &_parent;
-	std::vector<std::pair<QString, UnitFilter>> _filters;
-	friend class UnitFilterProxyModel;
-};
 
 class UnitFilterProxyModel: public QSortFilterProxyModel
 {
@@ -87,14 +40,8 @@ public:
 		invalidateRowsFilter();
 	}
 
-	template <std::predicate<const Unit &> Filter>
-	void setTemporaryFilter(Filter &&filter)
-	{
-		_temporary_filter = UnitFilter(std::forward<Filter>(filter));
-		invalidateRowsFilter();
-	}
-
-	UnitFilterList &filterList() { return _filter_list; }
+	const std::shared_ptr<const UserUnitFilters> &userFilters() const { return _user_filters; }
+	void setUserFilters(std::shared_ptr<const UserUnitFilters> user_filters);
 
 	const Unit *get(int row) const;
 	Unit *get(int row);
@@ -109,10 +56,7 @@ protected:
 private:
 	ObjectList<Unit> *_units;
 	UnitFilter _base_filter;
-	UnitFilterList _filter_list;
-	UnitFilter _temporary_filter;
-
-	friend class UnitFilterList;
+	std::shared_ptr<const UserUnitFilters> _user_filters;
 };
 
 #endif

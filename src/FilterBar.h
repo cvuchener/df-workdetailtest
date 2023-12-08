@@ -21,13 +21,7 @@
 
 #include <QToolBar>
 
-enum class FilterType {
-	Simple,
-	Regex,
-	Script,
-};
-
-class UnitFilterList;
+class UserUnitFilters;
 
 class FilterBar: public QToolBar
 {
@@ -36,10 +30,8 @@ public:
 	FilterBar(QWidget *parent);
 	~FilterBar() override;
 
-	void setFilterModel(UnitFilterList *model);
-
-signals:
-	void filterChanged(FilterType type, const QString &text);
+	void setFilters(std::shared_ptr<UserUnitFilters> filters);
+	const std::shared_ptr<UserUnitFilters> &filters() const { return _filters; }
 
 private:
 	void insertFilterButtons(int first, int last);
@@ -47,10 +39,11 @@ private:
 	void filterRemoved(const QModelIndex &parent, int first, int last);
 
 	void updateFilterUi();
+	void updateTemporaryFilter();
 
 	struct Ui;
 	std::unique_ptr<Ui> _ui;
-	UnitFilterList *_filters;
+	std::shared_ptr<UserUnitFilters> _filters;
 };
 
 #endif

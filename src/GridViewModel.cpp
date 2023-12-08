@@ -74,6 +74,12 @@ GridViewModel::~GridViewModel()
 {
 }
 
+void GridViewModel::setUserFilters(std::shared_ptr<UserUnitFilters> user_filters)
+{
+	_user_filters = std::move(user_filters);
+	_unit_filter.setUserFilters(_user_filters);
+}
+
 /*
  * QModelIndex internal id is used for the parent row. Top-level index has
  * NoParent as internal id.

@@ -110,8 +110,7 @@ MainWindow::MainWindow(QWidget *parent):
 	addToolBar(group_bar);
 
 	auto filter_bar = new FilterBar(this);
-	filter_bar->setFilterModel(&_model->filterList());
-	connect(filter_bar, &FilterBar::filterChanged, this, &MainWindow::updateTemporaryFilter);
+	_model->setUserFilters(filter_bar->filters());
 	addToolBar(filter_bar);
 
 
@@ -178,31 +177,6 @@ void MainWindow::onStateChanged(DwarfFortress::State state)
 				.arg(_df->getDFVersion())
 				.arg(_df->getDFHackVersion()));
 		break;
-	}
-}
-
-void MainWindow::updateTemporaryFilter(FilterType type, const QString &text)
-{
-	if (text.isEmpty())
-		_model->setTemporaryFilter(AllUnits{});
-	else {
-		switch (type) {
-		case FilterType::Simple:
-			_model->setTemporaryFilter(UnitNameFilter{
-				text
-			});
-			break;
-		case FilterType::Regex:
-			_model->setTemporaryFilter(UnitNameRegexFilter{
-				QRegularExpression(text)
-			});
-			break;
-		case FilterType::Script:
-			_model->setTemporaryFilter(ScriptedUnitFilter{
-				Application::scripts().makeScript(text)
-			});
-			break;
-		}
 	}
 }
 
