@@ -41,6 +41,7 @@
 #include "DataRole.h"
 #include "ScriptManager.h"
 #include "FilterBar.h"
+#include "GroupBar.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -98,23 +99,21 @@ MainWindow::MainWindow(QWidget *parent):
 			menu.exec(pos);
 	});
 
+	addToolBarBreak();
+
+	auto group_bar = new GroupBar(this);
+	connect(group_bar, &GroupBar::groupChanged, this, [this](GridViewModel::Group group) {
+		_model->setGroupBy(group);
+	});
+	_model->setGroupBy(GridViewModel::Group::NoGroup);
+	group_bar->setGroup(GridViewModel::Group::NoGroup);
+	addToolBar(group_bar);
+
 	auto filter_bar = new FilterBar(this);
 	filter_bar->setFilterModel(&_model->filterList());
 	connect(filter_bar, &FilterBar::filterChanged, this, &MainWindow::updateTemporaryFilter);
 	addToolBar(filter_bar);
 
-	_ui->group_by_cb->addItem(tr("No group"),
-			QVariant::fromValue(GridViewModel::Group::NoGroup));
-	_ui->group_by_cb->addItem(tr("Creature"),
-			QVariant::fromValue(GridViewModel::Group::Creature));
-	_ui->group_by_cb->addItem(tr("Migration wave"),
-			QVariant::fromValue(GridViewModel::Group::Migration));
-	_ui->group_by_cb->addItem(tr("Work detail assigned"),
-			QVariant::fromValue(GridViewModel::Group::WorkDetailAssigned));
-	connect(_ui->group_by_cb, &QComboBox::currentIndexChanged, this, [this](int index) {
-		_model->setGroupBy(_ui->group_by_cb->itemData(index).value<GridViewModel::Group>());
-	});
-	_model->setGroupBy(GridViewModel::Group::NoGroup);
 
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
 		QMessageBox::critical(this, tr("Connection error"), msg);
