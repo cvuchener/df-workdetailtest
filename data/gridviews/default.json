@@ -1,0 +1,8 @@
+{
+	"title": "Default",
+	"filter": "builtin:FortControlled",
+	"columns": [
+		{ "type": "WorkDetail" },
+		{ "type": "Specialist" }
+	]
+}

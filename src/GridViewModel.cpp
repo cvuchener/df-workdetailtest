@@ -18,6 +18,10 @@
 
 #include "GridViewModel.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
 #include "DwarfFortress.h"
 #include "AbstractColumn.h"
 #include "UnitFilterProxyModel.h"
@@ -29,15 +33,51 @@
 #include "GroupByCreature.h"
 #include "GroupByMigration.h"
 #include "GroupByWorkDetailAssigned.h"
+#include "Application.h"
+#include "ScriptManager.h"
 
-GridViewModel::GridViewModel(DwarfFortress &df, QObject *parent):
+GridViewModel::GridViewModel(const QJsonDocument &json, DwarfFortress &df, QObject *parent):
 	QAbstractItemModel(parent),
 	_df(df)
 {
+	// Initialize base filter from json
+	auto filter_string = json.object().value("filter").toString();
+	if (!filter_string.isNull()) {
+		auto sep = filter_string.indexOf(':');
+		auto type = filter_string.first(sep);
+		auto value = filter_string.sliced(sep+1);
+		if (type == "builtin") {
+			auto filter = std::ranges::find(BuiltinUnitFilters, value, [](const auto &p) { return p.first; });
+			if (filter == BuiltinUnitFilters.end())
+				qCritical() << "Invalid builtin filter:" << value;
+			else
+				_unit_filter.setBaseFilter(filter->second);
+		}
+		else if (type == "script") {
+			auto filter = Application::scripts().makeScript(value);
+			if (filter.isError())
+				qCritical() << "Invalid script filter:" << filter.property("message").toString();
+			else
+				_unit_filter.setBaseFilter(ScriptedUnitFilter{filter});
+		}
+		else
+			qCritical() << "Unsupported filter type:" << type;
+	}
+	// Initialize columns from json
 	_columns.push_back(std::make_unique<NameColumn>());
-	_columns.push_back(std::make_unique<WorkDetailColumn>(df));
-	_columns.push_back(std::make_unique<SpecialistColumn>(df));
-	_unit_filter.setBaseFilter(&Unit::isFortControlled);
+	for (auto json_column: json.object().value("columns").toArray()) {
+		if (!json_column.isObject()) {
+			qCritical() << "column must be an object";
+			continue;
+		}
+		auto type = json_column.toObject().value("type").toString();
+		if (type == "WorkDetail")
+			_columns.push_back(std::make_unique<WorkDetailColumn>(df));
+		else if (type == "Specialist")
+			_columns.push_back(std::make_unique<SpecialistColumn>(df));
+		else
+			qCritical() << "Unsupported column type:" << type;
+	}
 
 	_unit_filter.setSourceModel(&_df.units());
 	connect(&_unit_filter, &QAbstractItemModel::dataChanged,

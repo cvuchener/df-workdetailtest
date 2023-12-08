@@ -33,8 +33,10 @@ class GridViewModel: public QAbstractItemModel
 {
 	Q_OBJECT
 public:
-	GridViewModel(DwarfFortress &df, QObject *parent = nullptr);
+	GridViewModel(const QJsonDocument &json, DwarfFortress &df, QObject *parent = nullptr);
 	~GridViewModel() override;
+
+	const QString &title() const { return _title; }
 
 	const std::shared_ptr<UserUnitFilters> &userFilters() const { return _user_filters; }
 	void setUserFilters(std::shared_ptr<UserUnitFilters> user_filters);
@@ -79,6 +81,7 @@ private slots:
 
 private:
 	DwarfFortress &_df;
+	QString _title;
 	UnitFilterProxyModel _unit_filter;
 	std::shared_ptr<UserUnitFilters> _user_filters;
 	std::vector<std::unique_ptr<AbstractColumn>> _columns;

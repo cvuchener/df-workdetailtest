@@ -29,6 +29,7 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
+#include <QJsonDocument>
 
 #include <QCoroCore>
 
@@ -39,9 +40,9 @@
 #include "GridViewModel.h"
 #include "PreferencesDialog.h"
 #include "DataRole.h"
-#include "ScriptManager.h"
 #include "FilterBar.h"
 #include "GroupBar.h"
+#include "StandardPaths.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -75,7 +76,16 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui(std::make_unique<Ui::MainWindow>()),
 	_sb_ui(std::make_unique<StatusBarUi>()),
 	_df(std::make_unique<DwarfFortress>()),
-	_model(std::make_unique<GridViewModel>(*_df)),
+	_model(std::make_unique<GridViewModel>([](){
+			QFile file(StandardPaths::locate_data("gridviews/default.json"));
+			if (!file.open(QIODevice::ReadOnly))
+				qFatal() << "Failed to open gridview";
+			QJsonParseError error;
+			auto doc = QJsonDocument::fromJson(file.readAll(), &error);
+			if (error.error != QJsonParseError::NoError)
+				qFatal() << "Failed to parse gridview json:" << error.errorString();
+			return doc;
+		}(), *_df)),
 	_sort_model(std::make_unique<QSortFilterProxyModel>())
 {
 	_ui->setupUi(this);
