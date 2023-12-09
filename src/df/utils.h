@@ -20,11 +20,11 @@
 #define DF_UTILS_H
 
 #include <ranges>
-#include <algorithm>
-#include <memory>
+#include <QString>
 
 namespace df {
 
+// Sorted vector utils
 template <std::ranges::random_access_range Vector, typename Id> requires requires (std::ranges::range_value_t<Vector>::element_type item) {
 	{ item.id } -> std::totally_ordered_with<Id>;
 }
@@ -37,6 +37,13 @@ auto find(const Vector &vec, Id id)
 	else
 		return nullptr;
 }
+
+// String decoding/encoding
+QChar fromCP437(char);
+char toCP437(QChar);
+
+QString fromCP437(std::string_view);
+std::string toCP437(QStringView);
 
 }
 

@@ -51,9 +51,7 @@ add_executable(workdetailtest
 	src/Application.cpp
 	src/ColumnFactory.cpp
 	src/Counter.cpp
-	src/CP437.cpp
 	src/DFHackProcess.cpp
-	src/DFRaws.cpp
 	src/DataRole.h
 	src/DwarfFortress.cpp
 	src/DwarfFortress_read.cpp
@@ -87,6 +85,8 @@ add_executable(workdetailtest
 	src/WorkDetail.cpp
 	src/WorkDetailColumn.cpp
 	src/WorkDetailEditor.cpp
+	src/df/raws.cpp
+	src/df/utils.cpp
 	${PROTO_SOURCES}
 	${UI_SOURCES}
 )
@@ -99,7 +99,7 @@ else()
 endif()
 dfs_generate_df_types(TARGET workdetailtest
 	STRUCTURES ${CMAKE_CURRENT_SOURCE_DIR}/data/structures/50.11
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/DFEnums
+	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/df_enums
 	NAMESPACE df
 	TYPES
 		language_name_component
@@ -133,8 +133,8 @@ dfs_generate_df_types(TARGET workdetailtest
 )
 set_property(SOURCE
 	${PROTO_SOURCES} ${PROTO_HEADERS}
-	${CMAKE_CURRENT_BINARY_DIR}/DFEnums.h
-	${CMAKE_CURRENT_BINARY_DIR}/DFEnums.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/df_enums.h
+	${CMAKE_CURRENT_BINARY_DIR}/df_enums.cpp
 	PROPERTY SKIP_AUTOGEN ON)
 set_target_properties(workdetailtest PROPERTIES
 	AUTOMOC ON

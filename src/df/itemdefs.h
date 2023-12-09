@@ -23,7 +23,7 @@
 #include <dfs/PolymorphicReader.h>
 #include <dfs/ItemReader.h>
 
-#include "DFEnums.h"
+#include "df_enums.h"
 
 namespace df {
 

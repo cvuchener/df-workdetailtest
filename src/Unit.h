@@ -20,7 +20,7 @@
 #define UNIT_H
 
 #include <QObject>
-#include "DFTypes.h"
+#include "df/types.h"
 #include <QCoroTask>
 
 class DwarfFortress;

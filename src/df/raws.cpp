@@ -16,9 +16,8 @@
  *
  */
 
-#include "DFRaws.h"
-
-#include "CP437.h"
+#include "df/raws.h"
+#include "df/utils.h"
 
 std::string_view df::world_raws::language_t::english_word(const df::language_name &name, df::language_name_component_t comp) const
 {

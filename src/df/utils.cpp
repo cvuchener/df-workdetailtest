@@ -16,10 +16,9 @@
  *
  */
 
-#include "CP437.h"
+#include "df/utils.h"
 
 #include <map>
-#include <algorithm>
 
 static const char16_t CP437Table[256] = {
 	/*0x*/ u'\u0000'/*␀*/, u'\u263A'/*☺*/, u'\u263B'/*☻*/, u'\u2665'/*♥*/, u'\u2666'/*♦*/, u'\u2663'/*♣*/, u'\u2660'/*♠*/, u'\u2022'/*•*/,
@@ -50,12 +49,12 @@ static const char16_t CP437Table[256] = {
 	/*  */ u'\u00B0'/*°*/, u'\u2219'/*∙*/, u'\u00B7'/*·*/, u'\u221A'/*√*/, u'\u207F'/*ⁿ*/, u'\u00B2'/*²*/, u'\u25A0'/*■*/, u'\u00A0'/*NBSP*/,
 };
 
-QChar fromCP437(char c)
+QChar df::fromCP437(char c)
 {
 	return CP437Table[(unsigned char)c];
 }
 
-char toCP437(QChar c)
+char df::toCP437(QChar c)
 {
 	static const auto CP437Map = [](){
 		std::map<char16_t, char> m;
@@ -76,7 +75,7 @@ char toCP437(QChar c)
 	}
 }
 
-QString fromCP437(std::string_view str)
+QString df::fromCP437(std::string_view str)
 {
 	QString res;
 	res.reserve(str.size());
@@ -85,7 +84,7 @@ QString fromCP437(std::string_view str)
 	return res;
 }
 
-std::string toCP437(QStringView str)
+std::string df::toCP437(QStringView str)
 {
 	std::string res;
 	res.reserve(str.size());

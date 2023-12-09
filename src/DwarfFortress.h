@@ -31,7 +31,7 @@
 
 #include <dfs/Reader.h>
 
-#include "DFTime.h"
+#include "df/time.h"
 
 namespace dfs {
 class Structures;

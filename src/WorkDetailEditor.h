@@ -23,7 +23,7 @@
 
 namespace Ui { class WorkDetailEditor; }
 
-#include "DFEnums.h"
+#include "df_enums.h"
 
 class WorkDetailEditor: public QDialog
 {

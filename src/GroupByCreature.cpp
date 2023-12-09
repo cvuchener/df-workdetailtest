@@ -18,7 +18,7 @@
 
 #include "GroupByCreature.h"
 
-#include "CP437.h"
+#include "df/utils.h"
 #include "DwarfFortress.h"
 #include "Unit.h"
 
@@ -39,5 +39,5 @@ quint64 GroupByCreature::unitGroup(const Unit &unit) const
 QString GroupByCreature::groupName(quint64 race_id) const
 {
 	Q_ASSERT(race_id < _df.raws().creatures.all.size());
-	return fromCP437(_df.raws().creatures.all[race_id]->name[0]);
+	return df::fromCP437(_df.raws().creatures.all[race_id]->name[0]);
 }

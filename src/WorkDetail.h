@@ -21,7 +21,7 @@
 
 #include <QObject>
 #include <QCoroTask>
-#include "DFTypes.h"
+#include "df/types.h"
 
 class Unit;
 class DwarfFortress;

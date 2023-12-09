@@ -18,7 +18,7 @@
 
 #include "NameColumn.h"
 
-#include "CP437.h"
+#include "df/utils.h"
 #include "Unit.h"
 #include "DataRole.h"
 
@@ -52,7 +52,7 @@ QVariant NameColumn::unitData(int section, const Unit &unit, int role) const
 	case Qt::DisplayRole:
 		return unit.displayName();
 	case Qt::EditRole:
-		return fromCP437(unit->name.nickname);
+		return df::fromCP437(unit->name.nickname);
 	case DataRole::SortRole:
 		switch (_sort.option) {
 		case SortBy::Name:
@@ -112,7 +112,7 @@ void NameColumn::makeUnitMenu(int section, Unit &unit, QMenu *menu, QWidget *par
 				tr("Edit nickname"),
 				tr("Choose a new nickname for %1:").arg(unit.displayName()),
 				QLineEdit::Normal,
-				fromCP437(unit->name.nickname),
+				df::fromCP437(unit->name.nickname),
 				&ok);
 		if (ok)
 			unit.edit({ .nickname = new_nickname });

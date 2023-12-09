@@ -19,9 +19,8 @@
 #include "Unit.h"
 
 #include "DwarfFortress.h"
-#include "CP437.h"
 #include <QCoroFuture>
-#include "DFUtils.h"
+#include "df/utils.h"
 
 #include <dfhack-client-qt/Function.h>
 
@@ -52,7 +51,7 @@ void Unit::update(std::unique_ptr<df::unit> &&unit)
 
 void Unit::refresh()
 {
-
+	using df::fromCP437;
 	auto hf = _df.findHistoricalFigure(_u->hist_figure_id);
 	auto identity = hf && hf->info && hf->info->reputation
 		? _df.findIdentity(hf->info->reputation->cur_identity)
@@ -259,7 +258,7 @@ QCoro::Task<> Unit::edit(Properties changes)
 	dfproto::workdetailtest::UnitProperties args;
 	args.set_id(_u->id);
 	if (changes.nickname) {
-		args.set_nickname(toCP437(*changes.nickname));
+		args.set_nickname(df::toCP437(*changes.nickname));
 	}
 	if (changes.only_do_assigned_jobs) {
 		args.set_only_do_assigned_jobs(*changes.only_do_assigned_jobs);
@@ -275,7 +274,7 @@ QCoro::Task<> Unit::edit(Properties changes)
 	}
 	aboutToBeUpdated();
 	if (changes.nickname) {
-		_u->name.nickname = toCP437(*changes.nickname);
+		_u->name.nickname = df::toCP437(*changes.nickname);
 		refresh();
 	}
 	if (changes.only_do_assigned_jobs) {

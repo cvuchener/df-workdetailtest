@@ -21,8 +21,8 @@
 #include "ObjectList.h"
 #include "Unit.h"
 #include "WorkDetail.h"
-#include "DFTypes.h"
-#include "DFItems.h"
+#include "df/types.h"
+#include "df/items.h"
 
 #include <dfs/Reader.h>
 using namespace dfs;

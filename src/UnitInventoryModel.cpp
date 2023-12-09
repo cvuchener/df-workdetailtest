@@ -19,8 +19,8 @@
 #include "UnitInventoryModel.h"
 
 #include "Unit.h"
-#include "DFItems.h"
-#include "CP437.h"
+#include "df/items.h"
+#include "df/utils.h"
 #include "DwarfFortress.h"
 
 UnitInventoryModel::UnitInventoryModel(const DwarfFortress &df, QObject *parent):
@@ -71,6 +71,7 @@ struct ItemDescriptionGenerator
 	template <std::derived_from<df::item> T>
 	QString operator()(const T &item) const
 	{
+		using df::fromCP437;
 		QStringList out;
 
 		std::size_t stack_size = 1;

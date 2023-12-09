@@ -22,8 +22,8 @@
 #include <dfs/CompoundReader.h>
 #include <dfs/ItemReader.h>
 
-#include "DFEnums.h"
-#include "DFItemDefs.h"
+#include "df_enums.h"
+#include "df/itemdefs.h"
 
 #include <QString>
 

@@ -18,7 +18,7 @@
 
 #include "WorkDetail.h"
 
-#include "CP437.h"
+#include "df/utils.h"
 #include "DwarfFortress.h"
 #include "ObjectList.h"
 #include <QCoroFuture>
@@ -56,7 +56,7 @@ void WorkDetail::update(std::unique_ptr<df::work_detail> &&work_detail)
 
 void WorkDetail::refresh()
 {
-	_display_name = fromCP437(_wd->name);
+	_display_name = df::fromCP437(_wd->name);
 	_statuses.clear();
 }
 
@@ -161,7 +161,7 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	args.set_work_detail_index(index.row());
 	args.set_work_detail_name(_wd->name);
 	if (!changes.name.isEmpty())
-		args.set_new_name(toCP437(changes.name));
+		args.set_new_name(df::toCP437(changes.name));
 	if (changes.mode) {
 		switch (*changes.mode) {
 		case df::work_detail_mode::EverybodyDoesThis:
@@ -191,7 +191,7 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	}
 	aboutToBeUpdated();
 	if (!changes.name.isEmpty()) {
-		_wd->name = toCP437(changes.name);
+		_wd->name = df::toCP437(changes.name);
 		_display_name = changes.name;
 	}
 	if (changes.mode) {

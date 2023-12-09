@@ -21,7 +21,7 @@
 
 #include <QIcon>
 
-#include "DFEnums.h"
+#include "df_enums.h"
 
 class IconProvider
 {

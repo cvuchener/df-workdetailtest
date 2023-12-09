@@ -23,9 +23,9 @@
 #include <dfs/PolymorphicReader.h>
 #include <dfs/ItemReader.h>
 
-#include "DFEnums.h"
-#include "DFRaws.h"
-#include "DFTime.h"
+#include "df_enums.h"
+#include "df/raws.h"
+#include "df/time.h"
 
 namespace df {
 

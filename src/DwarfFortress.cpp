@@ -33,8 +33,8 @@
 #include "ObjectList.h"
 #include "Unit.h"
 #include "WorkDetail.h"
-#include "DFTypes.h"
-#include "DFUtils.h"
+#include "df/types.h"
+#include "df/utils.h"
 
 #include <dfhack-client-qt/Basic.h>
 
