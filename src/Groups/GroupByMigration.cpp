@@ -24,6 +24,8 @@
 #include <QCoreApplication>
 #include <QVariant>
 
+using namespace Groups;
+
 GroupByMigration::GroupByMigration(const DwarfFortress &df):
 	_df(df)
 {

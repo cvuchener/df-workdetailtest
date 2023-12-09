@@ -16,24 +16,29 @@
  *
  */
 
-#ifndef GROUP_BY_CREATURE_H
-#define GROUP_BY_CREATURE_H
+#ifndef GROUPS_GROUP_BY_MIGRATION_H
+#define GROUPS_GROUP_BY_MIGRATION_H
 
 #include "GroupBy.h"
 
 class DwarfFortress;
 
-class GroupByCreature: public GroupBy
+namespace Groups {
+
+class GroupByMigration: public GroupBy
 {
 public:
-	GroupByCreature(const DwarfFortress &df);
-	~GroupByCreature() override;
+	GroupByMigration(const DwarfFortress &df);
+	~GroupByMigration() override;
 
 	quint64 unitGroup(const Unit &unit) const override;
 	QString groupName(quint64 group_id) const override;
+	QVariant sortValue(quint64 group_id) const override;
 
 private:
 	const DwarfFortress &_df;
 };
+
+}
 
 #endif

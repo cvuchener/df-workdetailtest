@@ -16,28 +16,21 @@
  *
  */
 
-#include "GroupByCreature.h"
+#ifndef GROUPS_FACTORY_H
+#define GROUPS_FACTORY_H
 
-#include "df/utils.h"
-#include "DwarfFortress.h"
-#include "Unit.h"
+#include <functional>
+#include <memory>
 
-GroupByCreature::GroupByCreature(const DwarfFortress &df):
-	_df(df)
-{
+class GroupBy;
+class DwarfFortress;
+
+namespace Groups {
+
+using Factory = std::function<std::unique_ptr<GroupBy>(const DwarfFortress &)>;
+
+extern const std::vector<std::pair<const char *, Factory>> All;
+
 }
 
-GroupByCreature::~GroupByCreature()
-{
-}
-
-quint64 GroupByCreature::unitGroup(const Unit &unit) const
-{
-	return unit->race;
-}
-
-QString GroupByCreature::groupName(quint64 race_id) const
-{
-	Q_ASSERT(race_id < _df.raws().creatures.all.size());
-	return df::fromCP437(_df.raws().creatures.all[race_id]->name[0]);
-}
+#endif

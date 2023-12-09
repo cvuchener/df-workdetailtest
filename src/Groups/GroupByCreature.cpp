@@ -16,38 +16,30 @@
  *
  */
 
-#include "GroupByWorkDetailAssigned.h"
+#include "GroupByCreature.h"
 
-#include <QCoreApplication>
+#include "df/utils.h"
 #include "DwarfFortress.h"
 #include "Unit.h"
-#include "WorkDetail.h"
-#include "ObjectList.h"
 
-GroupByWorkDetailAssigned::GroupByWorkDetailAssigned(const DwarfFortress &df):
+using namespace Groups;
+
+GroupByCreature::GroupByCreature(const DwarfFortress &df):
 	_df(df)
 {
 }
 
-GroupByWorkDetailAssigned::~GroupByWorkDetailAssigned()
+GroupByCreature::~GroupByCreature()
 {
 }
 
-quint64 GroupByWorkDetailAssigned::unitGroup(const Unit &unit) const
+quint64 GroupByCreature::unitGroup(const Unit &unit) const
 {
-	quint64 count = 0;
-	for (int i = 0; i < _df.workDetails().rowCount(); ++i)
-		if (_df.workDetails().get(i)->isAssigned(unit->id))
-			++count;
-	return count;
+	return unit->race;
 }
 
-QString GroupByWorkDetailAssigned::groupName(quint64 count) const
+QString GroupByCreature::groupName(quint64 race_id) const
 {
-	return QCoreApplication::translate("GroupByWorkDetailAssigned", "assigned to %1 work details").arg(count);
-}
-
-QVariant GroupByWorkDetailAssigned::sortValue(quint64 count) const
-{
-	return count;
+	Q_ASSERT(race_id < _df.raws().creatures.all.size());
+	return df::fromCP437(_df.raws().creatures.all[race_id]->name[0]);
 }

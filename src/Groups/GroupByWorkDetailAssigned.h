@@ -16,12 +16,14 @@
  *
  */
 
-#ifndef GROUP_BY_WORK_DETAIL_ASSIGNED_H
-#define GROUP_BY_WORK_DETAIL_ASSIGNED_H
+#ifndef ROUPS_GROUP_BY_WORK_DETAIL_ASSIGNED_H
+#define GROUPS_GROUP_BY_WORK_DETAIL_ASSIGNED_H
 
 #include "GroupBy.h"
 
 class DwarfFortress;
+
+namespace Groups {
 
 class GroupByWorkDetailAssigned: public GroupBy
 {
@@ -36,5 +38,7 @@ public:
 private:
 	const DwarfFortress &_df;
 };
+
+}
 
 #endif

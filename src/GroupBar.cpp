@@ -23,7 +23,7 @@
 #include <QLabel>
 #include <QCoreApplication>
 
-#include "GroupBy.h"
+#include "Groups/Factory.h"
 
 struct GroupBar::Ui
 {
@@ -40,8 +40,8 @@ struct GroupBar::Ui
 
 		group_by_action = new QWidgetAction(parent);
 		group_by_cb = new QComboBox;
-		for (const auto &[name, factory]: GroupBy::AllMethods)
-			group_by_cb->addItem(QCoreApplication::translate("GroupBy", name));
+		for (const auto &[name, factory]: Groups::All)
+			group_by_cb->addItem(QCoreApplication::translate("Groups", name));
 		group_by_action->setDefaultWidget(group_by_cb);
 		parent->addAction(group_by_action);
 	}

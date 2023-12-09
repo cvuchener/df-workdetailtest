@@ -26,6 +26,7 @@
 #include "Columns/NameColumn.h"
 #include "Application.h"
 #include "ScriptManager.h"
+#include "Groups/Factory.h"
 
 Q_LOGGING_CATEGORY(GridViewLog, "gridview");
 
@@ -345,7 +346,7 @@ void GridViewModel::setGroupBy(int index)
 			[](const Unit &unit, int) { return unit->id; },
 			[](const group_t &, int) { return -1; }));
 	// Change grouping method
-	_group_by = GroupBy::AllMethods.at(index).second(_df);
+	_group_by = Groups::All.at(index).second(_df);
 	rebuildGroups();
 	// Rebuild indexes from unit ids
 	QModelIndexList new_indexes(old_indexes.size());

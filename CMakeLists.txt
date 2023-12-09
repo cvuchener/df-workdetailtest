@@ -65,9 +65,10 @@ add_executable(workdetailtest
 	src/GridViewStyle.cpp
 	src/GroupBar.cpp
 	src/GroupBy.cpp
-	src/GroupByCreature.cpp
-	src/GroupByMigration.cpp
-	src/GroupByWorkDetailAssigned.cpp
+	src/Groups/Factory.cpp
+	src/Groups/GroupByCreature.cpp
+	src/Groups/GroupByMigration.cpp
+	src/Groups/GroupByWorkDetailAssigned.cpp
 	src/IconProvider.cpp
 	src/MainWindow.cpp
 	src/MessageHandler.cpp
