@@ -23,6 +23,7 @@
 #include <QLoggingCategory>
 
 #include "UnitFilterProxyModel.h"
+#include "ColumnFactory.h"
 
 Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
@@ -36,7 +37,14 @@ class GridViewModel: public QAbstractItemModel
 {
 	Q_OBJECT
 public:
-	GridViewModel(const QJsonDocument &json, DwarfFortress &df, QObject *parent = nullptr);
+	struct Parameters {
+		QString title;
+		UnitFilter filter;
+		std::vector<ColumnFactory> columns;
+
+		static Parameters fromJson(const QJsonDocument &);
+	};
+	GridViewModel(const Parameters &parameters, DwarfFortress &df, QObject *parent = nullptr);
 	~GridViewModel() override;
 
 	const QString &title() const { return _title; }

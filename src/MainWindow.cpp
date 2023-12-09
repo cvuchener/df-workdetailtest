@@ -86,10 +86,9 @@ MainWindow::MainWindow(QWidget *parent):
 	_sb_ui->setupUi(_ui->statusbar);
 
 	auto tabs = new QTabWidget(this);
-	for (const auto &gv_name: Application::gridviews().gridviews()) {
-		auto model = Application::gridviews().makeGridView(gv_name, *_df);
-		auto title = model->title();
-		auto view = new GridView(std::move(model), tabs);
+	for (const auto &[name, params]: Application::gridviews().gridviews()) {
+		auto title = params.title;
+		auto view = new GridView(std::make_unique<GridViewModel>(params, *_df), tabs);
 		tabs->addTab(view, title);
 	}
 	setCentralWidget(tabs);

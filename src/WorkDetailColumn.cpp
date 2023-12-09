@@ -328,3 +328,8 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 		make_mode_action.operator()<OnlySelectedDoesThis>(tr("Only selected does this")),
 	});
 }
+
+ColumnFactory WorkDetailColumn::makeFactory(const QJsonObject &)
+{
+	return [](DwarfFortress &df) { return std::make_unique<WorkDetailColumn>(df); };
+}

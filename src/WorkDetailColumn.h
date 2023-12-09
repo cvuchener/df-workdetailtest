@@ -20,6 +20,7 @@
 #define WORK_DETAIL_COLUMN_H
 
 #include "AbstractColumn.h"
+#include "ColumnFactory.h"
 #include "ColumnSortOptions.h"
 
 class DwarfFortress;
@@ -42,6 +43,8 @@ public:
 	Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const override;
 
 	void makeHeaderMenu(int section, QMenu *menu, QWidget *parent) override;
+
+	static ColumnFactory makeFactory(const QJsonObject &);
 
 private:
 	DwarfFortress &_df;

@@ -22,6 +22,8 @@
 #include "GridViewModel.h"
 #include "StandardPaths.h"
 
+#include <QJsonDocument>
+
 GridViewManager::GridViewManager()
 {
 	QStringList name_filter = {"*.json"};
@@ -39,12 +41,14 @@ GridViewManager::GridViewManager()
 				qCCritical(GridViewLog) << "Failed to parse json from" << fi.filePath() << ":" << error.errorString();
 				continue;
 			}
-			auto [it, inserted] = _gridviews.try_emplace(fi.baseName(), std::move(doc));
+			auto [it, inserted] = _gridviews.try_emplace(
+					fi.baseName(),
+					GridViewModel::Parameters::fromJson(doc));
 			if (inserted)
-				qCInfo(GridViewLog) << "Added script" << fi.baseName()
+				qCInfo(GridViewLog) << "Added gridview" << fi.baseName()
 					<< "from" << fi.absoluteFilePath();
 			else
-				qCInfo(GridViewLog) << "Ignoring script" << fi.baseName()
+				qCInfo(GridViewLog) << "Ignoring gridview" << fi.baseName()
 					<< "from" << fi.absoluteFilePath();
 		}
 	}
@@ -54,10 +58,10 @@ GridViewManager::~GridViewManager()
 {
 }
 
-std::unique_ptr<GridViewModel> GridViewManager::makeGridView(QStringView name, DwarfFortress &df)
+const GridViewModel::Parameters &GridViewManager::find(QStringView name) const
 {
 	auto it = _gridviews.find(name);
 	if (it == _gridviews.end())
-		return nullptr;
-	return std::make_unique<GridViewModel>(it->second, df);
+		throw std::invalid_argument("Gridview name not found");
+	return it->second;
 }

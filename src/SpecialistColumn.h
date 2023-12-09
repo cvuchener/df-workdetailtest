@@ -20,6 +20,7 @@
 #define SPECIALIST_COLUMN_H
 
 #include "AbstractColumn.h"
+#include "ColumnFactory.h"
 
 class DwarfFortress;
 
@@ -37,6 +38,8 @@ public:
 	bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole) override;
 	Qt::ItemFlags unitFlags(int section, const Unit &unit) const override;
 	Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const override;
+
+	static ColumnFactory makeFactory(const QJsonObject &);
 
 private:
 	DwarfFortress &_df;

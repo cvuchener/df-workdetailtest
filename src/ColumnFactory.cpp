@@ -16,25 +16,24 @@
  *
  */
 
-#ifndef GRID_VIEW_MANAGER_H
-#define GRID_VIEW_MANAGER_H
+#include "ColumnFactory.h"
 
-#include <map>
+#include <QJsonObject>
 
 #include "GridViewModel.h"
 
-class GridViewManager
+#include "WorkDetailColumn.h"
+#include "SpecialistColumn.h"
+
+ColumnFactory makeColumnFactory(const QJsonObject &col)
 {
-public:
-	GridViewManager();
-	~GridViewManager();
-
-	const GridViewModel::Parameters &find(QStringView name) const;
-
-	const auto &gridviews() const { return _gridviews; }
-
-private:
-	std::map<QString, GridViewModel::Parameters, std::less<>> _gridviews;
-};
-
-#endif
+	auto type = col.value("type").toString();
+	if (type == "WorkDetail")
+		return WorkDetailColumn::makeFactory(col);
+	else if (type == "Specialist")
+		return SpecialistColumn::makeFactory(col);
+	else {
+		qCCritical(GridViewLog) << "Unsupported column type:" << type;
+		return {};
+	}
+}

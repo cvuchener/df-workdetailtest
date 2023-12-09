@@ -16,25 +16,18 @@
  *
  */
 
-#ifndef GRID_VIEW_MANAGER_H
-#define GRID_VIEW_MANAGER_H
+#ifndef COLUMN_FACTORY_H
+#define COLUMN_FACTORY_H
 
-#include <map>
+#include <functional>
+#include <memory>
 
-#include "GridViewModel.h"
+class AbstractColumn;
+class DwarfFortress;
+class QJsonObject;
 
-class GridViewManager
-{
-public:
-	GridViewManager();
-	~GridViewManager();
+using ColumnFactory = std::function<std::unique_ptr<AbstractColumn>(DwarfFortress &)>;
 
-	const GridViewModel::Parameters &find(QStringView name) const;
-
-	const auto &gridviews() const { return _gridviews; }
-
-private:
-	std::map<QString, GridViewModel::Parameters, std::less<>> _gridviews;
-};
+ColumnFactory makeColumnFactory(const QJsonObject &);
 
 #endif

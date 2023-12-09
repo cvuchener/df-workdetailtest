@@ -130,3 +130,7 @@ Qt::ItemFlags SpecialistColumn::groupFlags(int section, std::span<const Unit *> 
 		return {};
 }
 
+ColumnFactory SpecialistColumn::makeFactory(const QJsonObject &)
+{
+	return [](DwarfFortress &df) { return std::make_unique<SpecialistColumn>(df); };
+}

@@ -49,6 +49,7 @@ add_executable(workdetailtest
 	src/main.cpp
 	src/AbstractColumn.cpp
 	src/Application.cpp
+	src/ColumnFactory.cpp
 	src/Counter.cpp
 	src/CP437.cpp
 	src/DFHackProcess.cpp

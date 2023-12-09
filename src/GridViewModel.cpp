@@ -18,31 +18,29 @@
 
 #include "GridViewModel.h"
 
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-
 #include "DwarfFortress.h"
 #include "AbstractColumn.h"
 #include "UnitFilterProxyModel.h"
 #include "Unit.h"
 #include "ObjectList.h"
 #include "NameColumn.h"
-#include "WorkDetailColumn.h"
-#include "SpecialistColumn.h"
 #include "Application.h"
 #include "ScriptManager.h"
 
 Q_LOGGING_CATEGORY(GridViewLog, "gridview");
 
-GridViewModel::GridViewModel(const QJsonDocument &json, DwarfFortress &df, QObject *parent):
-	QAbstractItemModel(parent),
-	_df(df)
-{
-	_title = json.object().value("title").toString();
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
-	// Initialize base filter from json
-	auto filter_string = json.object().value("filter").toString();
+GridViewModel::Parameters GridViewModel::Parameters::fromJson(const QJsonDocument &doc)
+{
+	GridViewModel::Parameters params;
+
+	params.title = doc.object().value("title").toString();
+
+	// Parse base filter
+	auto filter_string = doc.object().value("filter").toString();
 	if (!filter_string.isNull()) {
 		auto sep = filter_string.indexOf(':');
 		auto type = filter_string.first(sep);
@@ -52,33 +50,40 @@ GridViewModel::GridViewModel(const QJsonDocument &json, DwarfFortress &df, QObje
 			if (filter == BuiltinUnitFilters.end())
 				qCCritical(GridViewLog) << "Invalid builtin filter:" << value;
 			else
-				_unit_filter.setBaseFilter(filter->second);
+				params.filter = filter->second;
 		}
 		else if (type == "script") {
 			auto filter = Application::scripts().makeScript(value);
 			if (filter.isError())
 				qCCritical(GridViewLog) << "Invalid script filter:" << filter.property("message").toString();
 			else
-				_unit_filter.setBaseFilter(ScriptedUnitFilter{filter});
+				params.filter = ScriptedUnitFilter{filter};
 		}
 		else
 			qCCritical(GridViewLog) << "Unsupported filter type:" << type;
 	}
-	// Initialize columns from json
-	_columns.push_back(std::make_unique<NameColumn>());
-	for (auto json_column: json.object().value("columns").toArray()) {
+
+	// Make column factories
+	for (auto json_column: doc.object().value("columns").toArray()) {
 		if (!json_column.isObject()) {
 			qCCritical(GridViewLog) << "column must be an object";
 			continue;
 		}
-		auto type = json_column.toObject().value("type").toString();
-		if (type == "WorkDetail")
-			_columns.push_back(std::make_unique<WorkDetailColumn>(df));
-		else if (type == "Specialist")
-			_columns.push_back(std::make_unique<SpecialistColumn>(df));
-		else
-			qCCritical(GridViewLog) << "Unsupported column type:" << type;
+		if (auto factory = makeColumnFactory(json_column.toObject()))
+			params.columns.push_back(std::move(factory));
 	}
+	return params;
+}
+
+GridViewModel::GridViewModel(const Parameters &parameters, DwarfFortress &df, QObject *parent):
+	QAbstractItemModel(parent),
+	_df(df)
+{
+	_title = parameters.title;
+	_unit_filter.setBaseFilter(parameters.filter);
+	_columns.push_back(std::make_unique<NameColumn>());
+	for (const auto &factory: parameters.columns)
+		_columns.push_back(factory(df));
 
 	_unit_filter.setSourceModel(&_df.units());
 	connect(&_unit_filter, &QAbstractItemModel::dataChanged,
