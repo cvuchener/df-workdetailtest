@@ -55,8 +55,6 @@ private:
 	std::unique_ptr<StatusBarUi> _sb_ui;
 
 	std::unique_ptr<DwarfFortress> _df;
-	std::unique_ptr<GridViewModel> _model;
-	std::unique_ptr<QSortFilterProxyModel> _sort_model;
 	QPersistentModelIndex _current_unit;
 };
 

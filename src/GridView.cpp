@@ -21,41 +21,31 @@
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QAbstractProxyModel>
+#include <QMenu>
 
 #include "GridViewModel.h"
 #include "GridViewStyle.h"
+#include "DataRole.h"
 
-GridView::GridView(QWidget *parent):
+GridView::GridView(std::unique_ptr<GridViewModel> &&model, QWidget *parent):
 	QTreeView(parent),
-	_style(std::make_unique<GridViewStyle>())
+	_style(std::make_unique<GridViewStyle>()),
+	_model(std::move(model)),
+	_sort_model(std::make_unique<QSortFilterProxyModel>())
 {
 	setStyle(_style.get());
 	header()->setStyle(_style.get());
 
-	header()->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(header(), &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
-		auto idx = header()->logicalIndexAt(pos);
-		if (idx != -1)
-			contextMenuRequestedForHeader(idx, header()->mapToGlobal(pos));
-	});
-	setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
-		auto idx = indexAt(pos);
-		if (idx.isValid())
-			contextMenuRequestedForCell(idx, viewport()->mapToGlobal(pos));
-	});
-}
+	setMouseTracking(true);
+	setSelectionMode(QAbstractItemView::ExtendedSelection);
+	setSortingEnabled(true);
+	header()->setStretchLastSection(false);
 
-GridView::~GridView()
-{
-}
-
-void GridView::setModel(QAbstractItemModel *model)
-{
-	if (auto old_model = GridView::model())
-		disconnect(old_model);
-	QTreeView::setModel(model);
-	connect(model, &QAbstractItemModel::layoutChanged, this, [this](const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint) {
+	Q_ASSERT(_model);
+	_sort_model->setSourceModel(_model.get());
+	_sort_model->setSortRole(DataRole::SortRole);
+	QTreeView::setModel(_sort_model.get());
+	connect(_model.get(), &QAbstractItemModel::layoutChanged, this, [this](const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint) {
 		if (hint == QAbstractItemModel::NoLayoutChangeHint) { // ignore sorting changes
 			if (!parents.empty()) {
 				for(auto parent: parents)
@@ -67,9 +57,38 @@ void GridView::setModel(QAbstractItemModel *model)
 		// stop painting cells
 		_last_index = QModelIndex{};
 	});
-	Q_ASSERT(model->columnCount() > 0);
 	header()->setSectionResizeMode(QHeaderView::Fixed);
 	header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+
+	header()->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(header(), &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+		auto idx = header()->logicalIndexAt(pos);
+		if (idx != -1) {
+			QMenu menu;
+			_model->makeColumnMenu(idx, &menu, this);
+			if (!menu.isEmpty())
+				menu.exec(header()->mapToGlobal(pos));
+		}
+	});
+	setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+		auto idx = indexAt(pos);
+		if (idx.isValid()) {
+			QMenu menu;
+			_model->makeCellMenu(_sort_model->mapToSource(idx), &menu, this);
+			if (!menu.isEmpty())
+				menu.exec(viewport()->mapToGlobal(pos));
+		}
+	});
+}
+
+GridView::~GridView()
+{
+}
+
+void GridView::setModel(QAbstractItemModel *model)
+{
+	qFatal("GridView's model should only be set through the constructor");
 }
 
 void GridView::rowsInserted(const QModelIndex &index, int start, int end)
@@ -82,47 +101,25 @@ void GridView::rowsInserted(const QModelIndex &index, int start, int end)
 
 void GridView::toggleCells(const QModelIndex &index)
 {
-	auto toggle_cell = [this](const QModelIndex &index) {
+	auto selection = selectionModel();
+	if (selection->selectedRows().size() <= 1
+			|| !selection->isRowSelected(index.row(), index.parent())) {
+		// If clicking outside the selection or single
+		// selection, only toggle the cell under the cursor
 		auto checked = index.data(Qt::CheckStateRole).value<Qt::CheckState>();
 		model()->setData(index,
 				checked == Qt::Checked
 					? Qt::Unchecked
 					: Qt::Checked,
 				Qt::CheckStateRole);
-	};
-	auto selection = selectionModel();
-	if (selection->selectedRows().size() <= 1
-			|| !selection->isRowSelected(index.row(), index.parent())) {
-		// If clicking outside the selection or single
-		// selection, only toggle the cell under the cursor
-		toggle_cell(index);
 	}
 	else { // Toggle all cells from this column in the selection
-		// Find the GridViewModel
-		std::vector<QAbstractProxyModel *> proxies;
-		GridViewModel *gv_model = nullptr;
-		auto m = model();
-		while (!(gv_model = qobject_cast<GridViewModel *>(m))) {
-			if (auto proxy = qobject_cast<QAbstractProxyModel *>(m)) {
-				proxies.push_back(proxy);
-				m = proxy->sourceModel();
-			}
-			else
-				break;
+		QModelIndexList indexes;
+		for (auto row: selection->selectedRows()) {
+			auto idx = row.siblingAtColumn(index.column());
+			indexes.push_back(_sort_model->mapToSource(idx));
 		}
-		if (gv_model) {
-			// Toggle all at once if possible
-			QModelIndexList indexes;
-			for (auto row: selection->selectedRows()) {
-				auto idx = row.siblingAtColumn(index.column());
-				for (auto proxy: proxies)
-					idx = proxy->mapToSource(idx);
-				indexes.push_back(idx);
-			}
-			gv_model->toggleCells(indexes);
-		}
-		else for (auto row: selection->selectedRows()) // ...or individually
-			toggle_cell(row.siblingAtColumn(index.column()));
+		_model->toggleCells(indexes);
 	}
 }
 

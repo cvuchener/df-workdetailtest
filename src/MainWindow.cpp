@@ -24,7 +24,6 @@
 #include <QLabel>
 #include <QMetaEnum>
 #include <QDockWidget>
-#include <QMenu>
 #include <QProgressBar>
 #include <QHeaderView>
 #include <QMessageBox>
@@ -39,10 +38,10 @@
 #include "Unit.h"
 #include "GridViewModel.h"
 #include "PreferencesDialog.h"
-#include "DataRole.h"
 #include "FilterBar.h"
 #include "GroupBar.h"
 #include "StandardPaths.h"
+#include "GridView.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -75,8 +74,12 @@ MainWindow::MainWindow(QWidget *parent):
 	QMainWindow(parent),
 	_ui(std::make_unique<Ui::MainWindow>()),
 	_sb_ui(std::make_unique<StatusBarUi>()),
-	_df(std::make_unique<DwarfFortress>()),
-	_model(std::make_unique<GridViewModel>([](){
+	_df(std::make_unique<DwarfFortress>())
+{
+	_ui->setupUi(this);
+	_sb_ui->setupUi(_ui->statusbar);
+
+	auto view = new GridView(std::make_unique<GridViewModel>([](){
 			QFile file(StandardPaths::locate_data("gridviews/default.json"));
 			if (!file.open(QIODevice::ReadOnly))
 				qFatal() << "Failed to open gridview";
@@ -85,45 +88,27 @@ MainWindow::MainWindow(QWidget *parent):
 			if (error.error != QJsonParseError::NoError)
 				qFatal() << "Failed to parse gridview json:" << error.errorString();
 			return doc;
-		}(), *_df)),
-	_sort_model(std::make_unique<QSortFilterProxyModel>())
-{
-	_ui->setupUi(this);
-	_sb_ui->setupUi(_ui->statusbar);
+		}(), *_df), this);
+	setCentralWidget(view);
 
 	const auto &settings = Application::settings();
 
-	_sort_model->setSourceModel(_model.get());
-	_sort_model->setSortRole(DataRole::SortRole);
-	_ui->view->setModel(_sort_model.get());
-	connect(_ui->view, &GridView::contextMenuRequestedForHeader, this, [this](int section, const QPoint &pos) {
-		QMenu menu;
-		_model->makeColumnMenu(section, &menu, this);
-		if (!menu.isEmpty())
-			menu.exec(pos);
-	});
-	connect(_ui->view, &GridView::contextMenuRequestedForCell, this, [this](const QModelIndex &index, const QPoint &pos) {
-		QMenu menu;
-		_model->makeCellMenu(_sort_model->mapToSource(index), &menu, this);
-		if (!menu.isEmpty())
-			menu.exec(pos);
-	});
-
+	// Setup tool bars
 	addToolBarBreak();
 
 	auto group_bar = new GroupBar(this);
-	connect(group_bar, &GroupBar::groupChanged, this, [this](int index) {
-		_model->setGroupBy(index);
+	connect(group_bar, &GroupBar::groupChanged, this, [view](int index) {
+		view->gridViewModel().setGroupBy(index);
 	});
-	_model->setGroupBy(0);
+	view->gridViewModel().setGroupBy(0);
 	group_bar->setGroup(0);
 	addToolBar(group_bar);
 
 	auto filter_bar = new FilterBar(this);
-	_model->setUserFilters(filter_bar->filters());
+	view->gridViewModel().setUserFilters(filter_bar->filters());
 	addToolBar(filter_bar);
 
-
+	// DFHack connection
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
 		QMessageBox::critical(this, tr("Connection error"), msg);
 	});
@@ -133,12 +118,14 @@ MainWindow::MainWindow(QWidget *parent):
 	connect(_df.get(), &DwarfFortress::stateChanged, this, &MainWindow::onStateChanged);
 	onStateChanged(_df->state());
 
+	// Setup dock
 	auto unit_details = new UnitDetailsDock(*_df, this);
 	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
 
-	connect(_ui->view->selectionModel(), &QItemSelectionModel::currentChanged, this, [this, unit_details](const QModelIndex &current, const QModelIndex &prev) {
-		auto unit = _model->unit(_sort_model->mapToSource(current));
+	// Unit details shows current unit
+	connect(view->selectionModel(), &QItemSelectionModel::currentChanged, this, [this, view, unit_details](const QModelIndex &current, const QModelIndex &prev) {
+		auto unit = view->gridViewModel().unit(view->sortModel().mapToSource(current));
 		auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
 		if (unit_index == _current_unit)
 			return;
@@ -146,6 +133,7 @@ MainWindow::MainWindow(QWidget *parent):
 		unit_details->setUnit(unit);
 	});
 
+	// Connect to DFHack
 	if (settings.autoconnect())
 		on_connect_action_triggered();
 }

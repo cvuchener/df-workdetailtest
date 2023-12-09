@@ -21,18 +21,25 @@
 
 #include <QTreeView>
 
+class GridViewModel;
+class QSortFilterProxyModel;
+
+// GridView uses a GridViewModel and a QSortFilterProxyModel for sorting, index
+// from QTreeView will be indexes from the sort model and must be mapped before
+// used with the GridViewModel.
 class GridView: public QTreeView
 {
 	Q_OBJECT
 public:
-	GridView(QWidget *parent = nullptr);
+	GridView(std::unique_ptr<GridViewModel> &&model, QWidget *parent = nullptr);
 	~GridView() override;
 
 	void setModel(QAbstractItemModel *model) override;
 
+	GridViewModel &gridViewModel() { return *_model; };
+	QSortFilterProxyModel &sortModel() { return *_sort_model; }
+
 signals:
-	void contextMenuRequestedForHeader(int section, const QPoint &pos);
-	void contextMenuRequestedForCell(QModelIndex, const QPoint &pos);
 
 protected:
 	void rowsInserted(const QModelIndex &index, int start, int end) override;
@@ -45,6 +52,8 @@ protected:
 
 private:
 	std::unique_ptr<QStyle> _style;
+	std::unique_ptr<GridViewModel> _model;
+	std::unique_ptr<QSortFilterProxyModel> _sort_model;
 	QPersistentModelIndex _last_index; // only valid when cell painting
 
 	void toggleCells(const QModelIndex &index);
