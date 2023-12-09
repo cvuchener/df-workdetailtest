@@ -58,6 +58,7 @@ add_executable(workdetailtest
 	src/DwarfFortress_read.cpp
 	src/FilterBar.cpp
 	src/GridView.cpp
+	src/GridViewManager.cpp
 	src/GridViewModel.cpp
 	src/GridViewStyle.cpp
 	src/GroupBar.cpp

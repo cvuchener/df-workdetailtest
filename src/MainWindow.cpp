@@ -25,10 +25,7 @@
 #include <QMetaEnum>
 #include <QDockWidget>
 #include <QProgressBar>
-#include <QHeaderView>
 #include <QMessageBox>
-#include <QSortFilterProxyModel>
-#include <QJsonDocument>
 
 #include <QCoroCore>
 
@@ -40,7 +37,7 @@
 #include "PreferencesDialog.h"
 #include "FilterBar.h"
 #include "GroupBar.h"
-#include "StandardPaths.h"
+#include "GridViewManager.h"
 #include "GridView.h"
 
 #include "ui_MainWindow.h"
@@ -70,6 +67,15 @@ struct MainWindow::StatusBarUi
 	}
 };
 
+
+void foreachGridView (QTabWidget *tabs, std::invocable<GridView *> auto &&f) {
+	for (int i = 0; i < tabs->count(); ++i) {
+		auto view = qobject_cast<GridView *>(tabs->widget(i));
+		Q_ASSERT(view);
+		f(view);
+	}
+};
+
 MainWindow::MainWindow(QWidget *parent):
 	QMainWindow(parent),
 	_ui(std::make_unique<Ui::MainWindow>()),
@@ -79,17 +85,14 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui->setupUi(this);
 	_sb_ui->setupUi(_ui->statusbar);
 
-	auto view = new GridView(std::make_unique<GridViewModel>([](){
-			QFile file(StandardPaths::locate_data("gridviews/default.json"));
-			if (!file.open(QIODevice::ReadOnly))
-				qFatal() << "Failed to open gridview";
-			QJsonParseError error;
-			auto doc = QJsonDocument::fromJson(file.readAll(), &error);
-			if (error.error != QJsonParseError::NoError)
-				qFatal() << "Failed to parse gridview json:" << error.errorString();
-			return doc;
-		}(), *_df), this);
-	setCentralWidget(view);
+	auto tabs = new QTabWidget(this);
+	for (const auto &gv_name: Application::gridviews().gridviews()) {
+		auto model = Application::gridviews().makeGridView(gv_name, *_df);
+		auto title = model->title();
+		auto view = new GridView(std::move(model), tabs);
+		tabs->addTab(view, title);
+	}
+	setCentralWidget(tabs);
 
 	const auto &settings = Application::settings();
 
@@ -97,15 +100,21 @@ MainWindow::MainWindow(QWidget *parent):
 	addToolBarBreak();
 
 	auto group_bar = new GroupBar(this);
-	connect(group_bar, &GroupBar::groupChanged, this, [view](int index) {
-		view->gridViewModel().setGroupBy(index);
+	connect(group_bar, &GroupBar::groupChanged, this, [tabs](int index) {
+		foreachGridView(tabs, [index](GridView *view) {
+			view->gridViewModel().setGroupBy(index);
+		});
 	});
-	view->gridViewModel().setGroupBy(0);
+	foreachGridView(tabs, [](GridView *view) {
+		view->gridViewModel().setGroupBy(0);
+	});
 	group_bar->setGroup(0);
 	addToolBar(group_bar);
 
 	auto filter_bar = new FilterBar(this);
-	view->gridViewModel().setUserFilters(filter_bar->filters());
+	foreachGridView(tabs, [filter_bar](GridView *view) {
+		view->gridViewModel().setUserFilters(filter_bar->filters());
+	});
 	addToolBar(filter_bar);
 
 	// DFHack connection
@@ -124,13 +133,17 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
 
 	// Unit details shows current unit
-	connect(view->selectionModel(), &QItemSelectionModel::currentChanged, this, [this, view, unit_details](const QModelIndex &current, const QModelIndex &prev) {
-		auto unit = view->gridViewModel().unit(view->sortModel().mapToSource(current));
-		auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
-		if (unit_index == _current_unit)
-			return;
-		_current_unit = unit_index;
-		unit_details->setUnit(unit);
+	foreachGridView(tabs, [this, unit_details](GridView *view) {
+		connect(view->selectionModel(), &QItemSelectionModel::currentChanged,
+			this, [this, view, unit_details](const QModelIndex &current, const QModelIndex &prev) {
+				auto source_index = view->sortModel().mapToSource(current);
+				auto unit = view->gridViewModel().unit(source_index);
+				auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
+				if (unit_index == _current_unit)
+					return;
+				_current_unit = unit_index;
+				unit_details->setUnit(unit);
+			});
 	});
 
 	// Connect to DFHack

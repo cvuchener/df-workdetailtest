@@ -20,8 +20,11 @@
 #define GRID_VIEW_MODEL_H
 
 #include <QAbstractItemModel>
+#include <QLoggingCategory>
 
 #include "UnitFilterProxyModel.h"
+
+Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
 class QMenu;
 class DwarfFortress;

@@ -25,6 +25,7 @@
 
 class IconProvider;
 class ScriptManager;
+class GridViewManager;
 
 class Application: public QApplication
 {
@@ -40,11 +41,13 @@ public:
 	static Settings &settings() { return *instance()->_settings; }
 	static const IconProvider &icons() { return *instance()->_icons; }
 	static ScriptManager &scripts() { return *instance()->_scripts; }
+	static GridViewManager &gridviews() { return *instance()->_gridviews; }
 
 private:
 	std::unique_ptr<Settings> _settings;
 	std::unique_ptr<IconProvider> _icons;
 	std::unique_ptr<ScriptManager> _scripts;
+	std::unique_ptr<GridViewManager> _gridviews;
 };
 
 #endif

@@ -21,6 +21,7 @@
 #include "MessageHandler.h"
 #include "IconProvider.h"
 #include "ScriptManager.h"
+#include "GridViewManager.h"
 
 Application::Application(int &argc, char **argv):
 	QApplication(argc, argv)
@@ -52,6 +53,7 @@ Application::Application(int &argc, char **argv):
 	_settings = std::make_unique<Settings>();
 	_icons = std::make_unique<IconProvider>();
 	_scripts = std::make_unique<ScriptManager>();
+	_gridviews = std::make_unique<GridViewManager>();
 }
 
 Application::~Application()

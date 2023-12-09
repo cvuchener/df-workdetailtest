@@ -1,0 +1,5 @@
+{
+	"title": "Dogs",
+	"filter": "script:u.race_name == \"dog\"",
+	"columns": []
+}
