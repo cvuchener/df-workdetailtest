@@ -57,6 +57,7 @@ class UserUnitFilters: public QAbstractListModel
 	Q_OBJECT
 public:
 	UserUnitFilters(QObject *parent = nullptr);
+	UserUnitFilters(const UserUnitFilters &, QObject *parent = nullptr);
 	~UserUnitFilters() override;
 
 	int rowCount(const QModelIndex &parent = {}) const override;
@@ -66,13 +67,16 @@ public:
 	void addFilter(const QString &name, UnitFilter filter);
 	void clear();
 
-	template <std::predicate<const Unit &> Filter>
-	void setTemporaryFilter(Filter &&filter)
-	{
-		_temporary_filter = UnitFilter(std::forward<Filter>(filter));
-		invalidated();
-	}
+	enum class TemporaryType {
+		Simple,
+		Regex,
+		Script,
+	};
 
+	std::pair<TemporaryType, QString> temporaryFilter() const {
+		return {_temporary_type, _temporary_text};
+	}
+	void setTemporaryFilter(TemporaryType type, const QString &text);
 
 	bool operator()(const Unit &) const;
 
@@ -82,6 +86,8 @@ signals:
 private:
 	std::vector<std::pair<QString, UnitFilter>> _filters;
 	UnitFilter _temporary_filter;
+	TemporaryType _temporary_type;
+	QString _temporary_text;
 };
 
 #endif

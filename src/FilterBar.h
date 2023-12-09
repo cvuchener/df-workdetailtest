@@ -38,12 +38,14 @@ private:
 	void filterInserted(const QModelIndex &parent, int first, int last);
 	void filterRemoved(const QModelIndex &parent, int first, int last);
 
+	void setupFilters();
 	void updateFilterUi();
 	void updateTemporaryFilter();
 
 	struct Ui;
 	std::unique_ptr<Ui> _ui;
 	std::shared_ptr<UserUnitFilters> _filters;
+	QMetaObject::Connection _inserted_signal, _removed_signal;
 };
 
 #endif

@@ -101,6 +101,7 @@ struct Settings
 	SettingProperty<bool> use_native_process = {"process/use_native", true};
 
 	SettingProperty<bool> per_view_group_by = {"gridview/per_view_group_by", false};
+	SettingProperty<bool> per_view_filters = {"gridview/per_view_filter", false};
 };
 
 #endif

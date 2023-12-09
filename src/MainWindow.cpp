@@ -98,6 +98,7 @@ MainWindow::MainWindow(QWidget *parent):
 	// Setup tool bars
 	addToolBarBreak();
 
+	// Groups
 	auto group_bar = new GroupBar(this);
 	connect(group_bar, &GroupBar::groupChanged, this, [tabs](int index) {
 		if (Application::settings().per_view_group_by()) {
@@ -130,9 +131,41 @@ MainWindow::MainWindow(QWidget *parent):
 	group_bar->setGroup(0);
 	addToolBar(group_bar);
 
+	// Filters
 	auto filter_bar = new FilterBar(this);
-	foreachGridView(tabs, [filter_bar](GridView *view) {
-		view->gridViewModel().setUserFilters(filter_bar->filters());
+	if (settings.per_view_filters()) {
+		foreachGridView(tabs, [tabs, filter_bar](GridView *view) {
+			if (view != tabs->currentWidget())
+				view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>());
+			else
+				view->gridViewModel().setUserFilters(filter_bar->filters());
+		});
+	}
+	else {
+		foreachGridView(tabs, [filter_bar](GridView *view) {
+			view->gridViewModel().setUserFilters(filter_bar->filters());
+		});
+	}
+	connect(&settings.per_view_filters, &SettingPropertyBase::valueChanged, this, [tabs, filter_bar]() {
+		if (Application::settings().per_view_filters()) {
+			foreachGridView(tabs, [tabs, filter_bar](GridView *view) {
+				if (view != tabs->currentWidget())
+					view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>(*filter_bar->filters()));
+			});
+		}
+		else {
+			foreachGridView(tabs, [tabs, filter_bar](GridView *view) {
+				if (view != tabs->currentWidget())
+					view->gridViewModel().setUserFilters(filter_bar->filters());
+			});
+		}
+	});
+	connect(tabs, &QTabWidget::currentChanged, this, [tabs, filter_bar](int index) {
+		if (Application::settings().per_view_filters()) {
+			auto view = qobject_cast<GridView *>(tabs->widget(index));
+			Q_ASSERT(view);
+			filter_bar->setFilters(view->gridViewModel().userFilters());
+		}
 	});
 	addToolBar(filter_bar);
 

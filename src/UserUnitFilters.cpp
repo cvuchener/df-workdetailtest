@@ -49,7 +49,18 @@ const std::vector<std::pair<const char *, UnitFilter>> BuiltinUnitFilters = {
 };
 
 UserUnitFilters::UserUnitFilters(QObject *parent):
-	QAbstractListModel(parent)
+	QAbstractListModel(parent),
+	_temporary_type(TemporaryType::Simple),
+	_temporary_text("")
+{
+}
+
+UserUnitFilters::UserUnitFilters(const UserUnitFilters &other, QObject *parent):
+	QAbstractListModel(parent),
+	_filters(other._filters),
+	_temporary_filter(other._temporary_filter),
+	_temporary_type(other._temporary_type),
+	_temporary_text(other._temporary_text)
 {
 }
 
@@ -94,6 +105,34 @@ void UserUnitFilters::clear()
 	beginRemoveRows({}, 0, _filters.size()-1);
 	_filters.clear();
 	endRemoveRows();
+	invalidated();
+}
+
+void UserUnitFilters::setTemporaryFilter(TemporaryType type, const QString &text)
+{
+	_temporary_type = type;
+	_temporary_text = text;
+	if (text.isEmpty())
+		_temporary_filter = AllUnits{};
+	else {
+		switch (type) {
+		case TemporaryType::Simple:
+			_temporary_filter = UnitNameFilter{
+				text
+			};
+			break;
+		case TemporaryType::Regex:
+			_temporary_filter = UnitNameRegexFilter{
+				QRegularExpression(text)
+			};
+			break;
+		case TemporaryType::Script:
+			_temporary_filter = ScriptedUnitFilter{
+				Application::scripts().makeScript(text)
+			};
+			break;
+		}
+	}
 	invalidated();
 }
 
