@@ -100,9 +100,29 @@ MainWindow::MainWindow(QWidget *parent):
 
 	auto group_bar = new GroupBar(this);
 	connect(group_bar, &GroupBar::groupChanged, this, [tabs](int index) {
-		foreachGridView(tabs, [index](GridView *view) {
+		if (Application::settings().per_view_group_by()) {
+			auto view = qobject_cast<GridView *>(tabs->currentWidget());
+			Q_ASSERT(view);
+			view->gridViewModel().setGroupBy(index);
+		}
+		else foreachGridView(tabs, [index](GridView *view) {
 			view->gridViewModel().setGroupBy(index);
 		});
+	});
+	connect(&settings.per_view_group_by, &SettingPropertyBase::valueChanged, this, [tabs, group_bar]() {
+		if (!Application::settings().per_view_group_by()) {
+			foreachGridView(tabs, [tabs, group_bar](GridView *view) {
+				if (view != tabs->currentWidget())
+					view->gridViewModel().setGroupBy(group_bar->groupIndex());
+			});
+		}
+	});
+	connect(tabs, &QTabWidget::currentChanged, this, [tabs, group_bar](int index) {
+		if (Application::settings().per_view_group_by()) {
+			auto view = qobject_cast<GridView *>(tabs->widget(index));
+			Q_ASSERT(view);
+			group_bar->setGroup(view->gridViewModel().groupIndex());
+		}
 	});
 	foreachGridView(tabs, [](GridView *view) {
 		view->gridViewModel().setGroupBy(0);

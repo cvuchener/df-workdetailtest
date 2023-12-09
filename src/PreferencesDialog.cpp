@@ -46,6 +46,7 @@ void PreferencesDialog::loadSettings()
 	_ui->autorefresh_enable->setChecked(settings.autorefresh_enabled());
 	_ui->autorefresh_interval->setValue(settings.autorefresh_interval());
 	_ui->use_native_process->setChecked(settings.use_native_process());
+	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by());
 }
 
 void PreferencesDialog::loadDefaultSettings()
@@ -57,6 +58,7 @@ void PreferencesDialog::loadDefaultSettings()
 	_ui->autorefresh_enable->setChecked(settings.autorefresh_enabled.defaultValue());
 	_ui->autorefresh_interval->setValue(settings.autorefresh_interval.defaultValue());
 	_ui->use_native_process->setChecked(settings.use_native_process.defaultValue());
+	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by.defaultValue());
 }
 
 void PreferencesDialog::saveSettings() const
@@ -68,4 +70,5 @@ void PreferencesDialog::saveSettings() const
 	settings.autorefresh_enabled = _ui->autorefresh_enable->checkState() == Qt::Checked;
 	settings.autorefresh_interval = _ui->autorefresh_interval->value();
 	settings.use_native_process = _ui->use_native_process->checkState() == Qt::Checked;
+	settings.per_view_group_by = _ui->gridview_perview_groups->checkState() == Qt::Checked;
 }

@@ -53,6 +53,7 @@ public:
 	void setUserFilters(std::shared_ptr<UserUnitFilters> user_filters);
 
 	void setGroupBy(int index);
+	int groupIndex() const { return _group_index; }
 
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &index) const override;
@@ -97,6 +98,7 @@ private:
 	std::shared_ptr<UserUnitFilters> _user_filters;
 	std::vector<std::unique_ptr<AbstractColumn>> _columns;
 	std::unique_ptr<GroupBy> _group_by;
+	int _group_index;
 	struct group_t {
 		quint64 id;
 		std::vector<Unit *> units; // sorted by id

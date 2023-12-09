@@ -61,6 +61,11 @@ GroupBar::~GroupBar()
 {
 }
 
+int GroupBar::groupIndex() const
+{
+	return _ui->group_by_cb->currentIndex();
+}
+
 void GroupBar::setGroup(int index)
 {
 	_ui->group_by_cb->setCurrentIndex(index);

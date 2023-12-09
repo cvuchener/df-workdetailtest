@@ -28,6 +28,7 @@ public:
 	GroupBar(QWidget *parent);
 	~GroupBar() override;
 
+	int groupIndex() const;
 	void setGroup(int index);
 
 signals:

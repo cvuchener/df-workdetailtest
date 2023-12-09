@@ -347,6 +347,7 @@ void GridViewModel::setGroupBy(int index)
 			[](const group_t &, int) { return -1; }));
 	// Change grouping method
 	_group_by = Groups::All.at(index).second(_df);
+	_group_index = index;
 	rebuildGroups();
 	// Rebuild indexes from unit ids
 	QModelIndexList new_indexes(old_indexes.size());

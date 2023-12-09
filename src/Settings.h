@@ -99,6 +99,8 @@ struct Settings
 	SettingProperty<double> autorefresh_interval = {"autorefresh/interval", 2.0};
 
 	SettingProperty<bool> use_native_process = {"process/use_native", true};
+
+	SettingProperty<bool> per_view_group_by = {"gridview/per_view_group_by", false};
 };
 
 #endif
