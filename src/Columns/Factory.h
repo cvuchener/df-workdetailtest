@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef COLUMN_FACTORY_H
-#define COLUMN_FACTORY_H
+#ifndef COLUMNS_FACTORY_H
+#define COLUMNS_FACTORY_H
 
 #include <functional>
 #include <memory>
@@ -26,8 +26,12 @@ class AbstractColumn;
 class DwarfFortress;
 class QJsonObject;
 
-using ColumnFactory = std::function<std::unique_ptr<AbstractColumn>(DwarfFortress &)>;
+namespace Columns {
 
-ColumnFactory makeColumnFactory(const QJsonObject &);
+using Factory = std::function<std::unique_ptr<AbstractColumn>(DwarfFortress &)>;
+
+Factory makeFactory(const QJsonObject &);
+
+}
 
 #endif

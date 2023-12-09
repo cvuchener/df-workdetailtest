@@ -16,15 +16,17 @@
  *
  */
 
-#ifndef COLUMN_SORT_OPTIONS_H
-#define COLUMN_SORT_OPTIONS_H
+#ifndef COLUMNS_SORT_OPTIONS_H
+#define COLUMNS_SORT_OPTIONS_H
 
 #include <QMenu>
 #include <QAction>
 #include <QCoreApplication>
 
+namespace Columns {
+
 template <typename T, typename Enum>
-struct ColumnSortOptions
+struct SortOptions
 {
 	T &parent;
 	Enum option;
@@ -45,5 +47,7 @@ struct ColumnSortOptions
 		}
 	}
 };
+
+}
 
 #endif

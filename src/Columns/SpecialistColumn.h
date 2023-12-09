@@ -16,35 +16,37 @@
  *
  */
 
-#ifndef NAME_COLUMN_H
-#define NAME_COLUMN_H
+#ifndef COLUMNS_SPECIALIST_COLUMN_H
+#define COLUMNS_SPECIALIST_COLUMN_H
 
 #include "AbstractColumn.h"
-#include "ColumnSortOptions.h"
+#include "Columns/Factory.h"
 
-class NameColumn: public AbstractColumn
+class DwarfFortress;
+
+namespace Columns {
+
+class SpecialistColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	NameColumn(QObject *parent = nullptr);
-	~NameColumn() override;
+	SpecialistColumn(DwarfFortress &df, QObject *parent = nullptr);
+	~SpecialistColumn() override;
 
 	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
 	QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const override;
 	QVariant groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role = Qt::DisplayRole) const override;
 	bool setUnitData(int section, Unit &unit, const QVariant &value, int role = Qt::EditRole) override;
+	bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole) override;
 	Qt::ItemFlags unitFlags(int section, const Unit &unit) const override;
 	Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const override;
 
-	void makeHeaderMenu(int section, QMenu *menu, QWidget *parent) override;
-	void makeUnitMenu(int section, Unit &unit, QMenu *menu, QWidget *parent) override;
+	static Factory makeFactory(const QJsonObject &);
 
 private:
-	enum class SortBy {
-		Name,
-		Age,
-	};
-	ColumnSortOptions<NameColumn, SortBy> _sort;
+	DwarfFortress &_df;
 };
+
+}
 
 #endif

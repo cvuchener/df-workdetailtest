@@ -16,14 +16,16 @@
  *
  */
 
-#ifndef WORK_DETAIL_COLUMN_H
-#define WORK_DETAIL_COLUMN_H
+#ifndef COLUMNS_WORK_DETAIL_COLUMN_H
+#define COLUMNS_WORK_DETAIL_COLUMN_H
 
 #include "AbstractColumn.h"
-#include "ColumnFactory.h"
-#include "ColumnSortOptions.h"
+#include "Columns/Factory.h"
+#include "Columns/SortOptions.h"
 
 class DwarfFortress;
+
+namespace Columns {
 
 class WorkDetailColumn: public AbstractColumn
 {
@@ -44,7 +46,7 @@ public:
 
 	void makeHeaderMenu(int section, QMenu *menu, QWidget *parent) override;
 
-	static ColumnFactory makeFactory(const QJsonObject &);
+	static Factory makeFactory(const QJsonObject &);
 
 private:
 	DwarfFortress &_df;
@@ -52,8 +54,10 @@ private:
 		Skill,
 		Assigned,
 	};
-	ColumnSortOptions<WorkDetailColumn, SortBy> _sort;
+	SortOptions<WorkDetailColumn, SortBy> _sort;
 
 };
+
+}
 
 #endif

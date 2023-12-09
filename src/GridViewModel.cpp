@@ -23,7 +23,7 @@
 #include "UnitFilterProxyModel.h"
 #include "Unit.h"
 #include "ObjectList.h"
-#include "NameColumn.h"
+#include "Columns/NameColumn.h"
 #include "Application.h"
 #include "ScriptManager.h"
 
@@ -69,7 +69,7 @@ GridViewModel::Parameters GridViewModel::Parameters::fromJson(const QJsonDocumen
 			qCCritical(GridViewLog) << "column must be an object";
 			continue;
 		}
-		if (auto factory = makeColumnFactory(json_column.toObject()))
+		if (auto factory = Columns::makeFactory(json_column.toObject()))
 			params.columns.push_back(std::move(factory));
 	}
 	return params;
@@ -81,7 +81,7 @@ GridViewModel::GridViewModel(const Parameters &parameters, DwarfFortress &df, QO
 {
 	_title = parameters.title;
 	_unit_filter.setBaseFilter(parameters.filter);
-	_columns.push_back(std::make_unique<NameColumn>());
+	_columns.push_back(std::make_unique<Columns::NameColumn>());
 	for (const auto &factory: parameters.columns)
 		_columns.push_back(factory(df));
 

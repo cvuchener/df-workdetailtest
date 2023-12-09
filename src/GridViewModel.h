@@ -23,7 +23,7 @@
 #include <QLoggingCategory>
 
 #include "UnitFilterProxyModel.h"
-#include "ColumnFactory.h"
+#include "Columns/Factory.h"
 
 Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
@@ -40,7 +40,7 @@ public:
 	struct Parameters {
 		QString title;
 		UnitFilter filter;
-		std::vector<ColumnFactory> columns;
+		std::vector<Columns::Factory> columns;
 
 		static Parameters fromJson(const QJsonDocument &);
 	};

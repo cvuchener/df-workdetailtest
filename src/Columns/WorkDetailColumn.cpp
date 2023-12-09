@@ -25,9 +25,15 @@
 #include "DataRole.h"
 #include "Application.h"
 #include "IconProvider.h"
+#include "WorkDetailEditor.h"
 
 #include <QIcon>
 #include <QBrush>
+#include <QMenu>
+#include <QAction>
+
+
+using namespace Columns;
 
 WorkDetailColumn::WorkDetailColumn(DwarfFortress &df, QObject *parent):
 	AbstractColumn(parent),
@@ -282,10 +288,6 @@ Qt::ItemFlags WorkDetailColumn::groupFlags(int section, std::span<const Unit *> 
 		return {};
 }
 
-#include <QMenu>
-#include <QAction>
-#include "WorkDetailEditor.h"
-
 void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 {
 	using namespace df::work_detail_mode;
@@ -329,7 +331,7 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 	});
 }
 
-ColumnFactory WorkDetailColumn::makeFactory(const QJsonObject &)
+Factory WorkDetailColumn::makeFactory(const QJsonObject &)
 {
 	return [](DwarfFortress &df) { return std::make_unique<WorkDetailColumn>(df); };
 }

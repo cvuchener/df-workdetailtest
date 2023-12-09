@@ -16,7 +16,7 @@
  *
  */
 
-#include "ColumnFactory.h"
+#include "Factory.h"
 
 #include <QJsonObject>
 
@@ -25,7 +25,7 @@
 #include "WorkDetailColumn.h"
 #include "SpecialistColumn.h"
 
-ColumnFactory makeColumnFactory(const QJsonObject &col)
+Columns::Factory Columns::makeFactory(const QJsonObject &col)
 {
 	auto type = col.value("type").toString();
 	if (type == "WorkDetail")

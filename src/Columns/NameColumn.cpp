@@ -23,6 +23,10 @@
 #include "DataRole.h"
 
 #include <QVariant>
+#include <QMenu>
+#include <QInputDialog>
+
+using namespace Columns;
 
 NameColumn::NameColumn(QObject *parent):
 	AbstractColumn(parent),
@@ -94,9 +98,6 @@ Qt::ItemFlags NameColumn::groupFlags(int section, std::span<const Unit *> units)
 {
 	return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
-
-#include <QMenu>
-#include <QInputDialog>
 
 void NameColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 {

@@ -49,7 +49,10 @@ add_executable(workdetailtest
 	src/main.cpp
 	src/AbstractColumn.cpp
 	src/Application.cpp
-	src/ColumnFactory.cpp
+	src/Columns/Factory.cpp
+	src/Columns/NameColumn.cpp
+	src/Columns/SpecialistColumn.cpp
+	src/Columns/WorkDetailColumn.cpp
 	src/Counter.cpp
 	src/DFHackProcess.cpp
 	src/DataRole.h
@@ -68,13 +71,11 @@ add_executable(workdetailtest
 	src/IconProvider.cpp
 	src/MainWindow.cpp
 	src/MessageHandler.cpp
-	src/NameColumn.cpp
 	src/ObjectList.cpp
 	src/PreferencesDialog.cpp
 	src/ProcessStats.cpp
 	src/ScriptManager.cpp
 	src/Settings.cpp
-	src/SpecialistColumn.cpp
 	src/StandardPaths.cpp
 	src/Unit.cpp
 	src/UnitDetailsDock.cpp
@@ -83,7 +84,6 @@ add_executable(workdetailtest
 	src/UnitScriptWrapper.cpp
 	src/UserUnitFilters.cpp
 	src/WorkDetail.cpp
-	src/WorkDetailColumn.cpp
 	src/WorkDetailEditor.cpp
 	src/df/raws.cpp
 	src/df/utils.cpp

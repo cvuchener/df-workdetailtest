@@ -24,6 +24,8 @@
 
 #include <QVariant>
 
+using namespace Columns;
+
 SpecialistColumn::SpecialistColumn(DwarfFortress &df, QObject *parent):
 	AbstractColumn(parent),
 	_df(df)
@@ -130,7 +132,7 @@ Qt::ItemFlags SpecialistColumn::groupFlags(int section, std::span<const Unit *> 
 		return {};
 }
 
-ColumnFactory SpecialistColumn::makeFactory(const QJsonObject &)
+Factory SpecialistColumn::makeFactory(const QJsonObject &)
 {
 	return [](DwarfFortress &df) { return std::make_unique<SpecialistColumn>(df); };
 }
