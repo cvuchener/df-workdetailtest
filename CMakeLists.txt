@@ -63,6 +63,7 @@ add_executable(workdetailtest
 	src/GridViewManager.cpp
 	src/GridViewModel.cpp
 	src/GridViewStyle.cpp
+	src/GridViewTabs.cpp
 	src/GroupBar.cpp
 	src/GroupBy.cpp
 	src/Groups/Factory.cpp

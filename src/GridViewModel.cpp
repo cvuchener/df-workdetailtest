@@ -78,7 +78,8 @@ GridViewModel::Parameters GridViewModel::Parameters::fromJson(const QJsonDocumen
 
 GridViewModel::GridViewModel(const Parameters &parameters, DwarfFortress &df, QObject *parent):
 	QAbstractItemModel(parent),
-	_df(df)
+	_df(df),
+	_group_index(0)
 {
 	_title = parameters.title;
 	_unit_filter.setBaseFilter(parameters.filter);

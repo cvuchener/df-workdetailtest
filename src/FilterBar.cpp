@@ -130,6 +130,9 @@ void FilterBar::setFilters(std::shared_ptr<UserUnitFilters> filters)
 {
 	Q_ASSERT(filters);
 
+	if (filters == _filters) // same filters, no change
+		return;
+
 	// clean up old filters
 	disconnect(_inserted_signal);
 	disconnect(_removed_signal);

@@ -37,8 +37,7 @@
 #include "PreferencesDialog.h"
 #include "FilterBar.h"
 #include "GroupBar.h"
-#include "GridViewManager.h"
-#include "GridView.h"
+#include "GridViewTabs.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -67,15 +66,6 @@ struct MainWindow::StatusBarUi
 	}
 };
 
-
-void foreachGridView (QTabWidget *tabs, std::invocable<GridView *> auto &&f) {
-	for (int i = 0; i < tabs->count(); ++i) {
-		auto view = qobject_cast<GridView *>(tabs->widget(i));
-		Q_ASSERT(view);
-		f(view);
-	}
-};
-
 MainWindow::MainWindow(QWidget *parent):
 	QMainWindow(parent),
 	_ui(std::make_unique<Ui::MainWindow>()),
@@ -85,14 +75,6 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui->setupUi(this);
 	_sb_ui->setupUi(_ui->statusbar);
 
-	auto tabs = new QTabWidget(this);
-	for (const auto &[name, params]: Application::gridviews().gridviews()) {
-		auto title = params.title;
-		auto view = new GridView(std::make_unique<GridViewModel>(params, *_df), tabs);
-		tabs->addTab(view, title);
-	}
-	setCentralWidget(tabs);
-
 	const auto &settings = Application::settings();
 
 	// Setup tool bars
@@ -100,74 +82,15 @@ MainWindow::MainWindow(QWidget *parent):
 
 	// Groups
 	auto group_bar = new GroupBar(this);
-	connect(group_bar, &GroupBar::groupChanged, this, [tabs](int index) {
-		if (Application::settings().per_view_group_by()) {
-			auto view = qobject_cast<GridView *>(tabs->currentWidget());
-			Q_ASSERT(view);
-			view->gridViewModel().setGroupBy(index);
-		}
-		else foreachGridView(tabs, [index](GridView *view) {
-			view->gridViewModel().setGroupBy(index);
-		});
-	});
-	connect(&settings.per_view_group_by, &SettingPropertyBase::valueChanged, this, [tabs, group_bar]() {
-		if (!Application::settings().per_view_group_by()) {
-			foreachGridView(tabs, [tabs, group_bar](GridView *view) {
-				if (view != tabs->currentWidget())
-					view->gridViewModel().setGroupBy(group_bar->groupIndex());
-			});
-		}
-	});
-	connect(tabs, &QTabWidget::currentChanged, this, [tabs, group_bar](int index) {
-		if (Application::settings().per_view_group_by()) {
-			auto view = qobject_cast<GridView *>(tabs->widget(index));
-			Q_ASSERT(view);
-			group_bar->setGroup(view->gridViewModel().groupIndex());
-		}
-	});
-	foreachGridView(tabs, [](GridView *view) {
-		view->gridViewModel().setGroupBy(0);
-	});
-	group_bar->setGroup(0);
 	addToolBar(group_bar);
 
 	// Filters
 	auto filter_bar = new FilterBar(this);
-	if (settings.per_view_filters()) {
-		foreachGridView(tabs, [tabs, filter_bar](GridView *view) {
-			if (view != tabs->currentWidget())
-				view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>());
-			else
-				view->gridViewModel().setUserFilters(filter_bar->filters());
-		});
-	}
-	else {
-		foreachGridView(tabs, [filter_bar](GridView *view) {
-			view->gridViewModel().setUserFilters(filter_bar->filters());
-		});
-	}
-	connect(&settings.per_view_filters, &SettingPropertyBase::valueChanged, this, [tabs, filter_bar]() {
-		if (Application::settings().per_view_filters()) {
-			foreachGridView(tabs, [tabs, filter_bar](GridView *view) {
-				if (view != tabs->currentWidget())
-					view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>(*filter_bar->filters()));
-			});
-		}
-		else {
-			foreachGridView(tabs, [tabs, filter_bar](GridView *view) {
-				if (view != tabs->currentWidget())
-					view->gridViewModel().setUserFilters(filter_bar->filters());
-			});
-		}
-	});
-	connect(tabs, &QTabWidget::currentChanged, this, [tabs, filter_bar](int index) {
-		if (Application::settings().per_view_filters()) {
-			auto view = qobject_cast<GridView *>(tabs->widget(index));
-			Q_ASSERT(view);
-			filter_bar->setFilters(view->gridViewModel().userFilters());
-		}
-	});
 	addToolBar(filter_bar);
+
+	// Grid views
+	auto tabs = new GridViewTabs(*group_bar, *filter_bar, *_df, this);
+	setCentralWidget(tabs);
 
 	// DFHack connection
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
@@ -185,18 +108,13 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
 
 	// Unit details shows current unit
-	foreachGridView(tabs, [this, unit_details](GridView *view) {
-		connect(view->selectionModel(), &QItemSelectionModel::currentChanged,
-			this, [this, view, unit_details](const QModelIndex &current, const QModelIndex &prev) {
-				auto source_index = view->sortModel().mapToSource(current);
-				auto unit = view->gridViewModel().unit(source_index);
-				auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
-				if (unit_index == _current_unit)
-					return;
-				_current_unit = unit_index;
-				unit_details->setUnit(unit);
-			});
-	});
+	connect(tabs, &GridViewTabs::currentUnitChanged,
+		this, [this, unit_details](const QModelIndex &current) {
+			if (current == _current_unit)
+				return;
+			_current_unit = current;
+			unit_details->setUnit(_df->units().get(current.row()));
+		});
 
 	// Connect to DFHack
 	if (settings.autoconnect())
