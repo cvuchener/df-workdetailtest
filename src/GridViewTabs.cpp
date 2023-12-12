@@ -108,7 +108,7 @@ GridViewTabs::GridViewTabs(GroupBar &group_bar, FilterBar &filter_bar, DwarfFort
 	add_button->setIcon(QIcon::fromTheme("list-add"));
 	add_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	add_button->setPopupMode(QToolButton::InstantPopup);
-	auto add_menu = new QMenu(add_button);
+	auto add_menu = new QMenu(this);
 	for (const auto &[name, params]: Application::gridviews().gridviews()) {
 		auto action = new QAction(add_menu);
 		action->setText(params.title);
@@ -123,13 +123,10 @@ GridViewTabs::GridViewTabs(GroupBar &group_bar, FilterBar &filter_bar, DwarfFort
 		auto layout = new QVBoxLayout;
 		widget->setLayout(layout);
 		layout->addStretch();
-		layout->addWidget(new QLabel(tr("Add a grid view:"), widget));
-		for (const auto &[name, params]: Application::gridviews().gridviews()) {
-			auto button = new QPushButton(widget);
-			button->setText(params.title);
-			connect(button, &QAbstractButton::clicked, this, [this, name]() { addView(name); });
-			layout->addWidget(button);
-		}
+		auto button = new QPushButton(widget);
+		button->setText(tr("Add a grid view"));
+		button->setMenu(add_menu);
+		layout->addWidget(button, 0, Qt::AlignCenter);
 		layout->addStretch();
 		addTab(widget, tr("Add grid views"));
 	}
