@@ -66,6 +66,10 @@ struct MainWindow::StatusBarUi
 	}
 };
 
+static constexpr QStringView QSETTINGS_MAIN_WINDOW = u"mainwindow";
+static constexpr QStringView QSETTINGS_MAIN_WINDOW_GEOMETRY = u"state";
+static constexpr QStringView QSETTINGS_MAIN_WINDOW_STATE = u"state";
+
 MainWindow::MainWindow(QWidget *parent):
 	QMainWindow(parent),
 	_ui(std::make_unique<Ui::MainWindow>()),
@@ -77,16 +81,26 @@ MainWindow::MainWindow(QWidget *parent):
 
 	const auto &settings = Application::settings();
 
+	// Setup dock
+	auto unit_details = new UnitDetailsDock(*_df, this);
+	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
+	_ui->view_menu->addAction(unit_details->toggleViewAction());
+
+	_ui->view_menu->addSeparator();
+	_ui->view_menu->addAction(_ui->toolbar->toggleViewAction());
+
 	// Setup tool bars
 	addToolBarBreak();
 
 	// Groups
 	auto group_bar = new GroupBar(this);
 	addToolBar(group_bar);
+	_ui->view_menu->addAction(group_bar->toggleViewAction());
 
 	// Filters
 	auto filter_bar = new FilterBar(this);
 	addToolBar(filter_bar);
+	_ui->view_menu->addAction(filter_bar->toggleViewAction());
 
 	// Grid views
 	auto tabs = new GridViewTabs(*group_bar, *filter_bar, *_df, this);
@@ -102,11 +116,6 @@ MainWindow::MainWindow(QWidget *parent):
 	connect(_df.get(), &DwarfFortress::stateChanged, this, &MainWindow::onStateChanged);
 	onStateChanged(_df->state());
 
-	// Setup dock
-	auto unit_details = new UnitDetailsDock(*_df, this);
-	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
-	_ui->view_menu->addAction(unit_details->toggleViewAction());
-
 	// Unit details shows current unit
 	connect(tabs, &GridViewTabs::currentUnitChanged,
 		this, [this, unit_details](const QModelIndex &current) {
@@ -119,10 +128,26 @@ MainWindow::MainWindow(QWidget *parent):
 	// Connect to DFHack
 	if (settings.autoconnect())
 		on_connect_action_triggered();
+
+	auto qsettings = StandardPaths::settings();
+	qsettings.beginGroup(QSETTINGS_MAIN_WINDOW);
+	restoreGeometry(qsettings.value(QSETTINGS_MAIN_WINDOW_GEOMETRY).toByteArray());
+	restoreState(qsettings.value(QSETTINGS_MAIN_WINDOW_STATE).toByteArray());
+	qsettings.endGroup();
 }
 
 MainWindow::~MainWindow()
 {
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+	auto qsettings = StandardPaths::settings();
+	qsettings.beginGroup(QSETTINGS_MAIN_WINDOW);
+	qsettings.setValue(QSETTINGS_MAIN_WINDOW_GEOMETRY, saveGeometry());
+	qsettings.setValue(QSETTINGS_MAIN_WINDOW_STATE, saveState());
+	qsettings.endGroup();
+	QMainWindow::closeEvent(event);
 }
 
 void MainWindow::onStateChanged(DwarfFortress::State state)

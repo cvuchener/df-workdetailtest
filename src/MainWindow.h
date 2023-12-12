@@ -38,6 +38,9 @@ public:
 	MainWindow(QWidget *parent = nullptr);
 	~MainWindow() override;
 
+protected:
+	void closeEvent(QCloseEvent *) override;
+
 private slots:
 	void onStateChanged(DwarfFortress::State state);
 

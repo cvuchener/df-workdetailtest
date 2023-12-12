@@ -30,20 +30,21 @@ struct GroupBar::Ui
 	QWidgetAction *group_by_action;
 	QComboBox *group_by_cb;
 
-	void setupUi(QToolBar *parent)
+	void setupUi(QToolBar *toolbar)
 	{
-		parent->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+		toolbar->setObjectName("GroupBar");
+		toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
-		auto title_action = new QWidgetAction(parent);
+		auto title_action = new QWidgetAction(toolbar);
 		title_action->setDefaultWidget(new QLabel(tr("Group by: ")));
-		parent->addAction(title_action);
+		toolbar->addAction(title_action);
 
-		group_by_action = new QWidgetAction(parent);
+		group_by_action = new QWidgetAction(toolbar);
 		group_by_cb = new QComboBox;
 		for (const auto &[name, factory]: Groups::All)
 			group_by_cb->addItem(QCoreApplication::translate("Groups", name));
 		group_by_action->setDefaultWidget(group_by_cb);
-		parent->addAction(group_by_action);
+		toolbar->addAction(group_by_action);
 	}
 };
 

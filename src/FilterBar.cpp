@@ -40,15 +40,16 @@ struct FilterBar::Ui
 	QWidgetAction *add_filter_action;
 	QMenu *add_filter_menu;
 
-	void setupUi(QToolBar *parent)
+	void setupUi(QToolBar *toolbar)
 	{
-		parent->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+		toolbar->setObjectName("FilterBar");
+		toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
-		auto title_action = new QWidgetAction(parent);
+		auto title_action = new QWidgetAction(toolbar);
 		title_action->setDefaultWidget(new QLabel(tr("Filters: ")));
-		parent->addAction(title_action);
+		toolbar->addAction(title_action);
 
-		filter_type_action = new QWidgetAction(parent);
+		filter_type_action = new QWidgetAction(toolbar);
 		filter_type_cb = new QComboBox;
 		filter_type_cb->addItem(tr("Simple"),
 				QVariant::fromValue(UserUnitFilters::TemporaryType::Simple));
@@ -57,15 +58,15 @@ struct FilterBar::Ui
 		filter_type_cb->addItem(tr("Script"),
 				QVariant::fromValue(UserUnitFilters::TemporaryType::Script));
 		filter_type_action->setDefaultWidget(filter_type_cb);
-		parent->addAction(filter_type_action);
+		toolbar->addAction(filter_type_action);
 
-		filter_text_action = new QWidgetAction(parent);
+		filter_text_action = new QWidgetAction(toolbar);
 		filter_text = new QLineEdit;
 		filter_text->setClearButtonEnabled(true);
 		filter_text_action->setDefaultWidget(filter_text);
-		parent->addAction(filter_text_action);
+		toolbar->addAction(filter_text_action);
 
-		add_filter_action = new QWidgetAction(parent);
+		add_filter_action = new QWidgetAction(toolbar);
 		auto add_filter_button = new QToolButton;
 		add_filter_menu = new QMenu(add_filter_button);
 		add_filter_button->setMenu(add_filter_menu);
@@ -75,7 +76,7 @@ struct FilterBar::Ui
 		add_filter_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
 		add_filter_button->setPopupMode(QToolButton::InstantPopup);
 		add_filter_action->setDefaultWidget(add_filter_button);
-		parent->addAction(add_filter_action);
+		toolbar->addAction(add_filter_action);
 	}
 };
 
