@@ -38,6 +38,7 @@
 #include "FilterBar.h"
 #include "GroupBar.h"
 #include "GridViewTabs.h"
+#include "LogDock.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -85,6 +86,11 @@ MainWindow::MainWindow(QWidget *parent):
 	auto unit_details = new UnitDetailsDock(*_df, this);
 	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
+
+	auto log = new LogDock(this);
+	addDockWidget(Qt::BottomDockWidgetArea, log);
+	_ui->view_menu->addAction(log->toggleViewAction());
+	log->close();
 
 	_ui->view_menu->addSeparator();
 	_ui->view_menu->addAction(_ui->toolbar->toggleViewAction());

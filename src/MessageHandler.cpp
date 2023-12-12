@@ -22,6 +22,8 @@
 
 #include <QFileInfo>
 #include <QString>
+#include <QVariant>
+#include <QBrush>
 
 MessageHandler::MessageHandler()
 {
@@ -43,7 +45,7 @@ void MessageHandler::init()
 
 void MessageHandler::setLogFile(const QString &filename)
 {
-	output = std::ofstream(filename.toLocal8Bit());
+	_output = std::ofstream(filename.toLocal8Bit());
 }
 
 MessageHandler &MessageHandler::instance()
@@ -54,11 +56,114 @@ MessageHandler &MessageHandler::instance()
 
 void MessageHandler::handler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
-	auto &self = instance();
-	auto formatted = qFormatLogMessage(type, {QFileInfo(context.file).fileName().toLocal8Bit(), context.line, context.function, context.category}, msg).toLocal8Bit();
+	instance().handleMessage(type, context, msg);
+}
+
+struct MessageHandler::Message
+{
+	QDateTime time;
+	QtMsgType type;
+	QString category;
+	QString message;
+	QString location;
+	QString function;
+};
+
+void MessageHandler::handleMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+	auto short_filename = QFileInfo(context.file).fileName();
+	auto formatted = qFormatLogMessage(type, {short_filename.toLocal8Bit(), context.line, context.function, context.category}, msg).toLocal8Bit();
 	formatted += "\n";
-	if (self.output)
-		self.output.write(formatted.data(), formatted.size());
+	if (_output)
+		_output.write(formatted.data(), formatted.size());
 	// TODO: Windows use OutputDebugStringA
 	std::cerr.write(formatted.data(), formatted.size());
+	if (type != QtFatalMsg) {
+		beginInsertRows({}, _messages.size(), _messages.size());
+		_messages.emplace_back(
+			QDateTime::currentDateTime(),
+			type,
+			context.category,
+			msg,
+			QString("%1:%2").arg(short_filename).arg(context.line),
+			context.function);
+		endInsertRows();
+	}
+}
+
+int MessageHandler::rowCount(const QModelIndex &) const
+{
+	return _messages.size();
+}
+
+int MessageHandler::columnCount(const QModelIndex &) const
+{
+	return static_cast<int>(Columns::Count);
+}
+
+QVariant MessageHandler::data(const QModelIndex &index, int role) const
+{
+	auto column = static_cast<Columns>(index.column());
+	const auto &msg = _messages.at(index.row());
+	switch (role) {
+	case Qt::DisplayRole:
+		switch (column) {
+		case Columns::Time:
+			return msg.time;
+		case Columns::Type:
+			switch (msg.type) {
+			case QtFatalMsg:
+				return {};
+			case QtCriticalMsg:
+				return tr("Error");
+			case QtWarningMsg:
+				return tr("Warning");
+			case QtInfoMsg:
+				return tr("Info");
+			case QtDebugMsg:
+				return tr("Debug");
+			}
+		case Columns::Category:
+			return msg.category;
+		case Columns::Message:
+			return msg.message;
+		case Columns::Location:
+			return msg.location;
+		case Columns::Function:
+			return msg.function;
+		default:
+			return {};
+		}
+	case Qt::BackgroundRole:
+		switch (msg.type) {
+		case QtFatalMsg:
+			return {};
+		case QtCriticalMsg:
+			return QBrush(QColor(255, 0, 0, 64));
+		case QtWarningMsg:
+			return QBrush(QColor(255, 128, 0, 64));
+		case QtInfoMsg:
+		case QtDebugMsg:
+			return {};
+		}
+	case Qt::UserRole:
+		return msg.type;
+	default:
+		return {};
+	}
+}
+
+QVariant MessageHandler::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	if (role != Qt::DisplayRole || orientation != Qt::Horizontal)
+		return {};
+	switch (static_cast<Columns>(section)) {
+	case Columns::Time: return tr("Time");
+	case Columns::Type: return tr("Type");
+	case Columns::Category: return tr("Category");
+	case Columns::Message: return tr("Message");
+	case Columns::Location: return tr("Location");
+	case Columns::Function: return tr("Function");
+	default: return {};
+	}
 }

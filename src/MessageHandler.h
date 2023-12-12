@@ -19,10 +19,11 @@
 #ifndef MESSAGE_HANDLER_H
 #define MESSAGE_HANDLER_H
 
+#include <QAbstractTableModel>
 #include <QtLogging>
 #include <fstream>
 
-class MessageHandler final
+class MessageHandler: public QAbstractTableModel
 {
 public:
 	MessageHandler();
@@ -33,10 +34,28 @@ public:
 	static void init();
 	static MessageHandler &instance();
 
+	// Model
+	enum class Columns {
+		Time,
+		Type,
+		Category,
+		Message,
+		Location,
+		Function,
+		Count
+	};
+	int rowCount(const QModelIndex &) const override;
+	int columnCount(const QModelIndex &) const override;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+
 private:
 	static void handler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+	void handleMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 
-	std::ofstream output;
+	struct Message;
+	std::vector<Message> _messages;
+	std::ofstream _output;
 };
 
 #endif

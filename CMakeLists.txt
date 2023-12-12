@@ -40,6 +40,7 @@ protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS
 qt_wrap_ui(UI_SOURCES
 	ui/AboutDialog.ui
 	ui/AdvancedConnectionDialog.ui
+	ui/LogDock.ui
 	ui/MainWindow.ui
 	ui/PreferencesDialog.ui
 	ui/UnitDetailsDock.ui
@@ -71,6 +72,7 @@ add_executable(workdetailtest
 	src/Groups/GroupByMigration.cpp
 	src/Groups/GroupByWorkDetailAssigned.cpp
 	src/IconProvider.cpp
+	src/LogDock.cpp
 	src/MainWindow.cpp
 	src/MessageHandler.cpp
 	src/ObjectList.cpp
