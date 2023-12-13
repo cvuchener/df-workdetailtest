@@ -46,6 +46,20 @@
      <item row="2" column="1">
       <widget class="QComboBox" name="icon"/>
      </item>
+     <item row="3" column="1">
+      <widget class="QTreeView" name="labors">
+       <property name="headerHidden">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="labors_label">
+       <property name="text">
+        <string>Labors:</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

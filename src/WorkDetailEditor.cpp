@@ -21,10 +21,12 @@
 
 #include "Application.h"
 #include "IconProvider.h"
+#include "LaborModel.h"
 
 WorkDetailEditor::WorkDetailEditor(QWidget *parent, Qt::WindowFlags f):
 	QDialog(parent, f),
-	_ui(std::make_unique<Ui::WorkDetailEditor>())
+	_ui(std::make_unique<Ui::WorkDetailEditor>()),
+	_labors(std::make_unique<LaborModel>())
 {
 	_ui->setupUi(this);
 	_ui->mode->addItem(tr("Everybody does this"), df::work_detail_mode::EverybodyDoesThis);
@@ -36,6 +38,8 @@ WorkDetailEditor::WorkDetailEditor(QWidget *parent, Qt::WindowFlags f):
 		auto name = QString::fromLocal8Bit(to_string(icon));
 		_ui->icon->addItem(Application::icons().workdetail(icon), name, icon);
 	}
+	_labors->setGroupByCategory(true);
+	_ui->labors->setModel(_labors.get());
 }
 
 WorkDetailEditor::~WorkDetailEditor()

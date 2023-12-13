@@ -25,6 +25,8 @@ namespace Ui { class WorkDetailEditor; }
 
 #include "df_enums.h"
 
+class LaborModel;
+
 class WorkDetailEditor: public QDialog
 {
 	Q_OBJECT
@@ -38,9 +40,12 @@ public:
 	void setMode(df::work_detail_mode_t mode);
 	df::work_detail_icon_t icon() const;
 	void setIcon(df::work_detail_icon_t icon);
+	LaborModel &labors() { return *_labors; }
+	const LaborModel &labors() const { return *_labors; }
 
 private:
 	std::unique_ptr<Ui::WorkDetailEditor> _ui;
+	std::unique_ptr<LaborModel> _labors;
 };
 
 #endif

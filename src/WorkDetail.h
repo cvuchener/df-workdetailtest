@@ -67,6 +67,7 @@ public:
 		QString name;
 		std::optional<df::work_detail_mode_t> mode;
 		std::optional<df::work_detail_icon_t> icon;
+		std::vector<std::pair<df::unit_labor_t, bool>> labors;
 	};
 	QCoro::Task<> assign(int unit_id, bool assign);
 	QCoro::Task<> assign(std::vector<int> units, bool assign);

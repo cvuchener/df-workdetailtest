@@ -192,6 +192,11 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	}
 	if (changes.icon)
 		args.set_new_icon(static_cast<int>(*changes.icon));
+	for (const auto &[labor, enable]: changes.labors) {
+		auto labor_change = args.mutable_labor_changes()->Add();
+		labor_change->set_labor(labor);
+		labor_change->set_enable(enable);
+	}
 	// Call
 	if (!_dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
@@ -230,6 +235,16 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 		}
 		else {
 			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
+		}
+	}
+	for (std::size_t i = 0; i < changes.labors.size(); ++i) {
+		const auto &labor_result = r->labors(i);
+		const auto &[labor, enable] = changes.labors[i];
+		if (labor_result.success()) {
+			_wd->allowed_labors[labor] = enable;
+		}
+		else {
+			qCWarning(DFHackLog) << "editWorkDetail failed" << labor_result.error();
 		}
 	}
 	updated();

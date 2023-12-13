@@ -26,6 +26,7 @@
 #include "Application.h"
 #include "IconProvider.h"
 #include "WorkDetailEditor.h"
+#include "LaborModel.h"
 
 #include <QIcon>
 #include <QBrush>
@@ -302,11 +303,21 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 		editor.setName(wd->displayName());
 		editor.setMode(static_cast<work_detail_mode>((*wd)->flags.bits.mode));
 		editor.setIcon((*wd)->icon);
+		editor.labors().setLabors((*wd)->allowed_labors);
 		if (QDialog::Accepted == editor.exec()) {
 			wd->edit({
 				.name = editor.name(),
 				.mode = editor.mode(),
 				.icon = editor.icon(),
+				.labors = [](auto labors) {
+					std::vector<std::pair<df::unit_labor_t, bool>> l;
+					l.reserve(df::unit_labor::Count);
+					for (int i = 0; i < df::unit_labor::Count; ++i) {
+						l.emplace_back(static_cast<df::unit_labor_t>(i),
+								labors[i]);
+					}
+					return l;
+				}(editor.labors().labors()),
 			});
 		}
 	});
