@@ -20,6 +20,7 @@
 #define GRID_VIEW_TABS_H
 
 #include <QTabWidget>
+#include <QPointer>
 
 class GroupBar;
 class FilterBar;
@@ -29,8 +30,12 @@ class GridViewTabs: public QTabWidget
 {
 	Q_OBJECT
 public:
-	GridViewTabs(GroupBar &group_bar, FilterBar &filter_bar, DwarfFortress &df, QWidget *parent = nullptr);
+	GridViewTabs(QWidget *parent = nullptr);
 	~GridViewTabs() override;
+
+	void setGroupBar(GroupBar *group_bar);
+	void setFilterBar(FilterBar *filter_bar);
+	void init(DwarfFortress *df);
 
 	void addView(const QString &name);
 
@@ -41,9 +46,9 @@ protected:
 	void tabRemoved(int index) override;
 
 private:
-	GroupBar &_group_bar;
-	FilterBar &_filter_bar;
-	DwarfFortress &_df;
+	QPointer<GroupBar> _group_bar;
+	QPointer<FilterBar> _filter_bar;
+	QPointer<DwarfFortress> _df;
 };
 
 #endif

@@ -94,23 +94,13 @@ MainWindow::MainWindow(QWidget *parent):
 
 	_ui->view_menu->addSeparator();
 	_ui->view_menu->addAction(_ui->toolbar->toggleViewAction());
-
-	// Setup tool bars
-	addToolBarBreak();
-
-	// Groups
-	auto group_bar = new GroupBar(this);
-	addToolBar(group_bar);
-	_ui->view_menu->addAction(group_bar->toggleViewAction());
-
-	// Filters
-	auto filter_bar = new FilterBar(this);
-	addToolBar(filter_bar);
-	_ui->view_menu->addAction(filter_bar->toggleViewAction());
+	_ui->view_menu->addAction(_ui->groupbar->toggleViewAction());
+	_ui->view_menu->addAction(_ui->filterbar->toggleViewAction());
 
 	// Grid views
-	auto tabs = new GridViewTabs(*group_bar, *filter_bar, *_df, this);
-	setCentralWidget(tabs);
+	_ui->tabs->setGroupBar(_ui->groupbar);
+	_ui->tabs->setFilterBar(_ui->filterbar);
+	_ui->tabs->init(_df.get());
 
 	// DFHack connection
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
@@ -123,7 +113,7 @@ MainWindow::MainWindow(QWidget *parent):
 	onStateChanged(_df->state());
 
 	// Unit details shows current unit
-	connect(tabs, &GridViewTabs::currentUnitChanged,
+	connect(_ui->tabs, &GridViewTabs::currentUnitChanged,
 		this, [this, unit_details](const QModelIndex &current) {
 			if (current == _current_unit)
 				return;
@@ -144,6 +134,8 @@ MainWindow::MainWindow(QWidget *parent):
 
 MainWindow::~MainWindow()
 {
+	_ui->tabs->disconnect(this);
+	_df->disconnect(this);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

@@ -48,53 +48,45 @@ static constexpr QStringView QSETTINGS_OPENED_GRIDVIEWS = u"opened_gridviews";
 static constexpr QStringView QSETTINGS_OPENED_GRIDVIEWS_NAME = u"name";
 static constexpr const char GRIDVIEW_NAME_PROPERTY[] = "gridview_name";
 
-GridViewTabs::GridViewTabs(GroupBar &group_bar, FilterBar &filter_bar, DwarfFortress &df, QWidget *parent):
-	QTabWidget(parent),
-	_group_bar(group_bar),
-	_filter_bar(filter_bar),
-	_df(df)
+GridViewTabs::GridViewTabs(QWidget *parent):
+	QTabWidget(parent)
 {
 	setMovable(true);
 
 	const auto &settings = Application::settings();
-	connect(&group_bar, &GroupBar::groupChanged, this, [this](int index) {
-		if (Application::settings().per_view_group_by()) {
-			if (auto view = qobject_cast<GridView *>(currentWidget()))
-				view->gridViewModel().setGroupBy(index);
-		}
-		else foreachGridView(this, [index](GridView *view) {
-			view->gridViewModel().setGroupBy(index);
-		});
-	});
 	connect(&settings.per_view_group_by, &SettingPropertyBase::valueChanged, this, [this]() {
+		if (!_group_bar)
+			return;
 		if (!Application::settings().per_view_group_by()) {
 			foreachGridView(this, [this](GridView *view) {
 				if (view != currentWidget())
-					view->gridViewModel().setGroupBy(_group_bar.groupIndex());
+					view->gridViewModel().setGroupBy(_group_bar->groupIndex());
 			});
 		}
 	});
 	connect(&settings.per_view_filters, &SettingPropertyBase::valueChanged, this, [this]() {
+		if (!_filter_bar)
+			return;
 		if (Application::settings().per_view_filters()) {
 			foreachGridView(this, [this](GridView *view) {
 				if (view != currentWidget())
-					view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>(*_filter_bar.filters()));
+					view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>(*_filter_bar->filters()));
 			});
 		}
 		else {
 			foreachGridView(this, [this](GridView *view) {
 				if (view != currentWidget())
-					view->gridViewModel().setUserFilters(_filter_bar.filters());
+					view->gridViewModel().setUserFilters(_filter_bar->filters());
 			});
 		}
 	});
 	connect(this, &QTabWidget::currentChanged, this, [this](int index) {
 		if (auto view = qobject_cast<GridView *>(widget(index))) {
 			const auto &settings = Application::settings();
-			if (settings.per_view_group_by())
-				_group_bar.setGroup(view->gridViewModel().groupIndex());
-			if (settings.per_view_filters())
-				_filter_bar.setFilters(view->gridViewModel().userFilters());
+			if (settings.per_view_group_by() && _group_bar)
+				_group_bar->setGroup(view->gridViewModel().groupIndex());
+			if (settings.per_view_filters() && _filter_bar)
+				_filter_bar->setFilters(view->gridViewModel().userFilters());
 		}
 	});
 	connect(this, &QTabWidget::tabCloseRequested, this, [this](int index) {
@@ -130,18 +122,6 @@ GridViewTabs::GridViewTabs(GroupBar &group_bar, FilterBar &filter_bar, DwarfFort
 		layout->addStretch();
 		addTab(widget, tr("Add grid views"));
 	}
-
-	// Add previously saved grid views
-	auto qsettings = StandardPaths::settings();
-	int gridview_count = qsettings.beginReadArray(QSETTINGS_OPENED_GRIDVIEWS);
-	for (int i = 0; i < gridview_count; ++i) {
-		qsettings.setArrayIndex(i);
-		addView(qsettings.value(QSETTINGS_OPENED_GRIDVIEWS_NAME).toString());
-	}
-	qsettings.endArray();
-
-	setTabsClosable(gridview_count > 0);
-	setTabVisible(0, gridview_count == 0);
 }
 
 GridViewTabs::~GridViewTabs()
@@ -157,24 +137,65 @@ GridViewTabs::~GridViewTabs()
 	qsettings.endArray();
 }
 
+void GridViewTabs::setGroupBar(GroupBar *group_bar)
+{
+	if (_group_bar)
+		_group_bar->disconnect(this);
+	_group_bar = group_bar;
+	connect(_group_bar, &GroupBar::groupChanged, this, [this](int index) {
+		if (Application::settings().per_view_group_by()) {
+			if (auto view = qobject_cast<GridView *>(currentWidget()))
+				view->gridViewModel().setGroupBy(index);
+		}
+		else foreachGridView(this, [index](GridView *view) {
+			view->gridViewModel().setGroupBy(index);
+		});
+	});
+}
+
+void GridViewTabs::setFilterBar(FilterBar *filter_bar)
+{
+	_filter_bar = filter_bar;
+}
+
+void GridViewTabs::init(DwarfFortress *df)
+{
+	_df = df;
+
+	// Add previously saved grid views
+	auto qsettings = StandardPaths::settings();
+	int gridview_count = qsettings.beginReadArray(QSETTINGS_OPENED_GRIDVIEWS);
+	for (int i = 0; i < gridview_count; ++i) {
+		qsettings.setArrayIndex(i);
+		addView(qsettings.value(QSETTINGS_OPENED_GRIDVIEWS_NAME).toString());
+	}
+	qsettings.endArray();
+
+	setTabsClosable(gridview_count > 0);
+	setTabVisible(0, gridview_count == 0);
+}
+
 void GridViewTabs::addView(const QString &name)
 {
+	Q_ASSERT(_df);
 	try {
 		const auto &settings = Application::settings();
 		const auto &params = Application::gridviews().find(name);
-		auto view = new GridView(std::make_unique<GridViewModel>(params, _df), this);
+		auto view = new GridView(std::make_unique<GridViewModel>(params, *_df), this);
 		view->setProperty(GRIDVIEW_NAME_PROPERTY, name);
 		if (!settings.per_view_group_by())
-			view->gridViewModel().setGroupBy(_group_bar.groupIndex());
-		if (settings.per_view_filters())
+			view->gridViewModel().setGroupBy(_group_bar ? _group_bar->groupIndex() : 0);
+		if (settings.per_view_filters() || !_filter_bar)
 			view->gridViewModel().setUserFilters(std::make_shared<UserUnitFilters>());
 		else
-			view->gridViewModel().setUserFilters(_filter_bar.filters());
+			view->gridViewModel().setUserFilters(_filter_bar->filters());
 		connect(view->selectionModel(), &QItemSelectionModel::currentChanged,
 			this, [this, view](const QModelIndex &current, const QModelIndex &prev) {
+				if (!_df)
+					return;
 				auto source_index = view->sortModel().mapToSource(current);
 				auto unit = view->gridViewModel().unit(source_index);
-				auto unit_index = unit ? _df.units().find(*unit) : QModelIndex{};
+				auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
 				currentUnitChanged(unit_index);
 			});
 		addTab(view, params.title);
