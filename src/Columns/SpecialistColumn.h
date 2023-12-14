@@ -22,15 +22,13 @@
 #include "AbstractColumn.h"
 #include "Columns/Factory.h"
 
-class DwarfFortress;
-
 namespace Columns {
 
 class SpecialistColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	SpecialistColumn(DwarfFortress &df, QObject *parent = nullptr);
+	SpecialistColumn(QObject *parent = nullptr);
 	~SpecialistColumn() override;
 
 	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
@@ -44,7 +42,6 @@ public:
 	static Factory makeFactory(const QJsonObject &);
 
 private:
-	DwarfFortress &_df;
 };
 
 }

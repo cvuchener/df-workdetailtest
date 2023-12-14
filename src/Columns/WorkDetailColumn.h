@@ -23,7 +23,7 @@
 #include "Columns/Factory.h"
 #include "Columns/SortOptions.h"
 
-class DwarfFortress;
+class DwarfFortressData;
 
 namespace Columns {
 
@@ -31,7 +31,7 @@ class WorkDetailColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	WorkDetailColumn(DwarfFortress &df, QObject *parent = nullptr);
+	WorkDetailColumn(DwarfFortressData &df, QObject *parent = nullptr);
 	~WorkDetailColumn() override;
 
 	int count() const override;
@@ -49,7 +49,7 @@ public:
 	static Factory makeFactory(const QJsonObject &);
 
 private:
-	DwarfFortress &_df;
+	DwarfFortressData &_df;
 	enum class SortBy {
 		Skill,
 		Assigned,

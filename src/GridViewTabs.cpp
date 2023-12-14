@@ -26,6 +26,7 @@
 
 #include "Application.h"
 #include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "FilterBar.h"
 #include "GridView.h"
 #include "GridViewManager.h"
@@ -137,10 +138,8 @@ GridViewTabs::~GridViewTabs()
 	qsettings.endArray();
 }
 
-void GridViewTabs::setGroupBar(GroupBar *group_bar)
+void GridViewTabs::init(GroupBar *group_bar, FilterBar *filter_bar, DwarfFortress *df)
 {
-	if (_group_bar)
-		_group_bar->disconnect(this);
 	_group_bar = group_bar;
 	connect(_group_bar, &GroupBar::groupChanged, this, [this](int index) {
 		if (Application::settings().per_view_group_by()) {
@@ -151,15 +150,9 @@ void GridViewTabs::setGroupBar(GroupBar *group_bar)
 			view->gridViewModel().setGroupBy(index);
 		});
 	});
-}
 
-void GridViewTabs::setFilterBar(FilterBar *filter_bar)
-{
 	_filter_bar = filter_bar;
-}
 
-void GridViewTabs::init(DwarfFortress *df)
-{
 	_df = df;
 
 	// Add previously saved grid views
@@ -181,7 +174,7 @@ void GridViewTabs::addView(const QString &name)
 	try {
 		const auto &settings = Application::settings();
 		const auto &params = Application::gridviews().find(name);
-		auto view = new GridView(std::make_unique<GridViewModel>(params, *_df), this);
+		auto view = new GridView(std::make_unique<GridViewModel>(params, _df->data(), _df->dfhack()), this);
 		view->setProperty(GRIDVIEW_NAME_PROPERTY, name);
 		if (!settings.per_view_group_by())
 			view->gridViewModel().setGroupBy(_group_bar ? _group_bar->groupIndex() : 0);
@@ -190,12 +183,10 @@ void GridViewTabs::addView(const QString &name)
 		else
 			view->gridViewModel().setUserFilters(_filter_bar->filters());
 		connect(view->selectionModel(), &QItemSelectionModel::currentChanged,
-			this, [this, view](const QModelIndex &current, const QModelIndex &prev) {
-				if (!_df)
-					return;
+			this, [this, view, df = _df->data()](const QModelIndex &current, const QModelIndex &prev) {
 				auto source_index = view->sortModel().mapToSource(current);
 				auto unit = view->gridViewModel().unit(source_index);
-				auto unit_index = unit ? _df->units().find(*unit) : QModelIndex{};
+				auto unit_index = unit ? df->units->find(*unit) : QModelIndex{};
 				currentUnitChanged(unit_index);
 			});
 		addTab(view, params.title);

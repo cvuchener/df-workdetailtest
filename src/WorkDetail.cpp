@@ -19,10 +19,11 @@
 #include "WorkDetail.h"
 
 #include "df/utils.h"
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "ObjectList.h"
 #include <QCoroFuture>
 
+#include "workdetailtest.pb.h"
 #include <dfhack-client-qt/Function.h>
 
 static const DFHack::Function<
@@ -34,10 +35,11 @@ static const DFHack::Function<
 	dfproto::workdetailtest::WorkDetailResult
 > EditWorkDetail = {"workdetailtest", "EditWorkDetail"};
 
-WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortress &df, QObject *parent):
+WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
 	QObject(parent),
 	_wd(std::move(work_detail)),
-	_df(df)
+	_df(df),
+	_dfhack(&dfhack)
 {
 	refresh();
 }
@@ -100,12 +102,15 @@ QCoro::Task<> WorkDetail::toggle(std::vector<int> units)
 	return changeAssignments(std::move(units), [](bool assign) { return !assign; });
 }
 
+Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
+
 template<typename F>
 QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign)
 {
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
-	auto index = _df.workDetails().find(*this);
+	// Prepare arguments
+	auto index = _df.work_details->find(*this);
 	if (!index.isValid()) {
 		qWarning() << "invalid work detail index";
 		co_return;
@@ -122,7 +127,13 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 		assignment->set_enable(assign);
 		setAssignment(units[i], assign, WorkDetail::Pending);
 	}
-	auto r = co_await EditWorkDetail(_df.dfhack(), args).first;
+	// Call
+	if (!_dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
+	}
+	auto r = co_await EditWorkDetail(*_dfhack, args).first;
+	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
 		for (std::size_t i = 0; i < units.size(); ++i)
@@ -136,6 +147,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 			setAssignment(units[i], old_assignment[i], WorkDetail::Failed);
 		co_return;
 	}
+	// Apply changes
 	for (std::size_t i = 0; i < units.size(); ++i) {
 		const auto &assign_result = r->assignments(i);
 		if (!assign_result.success()) {
@@ -151,8 +163,9 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 {
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
+	// Prepare arguments
 	using namespace dfproto::workdetailtest;
-	auto index = _df.workDetails().find(*this);
+	auto index = _df.work_details->find(*this);
 	if (!index.isValid()) {
 		qWarning() << "invalid work detail index";
 		co_return;
@@ -179,7 +192,13 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	}
 	if (changes.icon)
 		args.set_new_icon(static_cast<int>(*changes.icon));
-	auto r = co_await EditWorkDetail(_df.dfhack(), args).first;
+	// Call
+	if (!_dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
+	}
+	auto r = co_await EditWorkDetail(*_dfhack, args).first;
+	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
 		co_return;
@@ -189,6 +208,7 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 		qCWarning(DFHackLog) << "editWorkDetail failed" << wd_result.error();
 		co_return;
 	}
+	// Apply changes
 	aboutToBeUpdated();
 	if (!changes.name.isEmpty()) {
 		_wd->name = df::toCP437(changes.name);

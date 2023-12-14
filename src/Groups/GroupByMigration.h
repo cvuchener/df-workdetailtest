@@ -21,14 +21,14 @@
 
 #include "GroupBy.h"
 
-class DwarfFortress;
+class DwarfFortressData;
 
 namespace Groups {
 
 class GroupByMigration: public GroupBy
 {
 public:
-	GroupByMigration(const DwarfFortress &df);
+	GroupByMigration(const DwarfFortressData &df);
 	~GroupByMigration() override;
 
 	quint64 unitGroup(const Unit &unit) const override;
@@ -36,7 +36,7 @@ public:
 	QVariant sortValue(quint64 group_id) const override;
 
 private:
-	const DwarfFortress &_df;
+	const DwarfFortressData &_df;
 };
 
 }

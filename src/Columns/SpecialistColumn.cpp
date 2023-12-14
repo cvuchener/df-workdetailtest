@@ -19,16 +19,14 @@
 #include "SpecialistColumn.h"
 
 #include "Unit.h"
-#include "DwarfFortress.h"
 #include "DataRole.h"
 
 #include <QVariant>
 
 using namespace Columns;
 
-SpecialistColumn::SpecialistColumn(DwarfFortress &df, QObject *parent):
-	AbstractColumn(parent),
-	_df(df)
+SpecialistColumn::SpecialistColumn(QObject *parent):
+	AbstractColumn(parent)
 {
 }
 
@@ -134,5 +132,7 @@ Qt::ItemFlags SpecialistColumn::groupFlags(int section, std::span<const Unit *> 
 
 Factory SpecialistColumn::makeFactory(const QJsonObject &)
 {
-	return [](DwarfFortress &df) { return std::make_unique<SpecialistColumn>(df); };
+	return [](DwarfFortressData &df, QPointer<DFHack::Client>) {
+		return std::make_unique<SpecialistColumn>();
+	};
 }

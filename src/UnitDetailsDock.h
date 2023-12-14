@@ -29,7 +29,7 @@ class UnitDetailsDock: public QDockWidget
 {
 	Q_OBJECT
 public:
-	UnitDetailsDock(const DwarfFortress &df, QWidget *parent = nullptr);
+	UnitDetailsDock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent = nullptr);
 	~UnitDetailsDock() override;
 
 public slots:
@@ -37,7 +37,7 @@ public slots:
 
 private:
 	std::unique_ptr<Ui::UnitDetailsDock> _ui;
-	const DwarfFortress &_df;
+	std::shared_ptr<const DwarfFortressData> _df;
 	UnitInventoryModel _inventory_model;
 	QMetaObject::Connection _current_unit_destroyed;
 };

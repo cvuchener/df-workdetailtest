@@ -18,7 +18,7 @@
 
 #include "GroupByMigration.h"
 
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "Unit.h"
 
 #include <QCoreApplication>
@@ -26,7 +26,7 @@
 
 using namespace Groups;
 
-GroupByMigration::GroupByMigration(const DwarfFortress &df):
+GroupByMigration::GroupByMigration(const DwarfFortressData &df):
 	_df(df)
 {
 }
@@ -38,7 +38,7 @@ GroupByMigration::~GroupByMigration()
 quint64 GroupByMigration::unitGroup(const Unit &unit) const
 {
 	auto birth = df::time(unit->birth_year) + unit->birth_tick;
-	auto arrival = _df.currentTime() - unit->time_on_site;
+	auto arrival = _df.current_time - unit->time_on_site;
 	return duration_cast<df::season>(arrival).count() * 2 + (birth == arrival ? 1 : 0);
 
 }

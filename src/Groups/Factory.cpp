@@ -22,13 +22,13 @@
 #include "GroupByMigration.h"
 #include "GroupByWorkDetailAssigned.h"
 
-static std::unique_ptr<GroupBy> null_factory(const DwarfFortress &)
+static std::unique_ptr<GroupBy> null_factory(const DwarfFortressData &)
 {
 	return nullptr;
 }
 
 template <std::derived_from<GroupBy> T>
-static std::unique_ptr<GroupBy> factory(const DwarfFortress &df)
+static std::unique_ptr<GroupBy> factory(const DwarfFortressData &df)
 {
 	return std::make_unique<T>(df);
 }

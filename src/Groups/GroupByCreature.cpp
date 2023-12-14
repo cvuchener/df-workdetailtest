@@ -19,12 +19,12 @@
 #include "GroupByCreature.h"
 
 #include "df/utils.h"
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "Unit.h"
 
 using namespace Groups;
 
-GroupByCreature::GroupByCreature(const DwarfFortress &df):
+GroupByCreature::GroupByCreature(const DwarfFortressData &df):
 	_df(df)
 {
 }
@@ -40,6 +40,6 @@ quint64 GroupByCreature::unitGroup(const Unit &unit) const
 
 QString GroupByCreature::groupName(quint64 race_id) const
 {
-	Q_ASSERT(race_id < _df.raws().creatures.all.size());
-	return df::fromCP437(_df.raws().creatures.all[race_id]->name[0]);
+	Q_ASSERT(race_id < _df.raws->creatures.all.size());
+	return df::fromCP437(_df.raws->creatures.all[race_id]->name[0]);
 }

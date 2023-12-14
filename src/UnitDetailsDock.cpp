@@ -20,16 +20,16 @@
 
 #include "ui_UnitDetailsDock.h"
 
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "Unit.h"
 
 static const char *NamePlaceholder = QT_TRANSLATE_NOOP(UnitDetailsDock, "Select a unit");
 
-UnitDetailsDock::UnitDetailsDock(const DwarfFortress &df, QWidget *parent):
+UnitDetailsDock::UnitDetailsDock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent):
 	QDockWidget(tr("Unit details"), parent),
 	_ui(std::make_unique<Ui::UnitDetailsDock>()),
-	_df(df),
-	_inventory_model(df)
+	_df(std::move(df)),
+	_inventory_model(*_df)
 {
 	_ui->setupUi(this);
 	_ui->unit_name->setText(tr(NamePlaceholder));

@@ -23,13 +23,15 @@
 #include "df/types.h"
 #include <QCoroTask>
 
-class DwarfFortress;
+class DwarfFortressData;
+
+namespace DFHack { class Client; }
 
 class Unit: public QObject, public std::enable_shared_from_this<Unit>
 {
 	Q_OBJECT
 public:
-	Unit(std::unique_ptr<df::unit> &&unit, DwarfFortress &df, QObject *parent = nullptr);
+	Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent = nullptr);
 	~Unit() override;
 
 	using df_type = df::unit;
@@ -43,8 +45,8 @@ public:
 
 	const QString &displayName() const { return _display_name; }
 
-	const df::creature_raw &creature_raw() const;
-	const df::caste_raw &caste_raw() const;
+	const df::creature_raw *creature_raw() const;
+	const df::caste_raw *caste_raw() const;
 
 	df::time age() const;
 
@@ -74,7 +76,8 @@ private:
 	void refresh();
 
 	std::unique_ptr<df::unit> _u;
-	DwarfFortress &_df;
+	DwarfFortressData &_df;
+	QPointer<DFHack::Client> _dfhack;
 
 	QString _display_name;
 };
