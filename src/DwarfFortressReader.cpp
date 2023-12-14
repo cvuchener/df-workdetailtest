@@ -16,15 +16,15 @@
  *
  */
 
-#include "DwarfFortress.h"
+#include "DwarfFortressReader.h"
 
-#include "ObjectList.h"
-#include "Unit.h"
-#include "WorkDetail.h"
-#include "df/types.h"
-#include "df/items.h"
+#include <QLoggingCategory>
 
 #include <dfs/Reader.h>
+
+#include <df/types.h>
+#include <df/items.h>
+
 using namespace dfs;
 
 template <static_string Path, auto Output>
@@ -32,6 +32,12 @@ struct GlobalRead {
 	static constexpr auto path = parse_path<Path>();
 	static constexpr auto output = Output;
 };
+
+template <typename T>
+struct reads;
+
+template <typename T>
+using reads_t = reads<T>::type;
 
 template <typename, typename>
 struct test_all_t;
@@ -67,7 +73,7 @@ struct test_all_t<T, std::tuple<Reads...>>
 template <typename T>
 bool test_all(ReaderFactory &factory)
 {
-	return test_all_t<T, typename T::reads>{}(factory);
+	return test_all_t<T, reads_t<T>>{}(factory);
 }
 
 template <typename T>
@@ -78,7 +84,6 @@ struct read_all_t<std::tuple<Reads...>>
 {
 	template <typename T>
 	bool operator()(ReadSession &session, T &&out) const {
-	{
 		return session.sync([&]<typename Read>() {
 			auto &out_field = std::invoke(Read::output, out);
 			try {
@@ -89,14 +94,13 @@ struct read_all_t<std::tuple<Reads...>>
 				throw;
 			}
 		}.template operator()<Reads>()...);
-		}(std::index_sequence_for<Reads...>{});
 	}
 };
 
 template <typename T>
 bool read_all(ReadSession &session, T &&out)
 {
-	return read_all_t<typename std::remove_cvref_t<T>::reads>{}(session, out);
+	return read_all_t<reads_t<std::remove_cvref_t<T>>>{}(session, out);
 }
 
 struct df_game_state
@@ -110,18 +114,23 @@ struct df_game_state
 		>;
 	};
 	std::unique_ptr<world_data_t> world_data;
+};
 
-	using reads = std::tuple<
+
+template <>
+struct reads<df_game_state>
+{
+	using type = std::tuple<
 		GlobalRead<"world.world_data", &df_game_state::world_data_addr>,
 		GlobalRead<"world.world_data", &df_game_state::world_data>
 	>;
 };
 
-uintptr_t DwarfFortress::getWorldDataPtr(ReadSession &session)
+uintptr_t DwarfFortressReader::getWorldDataPtr()
 {
 	df_game_state state;
 	if (!read_all(session, state))
-		throw tr("Error while reading game state");
+		throw std::runtime_error("Error while reading game state");
 	if (state.world_data && !state.world_data->regions.empty())
 		return state.world_data_addr;
 	else
@@ -131,39 +140,29 @@ uintptr_t DwarfFortress::getWorldDataPtr(ReadSession &session)
 struct df_raws
 {
 	std::unique_ptr<df::world_raws> raws = std::make_unique<df::world_raws>();
-	df::world_raws &get_raws() { return *raws; }
+};
 
-	using reads = std::tuple<
-		GlobalRead<"world.raws", &df_raws::get_raws>
+template <>
+struct reads<df_raws>
+{
+	using type = std::tuple<
+		GlobalRead<"world.raws", [](df_raws &self) -> decltype(auto) { return *self.raws; }>
 	>;
 };
 
-void DwarfFortress::loadRaws(ReadSession &session)
+std::unique_ptr<df::world_raws> DwarfFortressReader::loadRaws()
 {
-	_shared_raws_objects.clear();
 	df_raws raws;
 	if (!read_all(session, raws))
-		throw tr("Error while reading raws");
-	QMetaObject::invokeMethod(this, [this, raws = std::move(raws.raws)]() mutable {
-		_raws = std::move(raws);
-	}, Qt::BlockingQueuedConnection);
+		throw std::runtime_error("Error while reading raws");
+	return std::move(raws.raws);
 }
 
-struct df_game_data {
-	int current_civ_id;
-	int current_group_id;
-	df::year current_year;
-	df::tick current_tick;
-	std::vector<std::unique_ptr<df::unit>> units;
-	std::vector<std::unique_ptr<df::historical_entity>> entities;
-	std::vector<std::unique_ptr<df::historical_figure>> histfigs;
-	std::vector<std::unique_ptr<df::identity>> identities;
-	std::vector<std::unique_ptr<df::work_detail>> work_details;
-	df::viewscreen viewscreen;
-	uintptr_t map_block_index;
-
-	using reads = std::tuple<
-		GlobalRead<"gview.view", &df_game_data::viewscreen>,
+template <>
+struct reads<df_game_data>
+{
+	using type = std::tuple<
+		GlobalRead<"gview.view", [](df_game_data &self) -> decltype(auto) { return *self.viewscreen; }>,
 		GlobalRead<"plotinfo.civ_id", &df_game_data::current_civ_id>,
 		GlobalRead<"plotinfo.group_id", &df_game_data::current_group_id>,
 		GlobalRead<"cur_year", &df_game_data::current_year>,
@@ -177,39 +176,15 @@ struct df_game_data {
 	>;
 };
 
-void DwarfFortress::loadGameData(ReadSession &session)
+std::unique_ptr<df_game_data> DwarfFortressReader::loadGameData()
 {
 	auto data = std::make_unique<df_game_data>();
 	if (!read_all(session, *data))
-		throw tr("Error while reading game data");
-	QMetaObject::invokeMethod(this, [this, data = std::move(data)]() mutable {
-		_map_loaded = data->map_block_index;
-		auto units = &data->units;
-		_last_viewscreen = Viewscreen::Other;
-		for (auto view = &data->viewscreen; view; view = view->child.get()) {
-			if (auto setupdwarfgame = dynamic_cast<df::viewscreen_setupdwarfgame *>(view)) {
-				qDebug() << "Use embark screen";
-				units = &setupdwarfgame->units;
-				_last_viewscreen = Viewscreen::SetupDwarfGame;
-				break;
-			}
-		}
-		_current_civ_id = data->current_civ_id;
-		_current_group_id = data->current_group_id;
-		_current_time = df::time(data->current_year) + data->current_tick;
-		_entities = std::move(data->entities);
-		_histfigs = std::move(data->histfigs);
-		_identities = std::move(data->identities);
-		_units->update(std::move(*units), [this](auto &&u) {
-			return std::make_shared<Unit>(std::move(u), *this);
-		});
-		_work_details->update(std::move(data->work_details), [this](auto &&wd) {
-			return std::make_shared<WorkDetail>(std::move(wd), *this);
-		});
-	}, Qt::BlockingQueuedConnection);
+		throw std::runtime_error("Error while reading game data");
+	return data;
 }
 
-bool DwarfFortress::testStructures(const Structures &structures)
+bool DwarfFortressReader::testStructures(const Structures &structures)
 {
 	bool ok = true;
 	bool first = true;

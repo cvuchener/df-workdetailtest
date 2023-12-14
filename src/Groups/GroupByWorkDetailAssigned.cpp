@@ -19,14 +19,14 @@
 #include "GroupByWorkDetailAssigned.h"
 
 #include <QCoreApplication>
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "Unit.h"
 #include "WorkDetail.h"
 #include "ObjectList.h"
 
 using namespace Groups;
 
-GroupByWorkDetailAssigned::GroupByWorkDetailAssigned(const DwarfFortress &df):
+GroupByWorkDetailAssigned::GroupByWorkDetailAssigned(const DwarfFortressData &df):
 	_df(df)
 {
 }
@@ -38,8 +38,8 @@ GroupByWorkDetailAssigned::~GroupByWorkDetailAssigned()
 quint64 GroupByWorkDetailAssigned::unitGroup(const Unit &unit) const
 {
 	quint64 count = 0;
-	for (int i = 0; i < _df.workDetails().rowCount(); ++i)
-		if (_df.workDetails().get(i)->isAssigned(unit->id))
+	for (int i = 0; i < _df.work_details->rowCount(); ++i)
+		if (_df.work_details->get(i)->isAssigned(unit->id))
 			++count;
 	return count;
 }

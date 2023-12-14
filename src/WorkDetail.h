@@ -24,7 +24,9 @@
 #include "df/types.h"
 
 class Unit;
-class DwarfFortress;
+class DwarfFortressData;
+
+namespace DFHack { class Client; }
 
 class WorkDetail: public QObject, public std::enable_shared_from_this<WorkDetail>
 {
@@ -38,7 +40,7 @@ public:
 	};
 	Q_ENUM(ChangeStatus)
 
-	WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortress &df, QObject *parent = nullptr);
+	WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent = nullptr);
 	~WorkDetail() override;
 
 	using df_type = df::work_detail;
@@ -83,7 +85,8 @@ private:
 	void setAssignment(int unit_id, bool assign, ChangeStatus status);
 
 	std::unique_ptr<df::work_detail> _wd;
-	DwarfFortress &_df;
+	DwarfFortressData &_df;
+	QPointer<DFHack::Client> _dfhack;
 	std::map<int, ChangeStatus> _statuses;
 
 	QString _display_name;

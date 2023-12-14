@@ -28,10 +28,12 @@
 Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
 class QMenu;
-class DwarfFortress;
+class DwarfFortressData;
 class AbstractColumn;
 class GroupBy;
 class Unit;
+
+namespace DFHack { class Client; }
 
 class GridViewModel: public QAbstractItemModel
 {
@@ -44,7 +46,7 @@ public:
 
 		static Parameters fromJson(const QJsonDocument &);
 	};
-	GridViewModel(const Parameters &parameters, DwarfFortress &df, QObject *parent = nullptr);
+	GridViewModel(const Parameters &parameters, std::shared_ptr<DwarfFortressData> df, DFHack::Client &dfhack, QObject *parent = nullptr);
 	~GridViewModel() override;
 
 	const QString &title() const { return _title; }
@@ -92,7 +94,8 @@ private slots:
 	void columnEndRemove(int first, int last);
 
 private:
-	DwarfFortress &_df;
+	std::shared_ptr<DwarfFortressData> _df;
+	QPointer<DFHack::Client> _dfhack;
 	QString _title;
 	UnitFilterProxyModel _unit_filter;
 	std::shared_ptr<UserUnitFilters> _user_filters;

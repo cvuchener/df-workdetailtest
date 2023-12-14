@@ -21,9 +21,9 @@
 #include "Unit.h"
 #include "df/items.h"
 #include "df/utils.h"
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 
-UnitInventoryModel::UnitInventoryModel(const DwarfFortress &df, QObject *parent):
+UnitInventoryModel::UnitInventoryModel(const DwarfFortressData &df, QObject *parent):
 	QAbstractTableModel(parent),
 	_df(df),
 	_u(nullptr)
@@ -66,7 +66,7 @@ int UnitInventoryModel::columnCount(const QModelIndex &parent) const
 
 struct ItemDescriptionGenerator
 {
-	const DwarfFortress &df;
+	const DwarfFortressData &df;
 
 	template <std::derived_from<df::item> T>
 	QString operator()(const T &item) const
@@ -104,7 +104,7 @@ struct ItemDescriptionGenerator
 			auto [material, mat_origin] = df.findMaterial(item.mat_type, item.mat_index);
 			if (material) {
 				if (auto hf = get_if<const df::historical_figure *>(&mat_origin)) {
-					out.append(df.raws().language.translate_name((*hf)->name) + "'s");
+					out.append(df.raws->language.translate_name((*hf)->name) + "'s");
 				}
 				if (!material->prefix.empty()) {
 					out.append(fromCP437(material->prefix));

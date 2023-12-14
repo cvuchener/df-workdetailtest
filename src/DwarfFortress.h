@@ -27,39 +27,20 @@
 
 #include <dfhack-client-qt/Client.h>
 #include "workdetailtest.pb.h"
+
 #include "Counter.h"
 
 #include <dfs/Reader.h>
-
-#include "df/time.h"
 
 namespace dfs {
 class Structures;
 class Process;
 }
 
-class Unit;
-class WorkDetail;
-template <typename T>
-class ObjectList;
-
-namespace df {
-struct creature_raw;
-struct historical_entity;
-struct historical_figure;
-struct identity;
-struct inorganic_raw;
-struct language_name;
-struct material;
-struct plant_raw;
-struct unit;
-struct work_detail;
-struct world_raws;
-}
-
 Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
-Q_DECLARE_LOGGING_CATEGORY(StructuresLog);
 Q_DECLARE_LOGGING_CATEGORY(ProcessLog);
+
+class DwarfFortressData;
 
 class DwarfFortress: public QObject
 {
@@ -82,6 +63,9 @@ public:
 	const QString &getDFHackVersion() const { return _dfhack_version; };
 	const QString &getDFVersion() const { return _df_version; };
 
+	DFHack::Client &dfhack() { return _dfhack; }
+	const std::shared_ptr<DwarfFortressData> &data() { return _data; }
+
 public slots:
 	QCoro::Task<bool> connectToDF(const QString &host, quint16 port);
 	QCoro::Task<> disconnectFromDF();
@@ -92,33 +76,6 @@ signals:
 	void stateChanged(State);
 	void error(const QString &);
 	void connectionProgress(const QString &);
-
-public:
-	// Game data access
-	const df::world_raws &raws() const;
-
-	ObjectList<Unit> &units() { return *_units; }
-	ObjectList<WorkDetail> &workDetails() { return *_work_details; }
-	const ObjectList<WorkDetail> &workDetails() const { return *_work_details; }
-	int currentCivId() const { return _current_civ_id; }
-	int currentGroupId() const { return _current_group_id; }
-	df::time currentTime() const { return _current_time; }
-
-	const df::historical_figure *findHistoricalFigure(int id) const;
-	const df::historical_entity *findHistoricalEntity(int id) const;
-	const df::identity *findIdentity(int id) const;
-
-	using material_origin = std::variant<std::monostate,
-			const df::inorganic_raw *,
-			const df::historical_figure *,
-			const df::creature_raw *,
-			const df::plant_raw *
-	>;
-	std::pair<const df::material *, material_origin> findMaterial(int type, int index) const;
-
-	DFHack::Client &dfhack() { return _dfhack; }
-
-	static bool testStructures(const dfs::Structures &structures);
 
 private slots:
 	void onConnectionChanged(bool);
@@ -135,11 +92,6 @@ private:
 	QString _df_version;
 
 	void setState(State state);
-
-	// Update game data
-	uintptr_t getWorldDataPtr(dfs::ReadSession &session);
-	void loadRaws(dfs::ReadSession &session);
-	void loadGameData(dfs::ReadSession &session);
 
 	QTimer _refresh_timer;
 
@@ -160,21 +112,10 @@ private:
 		Other
 	} _last_viewscreen;
 
-	// Game data
-	std::shared_ptr<df::world_raws> _raws;
 	dfs::ReadSession::shared_objects_cache_t _shared_raws_objects;
-
-	int _current_civ_id;
-	int _current_group_id;
-	df::time _current_time;
-	std::vector<std::unique_ptr<df::historical_entity>> _entities;
-	std::vector<std::unique_ptr<df::historical_figure>> _histfigs;
-	std::vector<std::unique_ptr<df::identity>> _identities;
-	std::unique_ptr<ObjectList<Unit>> _units;
-	std::unique_ptr<ObjectList<WorkDetail>> _work_details;
+	std::shared_ptr<DwarfFortressData> _data;
 
 	Counter _coroutine_counter;
-	// make dfhack client last so it is destroyed first
 	DFHack::Client _dfhack;
 };
 

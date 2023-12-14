@@ -18,7 +18,7 @@
 
 #include "WorkDetailColumn.h"
 
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include "WorkDetail.h"
 #include "ObjectList.h"
 #include "Unit.h"
@@ -35,35 +35,35 @@
 
 using namespace Columns;
 
-WorkDetailColumn::WorkDetailColumn(DwarfFortress &df, QObject *parent):
+WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QObject *parent):
 	AbstractColumn(parent),
 	_df(df),
 	_sort{*this, SortBy::Skill, {
 			{SortBy::Skill, tr("skill")},
 			{SortBy::Assigned, tr("assigned")}}}
 {
-	auto &list = _df.workDetails();
-	connect(&list, &QAbstractItemModel::rowsAboutToBeInserted,
+	auto list = _df.work_details.get();
+	connect(list, &QAbstractItemModel::rowsAboutToBeInserted,
 		this, [this](const QModelIndex &, int first, int last) {
 			columnsAboutToBeInserted(first, last);
 		});
-	connect(&list, &QAbstractItemModel::rowsInserted,
+	connect(list, &QAbstractItemModel::rowsInserted,
 		this, [this](const QModelIndex &, int first, int last) {
 			columnsInserted(first, last);
 		});
-	connect(&list, &QAbstractItemModel::rowsAboutToBeRemoved,
+	connect(list, &QAbstractItemModel::rowsAboutToBeRemoved,
 		this, [this](const QModelIndex &, int first, int last) {
 			columnsAboutToBeRemoved(first, last);
 		});
-	connect(&list, &QAbstractItemModel::rowsRemoved,
+	connect(list, &QAbstractItemModel::rowsRemoved,
 		this, [this](const QModelIndex &, int first, int last) {
 			columnsRemoved(first, last);
 		});
-	connect(&list, &QAbstractItemModel::dataChanged,
+	connect(list, &QAbstractItemModel::dataChanged,
 		this, [this](const QModelIndex &first, const QModelIndex &last, const QList<int> &) {
 			columnDataChanged(first.row(), last.row());
 		});
-	connect(&list, &ObjectListBase::unitDataChanged,
+	connect(list, &ObjectListBase::unitDataChanged,
 		this, [this](int row, int unit_id) {
 			unitDataChanged(row, row, unit_id);
 		});
@@ -75,12 +75,12 @@ WorkDetailColumn::~WorkDetailColumn()
 
 int WorkDetailColumn::count() const
 {
-	return _df.workDetails().rowCount();
+	return _df.work_details->rowCount();
 }
 
 QVariant WorkDetailColumn::headerData(int section, int role) const
 {
-	auto wd = _df.workDetails().get(section);
+	auto wd = _df.work_details->get(section);
 	Q_ASSERT(wd);
 	switch (role) {
 	case Qt::DisplayRole:
@@ -100,7 +100,7 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 	static const QBrush Working = QColor(0, 255, 0, 64);
 	static const QBrush NotWorking = QColor(255, 0, 0, 64);
 
-	auto wd = _df.workDetails().get(section);
+	auto wd = _df.work_details->get(section);
 	Q_ASSERT(wd);
 
 	std::vector<const df::unit_skill *> skills;
@@ -180,7 +180,7 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 
 QVariant WorkDetailColumn::groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role) const
 {
-	auto wd = _df.workDetails().get(section);
+	auto wd = _df.work_details->get(section);
 	Q_ASSERT(wd);
 
 	auto is_assigned = [wd](const Unit *unit) { return wd->isAssigned((*unit)->id); };
@@ -242,7 +242,7 @@ bool WorkDetailColumn::setUnitData(int section, Unit &unit, const QVariant &valu
 		return false;
 	if (!unit.canAssignWork())
 		return false;
-	auto work_detail = _df.workDetails().get(section);
+	auto work_detail = _df.work_details->get(section);
 	work_detail->assign(unit->id, value.toBool());
 	return true;
 }
@@ -251,7 +251,7 @@ bool WorkDetailColumn::setGroupData(int section, std::span<Unit *> units, const 
 {
 	if (role != Qt::CheckStateRole)
 		return false;
-	auto work_detail = _df.workDetails().get(section);
+	auto work_detail = _df.work_details->get(section);
 	std::vector<int> unit_ids;
 	for (auto unit: units) {
 		if (unit->canAssignWork())
@@ -263,7 +263,7 @@ bool WorkDetailColumn::setGroupData(int section, std::span<Unit *> units, const 
 
 void WorkDetailColumn::toggleUnits(int section, std::span<Unit *> units)
 {
-	auto work_detail = _df.workDetails().get(section);
+	auto work_detail = _df.work_details->get(section);
 	std::vector<int> unit_ids;
 	for (auto unit: units) {
 		if (unit->canAssignWork())
@@ -291,7 +291,7 @@ Qt::ItemFlags WorkDetailColumn::groupFlags(int section, std::span<const Unit *> 
 void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 {
 	using namespace df::work_detail_mode;
-	auto wd = _df.workDetails().get(section);
+	auto wd = _df.work_details->get(section);
 
 	menu->addSeparator();
 	auto edit_action = new QAction(tr("Edit %1...").arg(wd->displayName()), menu);
@@ -333,5 +333,7 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 Factory WorkDetailColumn::makeFactory(const QJsonObject &)
 {
-	return [](DwarfFortress &df) { return std::make_unique<WorkDetailColumn>(df); };
+	return [](DwarfFortressData &df, QPointer<DFHack::Client>) {
+		return std::make_unique<WorkDetailColumn>(df);
+	};
 }

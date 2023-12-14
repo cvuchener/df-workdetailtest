@@ -30,11 +30,10 @@
 #include "Application.h"
 #include "StandardPaths.h"
 
-#include "ObjectList.h"
-#include "Unit.h"
-#include "WorkDetail.h"
+#include "DwarfFortressData.h"
+#include "DwarfFortressReader.h"
+
 #include "df/types.h"
-#include "df/utils.h"
 
 #include <dfhack-client-qt/Basic.h>
 
@@ -85,8 +84,7 @@ DwarfFortress::DwarfFortress(QObject *parent):
 	_world_loaded(0),
 	_map_loaded(0),
 	_last_viewscreen(Viewscreen::Other),
-	_units(std::make_unique<ObjectList<Unit>>()),
-	_work_details(std::make_unique<ObjectList<WorkDetail>>())
+	_data(std::make_shared<DwarfFortressData>())
 {
 	for (QDir data_dir: StandardPaths::data_locations()) {
 		QDir structs_dir = data_dir.filePath("structures");
@@ -102,7 +100,7 @@ DwarfFortress::DwarfFortress(QObject *parent):
 				auto structures = std::make_unique<dfs::Structures>(
 						struct_dir.filesystemAbsolutePath(),
 						StructuresLogger);
-				if (!testStructures(*structures)) {
+				if (!DwarfFortressReader::testStructures(*structures)) {
 					qCCritical(StructuresLog) << "Incompatible structures";
 					continue;
 				}
@@ -165,6 +163,7 @@ DwarfFortress::~DwarfFortress()
 			co_await qCoro(&_coroutine_counter, &Counter::zero);
 		}
 	}());
+	_dfhack.QObject::disconnect(this);
 	qDebug() << "DwarfFortress cleaned up";
 }
 
@@ -311,33 +310,46 @@ QCoro::Task<bool> DwarfFortress::update()
 	setState(Updating);
 	auto ret = co_await QtConcurrent::run([=, this]() {
 		try {
-			dfs::ReadSession session(*_reader_factory, *_process);
-			session.addSharedObjectsCache<df::itemdef>(_shared_raws_objects);
+			DwarfFortressReader reader({*_reader_factory, *_process});
+			reader.session.addSharedObjectsCache<df::itemdef>(_shared_raws_objects);
 
 			connectionProgress(tr("Reading world state"));
-			auto current_world = getWorldDataPtr(session);
+			auto current_world = reader.getWorldDataPtr();
 
 			if (current_world != _world_loaded) {
 				_world_loaded = current_world;
 				if (_world_loaded == 0)
 					return true;
 				connectionProgress(tr("Loading raws"));
-				loadRaws(session);
+				_shared_raws_objects.clear();
+				auto raws = reader.loadRaws();
+				QMetaObject::invokeMethod(this, [this, raws = std::move(raws)]() mutable {
+					_data->updateRaws(std::move(raws));
+				}, Qt::BlockingQueuedConnection);
 			}
 			if (_world_loaded != 0) {
 				connectionProgress(tr("Loading game data"));
-				loadGameData(session);
+				auto data = reader.loadGameData();
+				QMetaObject::invokeMethod(this, [this, data = std::move(data)]() mutable {
+					_map_loaded = data->map_block_index;
+					auto units = &data->units;
+					_last_viewscreen = Viewscreen::Other;
+					for (auto view = data->viewscreen.get(); view; view = view->child.get()) {
+						if (auto setupdwarfgame = dynamic_cast<df::viewscreen_setupdwarfgame *>(view)) {
+							qDebug() << "Use embark screen";
+							units = &setupdwarfgame->units;
+							_last_viewscreen = Viewscreen::SetupDwarfGame;
+							break;
+						}
+					}
+					_data->updateGameData(std::move(data), std::move(*units), _dfhack);
+				}, Qt::BlockingQueuedConnection);
 			}
 			return true;
 		}
 		catch (std::exception &e) {
 			qCritical() << "Failed to update" << e.what();
 			error(e.what());
-			return false;
-		}
-		catch (QString &message) {
-			qCritical() << "Failed to update" << message;
-			error(message);
 			return false;
 		}
 	});
@@ -394,101 +406,12 @@ void DwarfFortress::setState(State state)
 		stateChanged(_state = state);
 }
 
-const df::world_raws &DwarfFortress::raws() const
-{
-	Q_ASSERT(_raws);
-	return *_raws;
-}
-
 void DwarfFortress::clearData()
 {
 	_world_loaded = 0;
 	_map_loaded = 0;
 	_last_viewscreen = Viewscreen::Other;
 
-	_units->clear();
-	_work_details->clear();
-
-	_identities.clear();
-	_raws.reset();
+	_data->clear();
 	_shared_raws_objects.clear();
-}
-
-const df::historical_figure *DwarfFortress::findHistoricalFigure(int id) const
-{
-	return df::find(_histfigs, id);
-}
-
-const df::historical_entity *DwarfFortress::findHistoricalEntity(int id) const
-{
-	return df::find(_entities, id);
-}
-
-const df::identity *DwarfFortress::findIdentity(int id) const
-{
-	return df::find(_identities, id);
-}
-
-std::pair<const df::material *, DwarfFortress::material_origin>
-DwarfFortress::findMaterial(int type, int index) const
-{
-	static constexpr std::size_t CreatureBase = 19;
-	static constexpr std::size_t HistFigureBase = 219;
-	static constexpr std::size_t PlantBase = 419;
-	static constexpr std::size_t MaxMaterialType = 200;
-
-	if (!_raws)
-		return {nullptr, {}};
-
-	auto check_index = [](const auto &vec, std::size_t index) -> decltype(vec[0].get()) {
-		if (index < vec.size())
-			return vec[index].get();
-		else
-			return nullptr;
-	};
-
-	std::size_t creature_mat = type - CreatureBase;
-	if (creature_mat < MaxMaterialType) {
-		auto default_creature_mat = _raws->builtin_mats[CreatureBase].get();
-		if (auto creature = check_index(_raws->creatures.all, index)) {
-			if (auto mat = check_index(creature->material, creature_mat))
-				return {mat, creature};
-			return {default_creature_mat, creature};
-		}
-		return {default_creature_mat, {}};
-	}
-
-	std::size_t histfig_mat = type - HistFigureBase;
-	if (histfig_mat < MaxMaterialType) {
-		auto default_creature_mat = _raws->builtin_mats[CreatureBase].get();
-		if (auto histfig = findHistoricalFigure(index)) {
-			if (auto creature = check_index(_raws->creatures.all, histfig->race))
-				if (auto mat = check_index(creature->material, histfig_mat))
-					return {mat, histfig};
-			return {default_creature_mat, histfig};
-		}
-		return {default_creature_mat, {}};
-	}
-
-	std::size_t plant_mat = type - PlantBase;
-	if (plant_mat < MaxMaterialType) {
-		auto default_plant_mat = _raws->builtin_mats[PlantBase].get();
-		if (auto plant = check_index(_raws->plants.all, index)) {
-			if (auto mat = check_index(plant->material, plant_mat))
-				return {mat, plant};
-			return {default_plant_mat, plant};
-		}
-		return {default_plant_mat, {}};
-	}
-
-	if (type == df::builtin_mats::INORGANIC) {
-		if (auto inorganic = check_index(_raws->inorganics, index))
-			return {&inorganic->material, inorganic};
-		return {_raws->builtin_mats[df::builtin_mats::INORGANIC].get(), {}};
-	}
-
-	if (type >= 0 && unsigned(type) < _raws->builtin_mats.size())
-		return {_raws->builtin_mats[type].get(), {}};
-
-	return {nullptr, {}};
 }

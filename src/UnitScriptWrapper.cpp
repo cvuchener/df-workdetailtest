@@ -58,8 +58,10 @@ MAKE_WRAPPER_METHOD(bool, hasMenialWorkExemption)
 
 QString UnitScriptWrapper::raceName() const
 {
-	if (_unit)
-		return df::fromCP437(_unit->creature_raw().name[0]);
+	if (!_unit)
+		return {};
+	if (auto creature = _unit->creature_raw())
+		return df::fromCP437(creature->name[0]);
 	else
 		return {};
 }
@@ -67,7 +69,9 @@ QString UnitScriptWrapper::raceName() const
 QString UnitScriptWrapper::casteName() const
 {
 	if (_unit)
-		return df::fromCP437(_unit->caste_raw().caste_name[0]);
+		return {};
+	if (auto caste = _unit->caste_raw())
+		return df::fromCP437(caste->caste_name[0]);
 	else
 		return {};
 }

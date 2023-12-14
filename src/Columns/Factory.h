@@ -22,13 +22,16 @@
 #include <functional>
 #include <memory>
 
+#include <QPointer>
+
 class AbstractColumn;
-class DwarfFortress;
+class DwarfFortressData;
 class QJsonObject;
+namespace DFHack { class Client; }
 
 namespace Columns {
 
-using Factory = std::function<std::unique_ptr<AbstractColumn>(DwarfFortress &)>;
+using Factory = std::function<std::unique_ptr<AbstractColumn>(DwarfFortressData &, QPointer<DFHack::Client>)>;
 
 Factory makeFactory(const QJsonObject &);
 

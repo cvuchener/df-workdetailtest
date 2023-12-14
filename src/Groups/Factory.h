@@ -23,11 +23,11 @@
 #include <memory>
 
 class GroupBy;
-class DwarfFortress;
+class DwarfFortressData;
 
 namespace Groups {
 
-using Factory = std::function<std::unique_ptr<GroupBy>(const DwarfFortress &)>;
+using Factory = std::function<std::unique_ptr<GroupBy>(const DwarfFortressData &)>;
 
 extern const std::vector<std::pair<const char *, Factory>> All;
 

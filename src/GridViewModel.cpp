@@ -18,7 +18,9 @@
 
 #include "GridViewModel.h"
 
-#include "DwarfFortress.h"
+#include <dfhack-client-qt/Client.h>
+
+#include "DwarfFortressData.h"
 #include "AbstractColumn.h"
 #include "UnitFilterProxyModel.h"
 #include "Unit.h"
@@ -76,18 +78,19 @@ GridViewModel::Parameters GridViewModel::Parameters::fromJson(const QJsonDocumen
 	return params;
 }
 
-GridViewModel::GridViewModel(const Parameters &parameters, DwarfFortress &df, QObject *parent):
+GridViewModel::GridViewModel(const Parameters &parameters, std::shared_ptr<DwarfFortressData> df, DFHack::Client &dfhack, QObject *parent):
 	QAbstractItemModel(parent),
-	_df(df),
+	_df(std::move(df)),
+	_dfhack(&dfhack),
 	_group_index(0)
 {
 	_title = parameters.title;
 	_unit_filter.setBaseFilter(parameters.filter);
 	_columns.push_back(std::make_unique<Columns::NameColumn>());
 	for (const auto &factory: parameters.columns)
-		_columns.push_back(factory(df));
+		_columns.push_back(factory(*_df, _dfhack));
 
-	_unit_filter.setSourceModel(&_df.units());
+	_unit_filter.setSourceModel(_df->units.get());
 	connect(&_unit_filter, &QAbstractItemModel::dataChanged,
 		this, &GridViewModel::unitDataChanged);
 	connect(&_unit_filter, &QAbstractItemModel::rowsAboutToBeInserted,
@@ -347,7 +350,7 @@ void GridViewModel::setGroupBy(int index)
 			[](const Unit &unit, int) { return unit->id; },
 			[](const group_t &, int) { return -1; }));
 	// Change grouping method
-	_group_by = Groups::All.at(index).second(_df);
+	_group_by = Groups::All.at(index).second(*_df);
 	_group_index = index;
 	rebuildGroups();
 	// Rebuild indexes from unit ids
@@ -367,7 +370,7 @@ void GridViewModel::cellDataChanged(int first, int last, int unit_id)
 	auto index = unitIndex(unit_id);
 	Q_ASSERT(index.isValid());
 	if (_group_by) {
-		auto unit = _df.units().get(_df.units().find(unit_id).row());
+		auto unit = _df->units->get(_df->units->find(unit_id).row());
 		updateGroupedUnit(*unit, col->begin_column+first, col->begin_column+last);
 	}
 	else {

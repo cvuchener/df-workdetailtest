@@ -18,21 +18,23 @@
 
 #include "Unit.h"
 
-#include "DwarfFortress.h"
+#include "DwarfFortressData.h"
 #include <QCoroFuture>
 #include "df/utils.h"
 
 #include <dfhack-client-qt/Function.h>
+#include "workdetailtest.pb.h"
 
 static const DFHack::Function<
 	dfproto::workdetailtest::UnitProperties,
 	dfproto::workdetailtest::Result
 > EditUnit = {"workdetailtest", "EditUnit"};
 
-Unit::Unit(std::unique_ptr<df::unit> &&unit, DwarfFortress &df, QObject *parent):
+Unit::Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
 	QObject(parent),
 	_u(std::move(unit)),
-	_df(df)
+	_df(df),
+	_dfhack(&dfhack)
 {
 	refresh();
 }
@@ -52,47 +54,61 @@ void Unit::update(std::unique_ptr<df::unit> &&unit)
 void Unit::refresh()
 {
 	using df::fromCP437;
-	auto hf = _df.findHistoricalFigure(_u->hist_figure_id);
+	auto hf = df::find(_df.histfigs, _u->hist_figure_id);
 	auto identity = hf && hf->info && hf->info->reputation
-		? _df.findIdentity(hf->info->reputation->cur_identity)
+		? df::find(_df.identities, hf->info->reputation->cur_identity)
 		: nullptr;
+	if (!_df.raws) {
+		_display_name = tr("Invalid raws");
+		return;
+	}
 	if (identity)
-		_display_name = _df.raws().language.translate_name(identity->name);
+		_display_name = _df.raws->language.translate_name(identity->name);
 	else
-		_display_name = _df.raws().language.translate_name(_u->name);
+		_display_name = _df.raws->language.translate_name(_u->name);
 	if (_display_name.isEmpty()) {
 		const auto &caste = caste_raw();
 		if (isBaby())
-			_display_name = fromCP437(caste.baby_name[0]);
+			_display_name = fromCP437(caste->baby_name[0]);
 		else if (isChild())
-			_display_name = fromCP437(caste.child_name[0]);
+			_display_name = fromCP437(caste->child_name[0]);
 		else
-			_display_name = fromCP437(caste.caste_name[0]);
+			_display_name = fromCP437(caste->caste_name[0]);
 	}
 	if (_display_name.isEmpty()) {
 		const auto &creature = creature_raw();
 		if (isBaby())
-			_display_name = fromCP437(creature.general_baby_name[0]);
+			_display_name = fromCP437(creature->general_baby_name[0]);
 		else if (isChild())
-			_display_name = fromCP437(creature.general_child_name[0]);
+			_display_name = fromCP437(creature->general_child_name[0]);
 		else
-			_display_name = fromCP437(creature.name[0]);
+			_display_name = fromCP437(creature->name[0]);
 	}
 }
 
-const df::creature_raw &Unit::creature_raw() const
+const df::creature_raw *Unit::creature_raw() const
 {
-	return *_df.raws().creatures.all.at(_u->race);
+	if (!_df.raws || _u->race < 0 || unsigned(_u->race) > _df.raws->creatures.all.size())
+		return nullptr;
+	else
+		return _df.raws->creatures.all[_u->race].get();
 }
 
-const df::caste_raw &Unit::caste_raw() const
+const df::caste_raw *Unit::caste_raw() const
 {
-	return *creature_raw().caste.at(_u->caste);
+	if (auto creature = creature_raw()) {
+		if (_u->caste < 0 || unsigned(_u->caste) > creature->caste.size())
+			return nullptr;
+		else
+			return creature->caste[_u->caste].get();
+	}
+	else
+		return nullptr;
 }
 
 df::time Unit::age() const
 {
-	return _df.currentTime() - _u->birth_year - _u->birth_tick;
+	return _df.current_time - _u->birth_year - _u->birth_tick;
 }
 
 bool Unit::isFortControlled() const
@@ -119,7 +135,7 @@ bool Unit::isFortControlled() const
 			|| _u->flags2.bits.resident
 			|| _u->flags4.bits.agitated_wilderness_creature)
 		return false;
-	return _u->civ_id != -1 && _u->civ_id == _df.currentCivId();
+	return _u->civ_id != -1 && _u->civ_id == _df.current_civ_id;
 }
 
 bool Unit::isCrazed() const
@@ -130,7 +146,10 @@ bool Unit::isCrazed() const
 		return false;
 	if (_u->curse.add_tags1.bits.CRAZED)
 		return true;
-	return caste_raw().flags.isSet(df::caste_raw_flags::CRAZED);
+	if (auto caste = caste_raw())
+		return caste->flags.isSet(df::caste_raw_flags::CRAZED);
+	else
+		return false;
 }
 
 bool Unit::isOpposedToLife() const
@@ -139,7 +158,10 @@ bool Unit::isOpposedToLife() const
 		return false;
 	if (_u->curse.add_tags1.bits.OPPOSED_TO_LIFE)
 		return true;
-	return caste_raw().flags.isSet(df::caste_raw_flags::OPPOSED_TO_LIFE);
+	if (auto caste = caste_raw())
+		return caste->flags.isSet(df::caste_raw_flags::OPPOSED_TO_LIFE);
+	else
+		return false;
 }
 
 bool Unit::canLearn() const
@@ -148,14 +170,17 @@ bool Unit::canLearn() const
 		return false;
 	if (_u->curse.add_tags1.bits.CAN_LEARN)
 		return true;
-	return caste_raw().flags.isSet(df::caste_raw_flags::CAN_LEARN);
+	if (auto caste = caste_raw())
+		return caste->flags.isSet(df::caste_raw_flags::CAN_LEARN);
+	else
+		return false;
 }
 
 bool Unit::isOwnGroup() const
 {
-	if (auto hf = _df.findHistoricalFigure(_u->hist_figure_id))
+	if (auto hf = df::find(_df.histfigs, _u->hist_figure_id))
 		return std::ranges::any_of(hf->entity_links, [this](const auto &link) {
-			return link->entity_id == _df.currentGroupId() &&
+			return link->entity_id == _df.current_group_id &&
 				link->type() == df::histfig_entity_link_type::MEMBER;
 		});
 	else
@@ -209,20 +234,22 @@ bool Unit::isAdult() const
 
 bool Unit::isTamable() const
 {
-	const auto &caste_flags = caste_raw().flags;
-	return caste_flags.isSet(df::caste_raw_flags::PET)
-		|| caste_flags.isSet(df::caste_raw_flags::PET_EXOTIC);
+	if (auto caste = caste_raw())
+		return caste->flags.isSet(df::caste_raw_flags::PET)
+			|| caste->flags.isSet(df::caste_raw_flags::PET_EXOTIC);
+	else
+		return false;
 }
 
 bool Unit::hasMenialWorkExemption() const
 {
-	auto match_position = [](const DwarfFortress &df, const df::historical_figure &hf, df::entity_position_flags_t flag) {
+	auto match_position = [](const DwarfFortressData &df, const df::historical_figure &hf, df::entity_position_flags_t flag) {
 		for (const auto &link: hf.entity_links) {
 			auto el_pos = dynamic_cast<const df::histfig_entity_link_position *>(link.get());
 			if (!el_pos)
 				continue;
-			auto entity = df.findHistoricalEntity(el_pos->entity_id);
-			if (!entity || entity->id != df.currentGroupId())
+			auto entity = df::find(df.entities, el_pos->entity_id);
+			if (!entity || entity->id != df.current_group_id)
 				continue;
 			auto assignment = df::find(entity->positions.assignments, el_pos->assignment_id);
 			if (!assignment)
@@ -234,14 +261,14 @@ bool Unit::hasMenialWorkExemption() const
 		}
 		return false;
 	};
-	if (auto hf = _df.findHistoricalFigure(_u->hist_figure_id)) {
+	if (auto hf = df::find(_df.histfigs, _u->hist_figure_id)) {
 		using namespace df::entity_position_flags;
 		if (match_position(_df, *hf, MENIAL_WORK_EXEMPTION))
 			return true;
 		for (const auto &link: hf->histfig_links) {
 			if (link->type() != df::histfig_hf_link_type::SPOUSE)
 				continue;
-			auto spouse_hf = _df.findHistoricalFigure(link->target);
+			auto spouse_hf = df::find(_df.histfigs, link->target);
 			if (!spouse_hf)
 				continue;
 			if (match_position(_df, *spouse_hf, MENIAL_WORK_EXEMPTION_SPOUSE))
@@ -251,10 +278,12 @@ bool Unit::hasMenialWorkExemption() const
 	return false;
 }
 
+Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
 QCoro::Task<> Unit::edit(Properties changes)
 {
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
+	// Prepare arguments
 	dfproto::workdetailtest::UnitProperties args;
 	args.set_id(_u->id);
 	if (changes.nickname) {
@@ -263,7 +292,13 @@ QCoro::Task<> Unit::edit(Properties changes)
 	if (changes.only_do_assigned_jobs) {
 		args.set_only_do_assigned_jobs(*changes.only_do_assigned_jobs);
 	}
-	auto r = co_await EditUnit(_df.dfhack(), args).first;
+	// Call
+	if (!_dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
+	}
+	auto r = co_await EditUnit(*_dfhack, args).first;
+	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "editUnit failed" << make_error_code(r.cr).message();
 		co_return;
@@ -272,6 +307,7 @@ QCoro::Task<> Unit::edit(Properties changes)
 		qCWarning(DFHackLog) << "editUnit failed" << r->error();
 		co_return;
 	}
+	// Apply changes
 	aboutToBeUpdated();
 	if (changes.nickname) {
 		_u->name.nickname = df::toCP437(*changes.nickname);

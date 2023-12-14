@@ -58,7 +58,8 @@ add_executable(workdetailtest
 	src/DFHackProcess.cpp
 	src/DataRole.h
 	src/DwarfFortress.cpp
-	src/DwarfFortress_read.cpp
+	src/DwarfFortressData.cpp
+	src/DwarfFortressReader.cpp
 	src/FilterBar.cpp
 	src/GridView.cpp
 	src/GridViewManager.cpp

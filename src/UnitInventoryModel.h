@@ -21,14 +21,14 @@
 
 #include <QAbstractTableModel>
 
-class DwarfFortress;
+class DwarfFortressData;
 class Unit;
 
 class UnitInventoryModel: public QAbstractTableModel
 {
 	Q_OBJECT
 public:
-	UnitInventoryModel(const DwarfFortress &df, QObject *parent = nullptr);
+	UnitInventoryModel(const DwarfFortressData &df, QObject *parent = nullptr);
 	~UnitInventoryModel() override;
 
 	void setUnit(const Unit *unit);
@@ -45,7 +45,7 @@ public:
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
 private:
-	const DwarfFortress &_df;
+	const DwarfFortressData &_df;
 	const Unit *_u;
 };
 

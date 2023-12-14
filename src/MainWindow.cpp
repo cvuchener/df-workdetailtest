@@ -39,6 +39,7 @@
 #include "GroupBar.h"
 #include "GridViewTabs.h"
 #include "LogDock.h"
+#include "DwarfFortressData.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -83,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent):
 	const auto &settings = Application::settings();
 
 	// Setup dock
-	auto unit_details = new UnitDetailsDock(*_df, this);
+	auto unit_details = new UnitDetailsDock(_df->data(), this);
 	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
 
@@ -98,9 +99,7 @@ MainWindow::MainWindow(QWidget *parent):
 	_ui->view_menu->addAction(_ui->filterbar->toggleViewAction());
 
 	// Grid views
-	_ui->tabs->setGroupBar(_ui->groupbar);
-	_ui->tabs->setFilterBar(_ui->filterbar);
-	_ui->tabs->init(_df.get());
+	_ui->tabs->init(_ui->groupbar, _ui->filterbar, _df.get());
 
 	// DFHack connection
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
@@ -118,7 +117,7 @@ MainWindow::MainWindow(QWidget *parent):
 			if (current == _current_unit)
 				return;
 			_current_unit = current;
-			unit_details->setUnit(_df->units().get(current.row()));
+			unit_details->setUnit(_df->data()->units->get(current.row()));
 		});
 
 	// Connect to DFHack

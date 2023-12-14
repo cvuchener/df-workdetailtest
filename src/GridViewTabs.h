@@ -33,9 +33,7 @@ public:
 	GridViewTabs(QWidget *parent = nullptr);
 	~GridViewTabs() override;
 
-	void setGroupBar(GroupBar *group_bar);
-	void setFilterBar(FilterBar *filter_bar);
-	void init(DwarfFortress *df);
+	void init(GroupBar *group_bar, FilterBar *filter_bar, DwarfFortress *df);
 
 	void addView(const QString &name);
 

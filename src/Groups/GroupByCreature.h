@@ -21,21 +21,21 @@
 
 #include "GroupBy.h"
 
-class DwarfFortress;
+class DwarfFortressData;
 
 namespace Groups {
 
 class GroupByCreature: public GroupBy
 {
 public:
-	GroupByCreature(const DwarfFortress &df);
+	GroupByCreature(const DwarfFortressData &df);
 	~GroupByCreature() override;
 
 	quint64 unitGroup(const Unit &unit) const override;
 	QString groupName(quint64 group_id) const override;
 
 private:
-	const DwarfFortress &_df;
+	const DwarfFortressData &_df;
 };
 
 }
