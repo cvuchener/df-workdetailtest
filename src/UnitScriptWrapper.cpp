@@ -76,3 +76,11 @@ QString UnitScriptWrapper::casteName() const
 		return {};
 }
 
+df::profession_t UnitScriptWrapper::profession() const
+{
+	if (!_unit)
+		return {};
+	else
+		return (*_unit)->profession;
+}
+

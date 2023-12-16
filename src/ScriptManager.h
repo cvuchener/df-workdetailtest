@@ -38,6 +38,9 @@ public:
 	QJSValue makeScript(const QString &expression);
 
 private:
+	template <std::ranges::input_range R>
+	void addEnumValues(const QString &name, R &&values);
+
 	QJSEngine _js;
 	QJSValue _test_dummy;
 	std::vector<std::pair<QString, QJSValue>> _scripts;

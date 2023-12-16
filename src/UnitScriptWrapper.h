@@ -21,6 +21,8 @@
 
 #include <QObject>
 
+#include "df_enums.h"
+
 class Unit;
 
 class UnitScriptWrapper: public QObject
@@ -29,6 +31,7 @@ class UnitScriptWrapper: public QObject
 	Q_PROPERTY(QString name READ displayName)
 	Q_PROPERTY(QString race_name READ raceName)
 	Q_PROPERTY(QString caste_name READ casteName)
+	Q_PROPERTY(df::profession_t profession READ profession)
 public:
 	UnitScriptWrapper(); // test dummy constructor
 	UnitScriptWrapper(const Unit &unit);
@@ -37,6 +40,7 @@ public:
 	QString displayName() const;
 	QString raceName() const;
 	QString casteName() const;
+	df::profession_t profession() const;
 
 	Q_INVOKABLE bool isFortControlled() const;
 	Q_INVOKABLE bool isCrazed() const;

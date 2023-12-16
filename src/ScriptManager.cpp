@@ -36,6 +36,7 @@ ScriptManager::ScriptManager():
 	_test_dummy(_js.newQObject(new UnitScriptWrapper))
 {
 	_js.installExtensions(QJSEngine::ConsoleExtension);
+	addEnumValues("profession", df::profession::AllValues);
 	QStringList name_filter = {"*.js"};
 	for (QDir data_dir: StandardPaths::data_locations()) {
 		QDir dir = data_dir.filePath("unit_filters");
@@ -85,4 +86,13 @@ QJSValue ScriptManager::makeScript(const QString &expression)
 	if (test_result.isError())
 		return test_result;
 	return script;
+}
+
+template <std::ranges::input_range R>
+void ScriptManager::addEnumValues(const QString &name, R &&values)
+{
+	auto object = _js.newObject();
+	for (auto value: values)
+		object.setProperty(QString::fromLocal8Bit(to_string(value)), value);
+	_js.globalObject().setProperty(name, object);
 }
