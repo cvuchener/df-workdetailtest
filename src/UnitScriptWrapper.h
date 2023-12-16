@@ -32,6 +32,8 @@ class UnitScriptWrapper: public QObject
 	Q_PROPERTY(QString race_name READ raceName)
 	Q_PROPERTY(QString caste_name READ casteName)
 	Q_PROPERTY(df::profession_t profession READ profession)
+
+	Q_CLASSINFO("doc:isFortControlled", "This unit is controlled by the player")
 public:
 	UnitScriptWrapper(); // test dummy constructor
 	UnitScriptWrapper(const Unit &unit);

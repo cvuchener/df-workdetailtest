@@ -21,6 +21,8 @@
 
 #include <QJSEngine>
 #include <QLoggingCategory>
+#include <QStandardItemModel>
+#include <QCompleter>
 
 Q_DECLARE_LOGGING_CATEGORY(ScriptLog);
 
@@ -37,6 +39,8 @@ public:
 	QJSValue makeUnit(const Unit &unit);
 	QJSValue makeScript(const QString &expression);
 
+	QAbstractItemModel *propertiesModel() { return &_properties_model; }
+
 private:
 	template <std::ranges::input_range R>
 	void addEnumValues(const QString &name, R &&values);
@@ -44,6 +48,18 @@ private:
 	QJSEngine _js;
 	QJSValue _test_dummy;
 	std::vector<std::pair<QString, QJSValue>> _scripts;
+	QStandardItemModel _properties_model;
+};
+
+class ScriptPropertiesCompleter: public QCompleter
+{
+	Q_OBJECT
+public:
+	ScriptPropertiesCompleter(QObject *parent = nullptr);
+	~ScriptPropertiesCompleter() override;
+
+	QString pathFromIndex(const QModelIndex &index) const override;
+	QStringList splitPath(const QString &path) const override;
 };
 
 #endif

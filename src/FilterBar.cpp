@@ -19,16 +19,27 @@
 #include "FilterBar.h"
 
 #include <QComboBox>
+#include <QCompleter>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QToolButton>
 #include <QWidgetAction>
+#include <QMainWindow>
+#include <QStatusBar>
 
 #include "Application.h"
 #include "ScriptManager.h"
 #include "UserUnitFilters.h"
 #include "Unit.h"
+
+static QStatusBar *findStatusBar(QWidget *widget)
+{
+	for (; widget; widget = widget->parentWidget())
+		if (auto main_window = qobject_cast<QMainWindow *>(widget))
+			return main_window->statusBar();
+	return nullptr;
+}
 
 struct FilterBar::Ui
 {
@@ -36,6 +47,7 @@ struct FilterBar::Ui
 	QComboBox *filter_type_cb;
 	QWidgetAction *filter_text_action;
 	QLineEdit *filter_text;
+	QCompleter *filter_script_completer;
 	std::vector<std::unique_ptr<QAction>> remove_filter_actions;
 	QWidgetAction *add_filter_action;
 	QMenu *add_filter_menu;
@@ -66,6 +78,10 @@ struct FilterBar::Ui
 		filter_text_action->setDefaultWidget(filter_text);
 		toolbar->addAction(filter_text_action);
 
+		filter_script_completer = new ScriptPropertiesCompleter(toolbar);
+		filter_script_completer->setCompletionMode(QCompleter::UnfilteredPopupCompletion);
+		filter_script_completer->setWidget(filter_text);
+
 		add_filter_action = new QWidgetAction(toolbar);
 		auto add_filter_button = new QToolButton;
 		add_filter_menu = new QMenu(add_filter_button);
@@ -90,9 +106,18 @@ FilterBar::FilterBar(QWidget *parent):
 		updateFilterUi();
 		updateTemporaryFilter();
 	});
-	connect(_ui->filter_text, &QLineEdit::textChanged, this, [this](const QString &text) {
-		updateTemporaryFilter();
-	});
+	connect(_ui->filter_text, &QLineEdit::textChanged,
+		this, &FilterBar::updateTemporaryFilter);
+	connect(_ui->filter_text, &QLineEdit::textEdited,
+		this, &FilterBar::filterEditChanged);
+	connect(_ui->filter_text, &QLineEdit::cursorPositionChanged,
+		this, &FilterBar::filterEditChanged);
+	connect(_ui->filter_text, &QLineEdit::selectionChanged,
+		this, &FilterBar::filterEditChanged);
+	connect(_ui->filter_script_completer, qOverload<const QString &>(&QCompleter::activated),
+		this, &FilterBar::completionActivated);
+	connect(_ui->filter_script_completer, qOverload<const QModelIndex &>(&QCompleter::highlighted),
+		this, &FilterBar::completionHighlighted);
 
 	auto make_add_filter_action = [&, this](const QString &name, auto data) {
 		auto action = new QAction(_ui->add_filter_menu);
@@ -218,4 +243,58 @@ void FilterBar::updateTemporaryFilter()
 		_ui->filter_type_cb->currentData().value<UserUnitFilters::TemporaryType>(),
 		_ui->filter_text->text()
 	);
+}
+
+static QRegularExpressionMatch findCurrentJSIdentifer(const QString &text, int cursor, bool full = false)
+{
+	// match partial identifier.member
+	static const QRegularExpression no_anchor("\\p{ID_Start}\\p{ID_Continue}*(?:\\.\\p{ID_Start}\\p{ID_Continue}*)*\\.?");
+	static const QRegularExpression anchor_at_end(no_anchor.pattern() + "\\z");
+	// Match before the cursor
+	auto match = anchor_at_end.matchView(QStringView(text).first(cursor));
+	if (full && match.hasMatch()) { // Also match after the cursor
+		match = no_anchor.match(text,
+				match.capturedStart(),
+				QRegularExpression::NormalMatch,
+				QRegularExpression::AnchorAtOffsetMatchOption);
+	}
+	return match;
+}
+
+void FilterBar::filterEditChanged()
+{
+	if (_ui->filter_type_cb->currentData().value<UserUnitFilters::TemporaryType>() != UserUnitFilters::TemporaryType::Script)
+		return;
+	auto filter_text  = _ui->filter_text->text();
+	auto cursor_pos = _ui->filter_text->selectionStart() != -1
+		? _ui->filter_text->selectionStart()
+		: _ui->filter_text->cursorPosition();
+	auto match = findCurrentJSIdentifer(filter_text, cursor_pos);
+	_ui->filter_script_completer->setCompletionPrefix(match.captured());
+	_ui->filter_script_completer->complete();
+}
+
+void FilterBar::completionActivated(const QString &text)
+{
+	auto filter_text = _ui->filter_text->text();
+	auto cursor_pos = _ui->filter_text->selectionStart() != -1
+		? _ui->filter_text->selectionStart()
+		: _ui->filter_text->cursorPosition();
+	auto match = findCurrentJSIdentifer(filter_text, cursor_pos, true);
+	if (match.hasMatch()) {
+		filter_text.replace(match.capturedStart(), match.capturedLength(), text);
+		_ui->filter_text->setText(filter_text);
+		_ui->filter_text->setCursorPosition(match.capturedStart() + text.size());
+	}
+	else {
+		filter_text.insert(cursor_pos, text);
+		_ui->filter_text->setText(filter_text);
+		_ui->filter_text->setCursorPosition(cursor_pos + text.size());
+	}
+}
+
+void FilterBar::completionHighlighted(const QModelIndex &index)
+{
+	if (auto status_bar = findStatusBar(this))
+		status_bar->showMessage(index.data(Qt::StatusTipRole).toString());
 }

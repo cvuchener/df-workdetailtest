@@ -41,6 +41,9 @@ private:
 	void setupFilters();
 	void updateFilterUi();
 	void updateTemporaryFilter();
+	void filterEditChanged();
+	void completionActivated(const QString &text);
+	void completionHighlighted(const QModelIndex &index);
 
 	struct Ui;
 	std::unique_ptr<Ui> _ui;

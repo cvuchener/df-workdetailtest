@@ -18,8 +18,12 @@
 
 #include "ScriptManager.h"
 
+#include "Application.h"
 #include "StandardPaths.h"
 #include "UnitScriptWrapper.h"
+
+#include <QMetaProperty>
+#include <QMetaMethod>
 
 Q_LOGGING_CATEGORY(ScriptLog, "script");
 
@@ -36,6 +40,63 @@ ScriptManager::ScriptManager():
 	_test_dummy(_js.newQObject(new UnitScriptWrapper))
 {
 	_js.installExtensions(QJSEngine::ConsoleExtension);
+	{ // Add unit properties to properties model
+		auto item = new QStandardItem("u");
+		const auto &meta_unit = UnitScriptWrapper::staticMetaObject;
+		for (int i = meta_unit.propertyOffset(); i < meta_unit.propertyCount(); ++i) {
+			auto prop = meta_unit.property(i);
+			auto prop_item = new QStandardItem();
+			prop_item->setData(prop.name(), Qt::EditRole);
+			int doc = meta_unit.indexOfClassInfo((QByteArray("doc:") + prop.name()).data());
+			if (doc == -1) {
+				prop_item->setData(QString("property %1: %2")
+						.arg(prop.name())
+						.arg(prop.typeName()),
+						Qt::StatusTipRole);
+			}
+			else {
+				prop_item->setData(QString("property %1: %2 – %3")
+						.arg(prop.name())
+						.arg(prop.typeName())
+						.arg(meta_unit.classInfo(doc).value()),
+						Qt::StatusTipRole);
+			}
+			item->appendRow(prop_item);
+		}
+		for (int i = meta_unit.methodOffset(); i < meta_unit.methodCount(); ++i) {
+			auto method = meta_unit.method(i);
+			if (method.access() != QMetaMethod::Public)
+				continue;
+			if (method.methodType() == QMetaMethod::Constructor
+					|| method.methodType() == QMetaMethod::Signal)
+				continue;
+			auto method_item = new QStandardItem();
+			method_item->setData(method.name(), Qt::EditRole);
+			QStringList params_doc;
+			for (int j = 0; j < method.parameterCount(); ++j)
+				params_doc.push_back(QString("%1: %2")
+						.arg(method.parameterNames().at(j))
+						.arg(method.parameterTypeName(j)));
+			int doc = meta_unit.indexOfClassInfo((QByteArray("doc:") + method.name()).data());
+			if (doc == -1) {
+				method_item->setData(QString("function %1(%2): %3")
+						.arg(method.name())
+						.arg(params_doc.join(", "))
+						.arg(method.returnMetaType().name()),
+						Qt::StatusTipRole);
+			}
+			else {
+				method_item->setData(QString("function %1(%2): %3 – %4")
+						.arg(method.name())
+						.arg(params_doc.join(", "))
+						.arg(method.returnMetaType().name())
+						.arg(meta_unit.classInfo(doc).value()),
+						Qt::StatusTipRole);
+			}
+			item->appendRow(method_item);
+		}
+		_properties_model.appendRow(item);
+	}
 	addEnumValues("profession", df::profession::AllValues);
 	QStringList name_filter = {"*.js"};
 	for (QDir data_dir: StandardPaths::data_locations()) {
@@ -66,6 +127,8 @@ ScriptManager::ScriptManager():
 			_scripts.emplace_back(fi.baseName(), std::move(result));
 		}
 	}
+	_properties_model.setSortRole(Qt::EditRole);
+	_properties_model.sort(0);
 }
 
 ScriptManager::~ScriptManager()
@@ -92,7 +155,37 @@ template <std::ranges::input_range R>
 void ScriptManager::addEnumValues(const QString &name, R &&values)
 {
 	auto object = _js.newObject();
-	for (auto value: values)
-		object.setProperty(QString::fromLocal8Bit(to_string(value)), value);
+	auto item = new QStandardItem(name);
+	for (auto value: values) {
+		auto value_name = QString::fromLocal8Bit(to_string(value));
+		object.setProperty(value_name, value);
+		item->appendRow(new QStandardItem(value_name));
+	}
 	_js.globalObject().setProperty(name, object);
+	_properties_model.appendRow(item);
+}
+
+ScriptPropertiesCompleter::ScriptPropertiesCompleter(QObject *parent):
+	QCompleter(Application::scripts().propertiesModel(), parent)
+{
+	setModelSorting(QCompleter::CaseInsensitivelySortedModel);
+}
+
+ScriptPropertiesCompleter::~ScriptPropertiesCompleter()
+{
+}
+
+QString ScriptPropertiesCompleter::pathFromIndex(const QModelIndex &index) const
+{
+	QString path = index.data().toString();
+	for (auto parent = index.parent(); parent.isValid(); parent = parent.parent()) {
+		path.prepend('.');
+		path.prepend(parent.data().toString());
+	}
+	return path;
+}
+
+QStringList ScriptPropertiesCompleter::splitPath(const QString &path) const
+{
+	return path.split('.');
 }
