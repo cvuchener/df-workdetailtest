@@ -239,10 +239,14 @@ void FilterBar::updateFilterUi()
 
 void FilterBar::updateTemporaryFilter()
 {
-	_filters->setTemporaryFilter(
+	auto error = _filters->setTemporaryFilter(
 		_ui->filter_type_cb->currentData().value<UserUnitFilters::TemporaryType>(),
 		_ui->filter_text->text()
 	);
+	if (!error.isNull())
+		findStatusBar(this)->showMessage(tr("Invalid filter: %1").arg(error));
+	else
+		findStatusBar(this)->clearMessage();
 }
 
 static QRegularExpressionMatch findCurrentJSIdentifer(const QString &text, int cursor, bool full = false)

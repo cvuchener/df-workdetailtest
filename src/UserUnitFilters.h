@@ -76,7 +76,8 @@ public:
 	std::pair<TemporaryType, QString> temporaryFilter() const {
 		return {_temporary_type, _temporary_text};
 	}
-	void setTemporaryFilter(TemporaryType type, const QString &text);
+	// returns an error string if filter creation failed
+	QString setTemporaryFilter(TemporaryType type, const QString &text);
 
 	bool operator()(const Unit &) const;
 

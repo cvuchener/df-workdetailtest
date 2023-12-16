@@ -108,7 +108,7 @@ void UserUnitFilters::clear()
 	invalidated();
 }
 
-void UserUnitFilters::setTemporaryFilter(TemporaryType type, const QString &text)
+QString UserUnitFilters::setTemporaryFilter(TemporaryType type, const QString &text)
 {
 	_temporary_type = type;
 	_temporary_text = text;
@@ -117,23 +117,28 @@ void UserUnitFilters::setTemporaryFilter(TemporaryType type, const QString &text
 	else {
 		switch (type) {
 		case TemporaryType::Simple:
-			_temporary_filter = UnitNameFilter{
-				text
-			};
+			_temporary_filter = UnitNameFilter{text};
 			break;
 		case TemporaryType::Regex:
-			_temporary_filter = UnitNameRegexFilter{
-				QRegularExpression(text)
-			};
+			{
+				QRegularExpression re(text);
+				if (!re.isValid())
+					return re.errorString();
+				_temporary_filter = UnitNameRegexFilter{std::move(re)};
+			}
 			break;
 		case TemporaryType::Script:
-			_temporary_filter = ScriptedUnitFilter{
-				Application::scripts().makeScript(text)
-			};
+			{
+				auto filter = Application::scripts().makeScript(text);
+				if (filter.isError())
+					return filter.property("message").toString();
+				_temporary_filter = ScriptedUnitFilter{std::move(filter)};
+			}
 			break;
 		}
 	}
 	invalidated();
+	return {};
 }
 
 bool UserUnitFilters::operator()(const Unit &unit) const
