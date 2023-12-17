@@ -27,11 +27,7 @@
 #include <dfhack-client-qt/Function.h>
 
 static const DFHack::Function<
-	dfproto::workdetailtest::WorkDetailChanges,
-	dfproto::workdetailtest::WorkDetailResults
-> EditWorkDetails = {"workdetailtest", "EditWorkDetails"};
-static const DFHack::Function<
-	dfproto::workdetailtest::WorkDetailProperties,
+	dfproto::workdetailtest::EditWorkDetail,
 	dfproto::workdetailtest::WorkDetailResult
 > EditWorkDetail = {"workdetailtest", "EditWorkDetail"};
 
@@ -117,11 +113,11 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	}
 	std::vector<int8_t> old_assignment(units.size());
 	std::ranges::transform(units, old_assignment.begin(), [this](int id) { return isAssigned(id); });
-	dfproto::workdetailtest::WorkDetailProperties args;
-	args.set_work_detail_index(index.row());
-	args.set_work_detail_name(_wd->name);
+	dfproto::workdetailtest::EditWorkDetail args;
+	args.mutable_id()->set_index(index.row());
+	args.mutable_id()->set_name(_wd->name);
 	for (std::size_t i = 0; i < units.size(); ++i) {
-		auto assignment = args.mutable_assignment_changes()->Add();
+		auto assignment = args.mutable_changes()->mutable_assignments()->Add();
 		assignment->set_unit_id(units[i]);
 		auto assign = get_assign(old_assignment[i]);
 		assignment->set_enable(assign);
@@ -164,36 +160,35 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
 	// Prepare arguments
-	using namespace dfproto::workdetailtest;
 	auto index = _df.work_details->find(*this);
 	if (!index.isValid()) {
 		qWarning() << "invalid work detail index";
 		co_return;
 	}
-	WorkDetailProperties args;
-	args.set_work_detail_index(index.row());
-	args.set_work_detail_name(_wd->name);
+	dfproto::workdetailtest::EditWorkDetail args;
+	args.mutable_id()->set_index(index.row());
+	args.mutable_id()->set_name(_wd->name);
 	if (!changes.name.isEmpty())
-		args.set_new_name(df::toCP437(changes.name));
+		args.mutable_changes()->set_name(df::toCP437(changes.name));
 	if (changes.mode) {
 		switch (*changes.mode) {
 		case df::work_detail_mode::EverybodyDoesThis:
-			args.set_new_mode(EverybodyDoesThis);
+			args.mutable_changes()->set_mode(dfproto::workdetailtest::EverybodyDoesThis);
 			break;
 		case df::work_detail_mode::NobodyDoesThis:
-			args.set_new_mode(NobodyDoesThis);
+			args.mutable_changes()->set_mode(dfproto::workdetailtest::NobodyDoesThis);
 			break;
 		case df::work_detail_mode::OnlySelectedDoesThis:
-			args.set_new_mode(OnlySelectedDoesThis);
+			args.mutable_changes()->set_mode(dfproto::workdetailtest::OnlySelectedDoesThis);
 			break;
 		default:
 			break;
 		}
 	}
 	if (changes.icon)
-		args.set_new_icon(static_cast<int>(*changes.icon));
+		args.mutable_changes()->set_icon(static_cast<int>(*changes.icon));
 	for (const auto &[labor, enable]: changes.labors) {
-		auto labor_change = args.mutable_labor_changes()->Add();
+		auto labor_change = args.mutable_changes()->mutable_labors()->Add();
 		labor_change->set_labor(labor);
 		labor_change->set_enable(enable);
 	}
