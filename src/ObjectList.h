@@ -263,6 +263,17 @@ public:
 		endInsertRows();
 	}
 
+	void insert(std::shared_ptr<T> object, int row)
+	{
+		if (row < 0 || unsigned(row) > _objects.size())
+			push(std::move(object));
+		else {
+			beginInsertRows({}, row, row);
+			_objects.insert(_objects.begin()+row, std::move(object));
+			endInsertRows();
+		}
+	}
+
 	void erase(const QModelIndex &index)
 	{
 		beginRemoveRows({}, index.row(), index.row());

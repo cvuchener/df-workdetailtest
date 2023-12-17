@@ -305,10 +305,12 @@ QCoro::Task<> WorkDetail::remove()
 	_df.work_details->erase(index);
 }
 
-QCoro::Task<> WorkDetail::makeNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties)
+QCoro::Task<> WorkDetail::addNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties, int position)
 {
 	// Prepare arguments
 	dfproto::workdetailtest::AddWorkDetail args;
+	if (position >= 0)
+		args.set_position(position);
 	initPropertiesArgs(*args.mutable_properties(), properties);
 	// Call
 	if (!dfhack) {
@@ -329,5 +331,8 @@ QCoro::Task<> WorkDetail::makeNewWorkDetail(std::shared_ptr<DwarfFortressData> d
 	// Apply changes
 	auto wd = std::make_shared<WorkDetail>(std::make_unique<df::work_detail>(), *df, *dfhack);
 	wd->setProperties(properties, *r);
-	df->work_details->push(std::move(wd));
+	if (position < 0)
+		df->work_details->push(std::move(wd));
+	else
+		df->work_details->insert(std::move(wd), position);
 }

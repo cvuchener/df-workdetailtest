@@ -297,10 +297,23 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 	auto wd = _df.work_details->get(section);
 
 	menu->addSeparator();
-	auto edit_action = new QAction(tr("Edit %1...").arg(wd->displayName()), menu);
-	auto remove_action = new QAction(tr("Remove %1").arg(wd->displayName()), menu);
-	auto add_new_action = new QAction(tr("Add new work detail..."), menu);
-	menu->addActions({edit_action, remove_action, add_new_action});
+	auto edit_action = new QAction(
+			QIcon::fromTheme("document-edit"),
+			tr("Edit %1...").arg(wd->displayName()),
+			menu);
+	auto remove_action = new QAction(
+			QIcon::fromTheme("edit-delete"),
+			tr("Remove %1").arg(wd->displayName()),
+			menu);
+	auto insert_before_action = new QAction(
+			QIcon::fromTheme("arrow-left"),
+			tr("Insert new work detail before..."),
+			menu);
+	auto insert_after_action = new QAction(
+			QIcon::fromTheme("arrow-right"),
+			tr("Insert new work detail after..."),
+			menu);
+	menu->addActions({edit_action, remove_action, insert_before_action, insert_after_action});
 
 	connect(edit_action, &QAction::triggered, [wd, parent]() {
 		WorkDetailEditor editor(parent);
@@ -326,20 +339,24 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 			wd->remove();
 	});
 
-	connect(add_new_action, &QAction::triggered, [df = _df.shared_from_this(), dfhack = _dfhack, parent]() {
-		WorkDetailEditor editor(parent);
-		editor.setName(tr("New work detail"));
-		editor.setMode(df::work_detail_mode::EverybodyDoesThis);
-		editor.setIcon(df::work_detail_icon::ICON_NONE);
-		if (QDialog::Accepted == editor.exec()) {
-			WorkDetail::makeNewWorkDetail(std::move(df), dfhack, {
-				.name = editor.name(),
-				.mode = editor.mode(),
-				.icon = editor.icon(),
-				.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
-			});
-		}
-	});
+	auto add_new = [&, this](int position) {
+		return [df = _df.shared_from_this(), dfhack = _dfhack, parent, position]() {
+			WorkDetailEditor editor(parent);
+			editor.setName(tr("New work detail"));
+			editor.setMode(df::work_detail_mode::EverybodyDoesThis);
+			editor.setIcon(df::work_detail_icon::ICON_NONE);
+			if (QDialog::Accepted == editor.exec()) {
+				WorkDetail::addNewWorkDetail(std::move(df), dfhack, {
+					.name = editor.name(),
+					.mode = editor.mode(),
+					.icon = editor.icon(),
+					.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
+				}, position);
+			}
+		};
+	};
+	connect(insert_before_action, &QAction::triggered, add_new(section));
+	connect(insert_after_action, &QAction::triggered, add_new(section+1));
 
 	_sort.makeSortMenu(menu);
 

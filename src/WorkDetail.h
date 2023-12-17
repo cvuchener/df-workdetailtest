@@ -80,7 +80,7 @@ public:
 	QCoro::Task<> edit(Properties properties);
 	QCoro::Task<> remove();
 
-	static QCoro::Task<> makeNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties);
+	static QCoro::Task<> addNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties, int position = -1);
 
 signals:
 	void unitDataChanged(int unit_id);
