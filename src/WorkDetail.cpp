@@ -30,6 +30,10 @@ static const DFHack::Function<
 	dfproto::workdetailtest::EditWorkDetail,
 	dfproto::workdetailtest::WorkDetailResult
 > EditWorkDetail = {"workdetailtest", "EditWorkDetail"};
+static const DFHack::Function<
+	dfproto::workdetailtest::AddWorkDetail,
+	dfproto::workdetailtest::WorkDetailResult
+> AddWorkDetail = {"workdetailtest", "AddWorkDetail"};
 
 WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
 	QObject(parent),
@@ -81,6 +85,15 @@ void WorkDetail::setAssignment(int unit_id, bool assign, ChangeStatus status)
 	}
 	if (assign != assigned || status_changed)
 		unitDataChanged(unit_id);
+}
+
+std::vector<std::pair<df::unit_labor_t, bool>> WorkDetail::Properties::fromLabors(std::span<const bool, df::unit_labor::Count> labors)
+{
+	std::vector<std::pair<df::unit_labor_t, bool>> l;
+	l.reserve(df::unit_labor::Count);
+	for (int i = 0; i < df::unit_labor::Count; ++i)
+		l.emplace_back(static_cast<df::unit_labor_t>(i), labors[i]);
+	return l;
 }
 
 QCoro::Task<> WorkDetail::assign(int unit_id, bool assign)
@@ -155,6 +168,70 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	}
 }
 
+static void initPropertiesArgs(dfproto::workdetailtest::WorkDetailProperties &args, const WorkDetail::Properties &props)
+{
+	if (!props.name.isEmpty())
+		args.set_name(df::toCP437(props.name));
+	if (props.mode) {
+		switch (*props.mode) {
+		case df::work_detail_mode::EverybodyDoesThis:
+			args.set_mode(dfproto::workdetailtest::EverybodyDoesThis);
+			break;
+		case df::work_detail_mode::NobodyDoesThis:
+			args.set_mode(dfproto::workdetailtest::NobodyDoesThis);
+			break;
+		case df::work_detail_mode::OnlySelectedDoesThis:
+			args.set_mode(dfproto::workdetailtest::OnlySelectedDoesThis);
+			break;
+		default:
+			break;
+		}
+	}
+	if (props.icon)
+		args.set_icon(static_cast<int>(*props.icon));
+	for (const auto &[labor, enable]: props.labors) {
+		auto labor_change = args.mutable_labors()->Add();
+		labor_change->set_labor(labor);
+		labor_change->set_enable(enable);
+	}
+}
+
+void WorkDetail::setProperties(const Properties &properties, const dfproto::workdetailtest::WorkDetailResult &r)
+{
+	if (!properties.name.isEmpty()) {
+		_wd->name = df::toCP437(properties.name);
+		_display_name = properties.name;
+	}
+	if (properties.mode) {
+		const auto &res = r.mode();
+		if (res.success()) {
+			_wd->flags.bits.mode = *properties.mode;
+		}
+		else {
+			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
+		}
+	}
+	if (properties.icon) {
+		const auto &res = r.icon();
+		if (res.success()) {
+			_wd->icon = *properties.icon;
+		}
+		else {
+			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
+		}
+	}
+	for (std::size_t i = 0; i < properties.labors.size(); ++i) {
+		const auto &labor_result = r.labors(i);
+		const auto &[labor, enable] = properties.labors[i];
+		if (labor_result.success()) {
+			_wd->allowed_labors[labor] = enable;
+		}
+		else {
+			qCWarning(DFHackLog) << "editWorkDetail failed" << labor_result.error();
+		}
+	}
+}
+
 QCoro::Task<> WorkDetail::edit(Properties changes)
 {
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
@@ -168,30 +245,7 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	dfproto::workdetailtest::EditWorkDetail args;
 	args.mutable_id()->set_index(index.row());
 	args.mutable_id()->set_name(_wd->name);
-	if (!changes.name.isEmpty())
-		args.mutable_changes()->set_name(df::toCP437(changes.name));
-	if (changes.mode) {
-		switch (*changes.mode) {
-		case df::work_detail_mode::EverybodyDoesThis:
-			args.mutable_changes()->set_mode(dfproto::workdetailtest::EverybodyDoesThis);
-			break;
-		case df::work_detail_mode::NobodyDoesThis:
-			args.mutable_changes()->set_mode(dfproto::workdetailtest::NobodyDoesThis);
-			break;
-		case df::work_detail_mode::OnlySelectedDoesThis:
-			args.mutable_changes()->set_mode(dfproto::workdetailtest::OnlySelectedDoesThis);
-			break;
-		default:
-			break;
-		}
-	}
-	if (changes.icon)
-		args.mutable_changes()->set_icon(static_cast<int>(*changes.icon));
-	for (const auto &[labor, enable]: changes.labors) {
-		auto labor_change = args.mutable_changes()->mutable_labors()->Add();
-		labor_change->set_labor(labor);
-		labor_change->set_enable(enable);
-	}
+	initPropertiesArgs(*args.mutable_changes(), changes);
 	// Call
 	if (!_dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
@@ -200,47 +254,43 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	auto r = co_await EditWorkDetail(*_dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
+		qCWarning(DFHackLog) << "EditWorkDetail failed" << make_error_code(r.cr).message();
 		co_return;
 	}
 	const auto &wd_result = r->work_detail();
 	if (!wd_result.success()) {
-		qCWarning(DFHackLog) << "editWorkDetail failed" << wd_result.error();
+		qCWarning(DFHackLog) << "EditWorkDetail failed" << wd_result.error();
 		co_return;
 	}
 	// Apply changes
 	aboutToBeUpdated();
-	if (!changes.name.isEmpty()) {
-		_wd->name = df::toCP437(changes.name);
-		_display_name = changes.name;
-	}
-	if (changes.mode) {
-		const auto &res = r->mode();
-		if (res.success()) {
-			_wd->flags.bits.mode = *changes.mode;
-		}
-		else {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
-		}
-	}
-	if (changes.icon) {
-		const auto &res = r->icon();
-		if (res.success()) {
-			_wd->icon = *changes.icon;
-		}
-		else {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
-		}
-	}
-	for (std::size_t i = 0; i < changes.labors.size(); ++i) {
-		const auto &labor_result = r->labors(i);
-		const auto &[labor, enable] = changes.labors[i];
-		if (labor_result.success()) {
-			_wd->allowed_labors[labor] = enable;
-		}
-		else {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << labor_result.error();
-		}
-	}
+	setProperties(changes, *r);
 	updated();
+}
+
+QCoro::Task<> WorkDetail::makeNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties)
+{
+	// Prepare arguments
+	dfproto::workdetailtest::AddWorkDetail args;
+	initPropertiesArgs(*args.mutable_properties(), properties);
+	// Call
+	if (!dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
+	}
+	auto r = co_await AddWorkDetail(*dfhack, args).first;
+	// Check results
+	if (!r) {
+		qCWarning(DFHackLog) << "AddWorkDetail failed" << make_error_code(r.cr).message();
+		co_return;
+	}
+	const auto &wd_result = r->work_detail();
+	if (!wd_result.success()) {
+		qCWarning(DFHackLog) << "AddWorkDetail failed" << wd_result.error();
+		co_return;
+	}
+	// Apply changes
+	auto wd = std::make_shared<WorkDetail>(std::make_unique<df::work_detail>(), *df, *dfhack);
+	wd->setProperties(properties, *r);
+	df->work_details->push(std::move(wd));
 }

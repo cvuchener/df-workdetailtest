@@ -29,7 +29,9 @@ static constexpr df::unit_labor_category_t indexToCategory(int index)
 }
 
 LaborModel::LaborModel(QObject *parent):
-	QAbstractItemModel(parent)
+	QAbstractItemModel(parent),
+	_group_by_category(false),
+	_labors{false}
 {
 	for (int i = 0; i < df::unit_labor::Count; ++i) {
 		auto labor = static_cast<df::unit_labor_t>(i);

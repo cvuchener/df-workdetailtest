@@ -256,6 +256,13 @@ public:
 			return index(distance(_objects.begin(), it));
 	}
 
+	void push(std::shared_ptr<T> object)
+	{
+		beginInsertRows({}, _objects.size(), _objects.size());
+		_objects.push_back(std::move(object));
+		endInsertRows();
+	}
+
 private:
 	std::vector<std::shared_ptr<T>> _objects;
 

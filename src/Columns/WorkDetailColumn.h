@@ -31,7 +31,7 @@ class WorkDetailColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	WorkDetailColumn(DwarfFortressData &df, QObject *parent = nullptr);
+	WorkDetailColumn(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
 	~WorkDetailColumn() override;
 
 	int count() const override;
@@ -50,6 +50,7 @@ public:
 
 private:
 	DwarfFortressData &_df;
+	QPointer<DFHack::Client> _dfhack;
 	enum class SortBy {
 		Skill,
 		Assigned,

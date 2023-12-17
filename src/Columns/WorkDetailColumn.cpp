@@ -36,9 +36,10 @@
 
 using namespace Columns;
 
-WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QObject *parent):
+WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent):
 	AbstractColumn(parent),
 	_df(df),
+	_dfhack(dfhack),
 	_sort{*this, SortBy::Skill, {
 			{SortBy::Skill, tr("skill")},
 			{SortBy::Assigned, tr("assigned")}}}
@@ -296,7 +297,8 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 	menu->addSeparator();
 	auto edit_action = new QAction(tr("Edit %1...").arg(wd->displayName()), menu);
-	menu->addAction(edit_action);
+	auto add_new_action = new QAction(tr("Add new work detail..."), menu);
+	menu->addActions({edit_action, add_new_action});
 
 	connect(edit_action, &QAction::triggered, [wd, parent]() {
 		WorkDetailEditor editor(parent);
@@ -309,15 +311,22 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 				.name = editor.name(),
 				.mode = editor.mode(),
 				.icon = editor.icon(),
-				.labors = [](auto labors) {
-					std::vector<std::pair<df::unit_labor_t, bool>> l;
-					l.reserve(df::unit_labor::Count);
-					for (int i = 0; i < df::unit_labor::Count; ++i) {
-						l.emplace_back(static_cast<df::unit_labor_t>(i),
-								labors[i]);
-					}
-					return l;
-				}(editor.labors().labors()),
+				.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
+			});
+		}
+	});
+
+	connect(add_new_action, &QAction::triggered, [df = _df.shared_from_this(), dfhack = _dfhack, parent]() {
+		WorkDetailEditor editor(parent);
+		editor.setName(tr("New work detail"));
+		editor.setMode(df::work_detail_mode::EverybodyDoesThis);
+		editor.setIcon(df::work_detail_icon::ICON_NONE);
+		if (QDialog::Accepted == editor.exec()) {
+			WorkDetail::makeNewWorkDetail(std::move(df), dfhack, {
+				.name = editor.name(),
+				.mode = editor.mode(),
+				.icon = editor.icon(),
+				.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
 			});
 		}
 	});
@@ -344,7 +353,7 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 Factory WorkDetailColumn::makeFactory(const QJsonObject &)
 {
-	return [](DwarfFortressData &df, QPointer<DFHack::Client>) {
-		return std::make_unique<WorkDetailColumn>(df);
+	return [](DwarfFortressData &df, QPointer<DFHack::Client> dfhack) {
+		return std::make_unique<WorkDetailColumn>(df, dfhack);
 	};
 }
