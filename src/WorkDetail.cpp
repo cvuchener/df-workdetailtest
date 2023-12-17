@@ -34,6 +34,10 @@ static const DFHack::Function<
 	dfproto::workdetailtest::AddWorkDetail,
 	dfproto::workdetailtest::WorkDetailResult
 > AddWorkDetail = {"workdetailtest", "AddWorkDetail"};
+static const DFHack::Function<
+	dfproto::workdetailtest::RemoveWorkDetail,
+	dfproto::workdetailtest::Result
+> RemoveWorkDetail = {"workdetailtest", "RemoveWorkDetail"};
 
 WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
 	QObject(parent),
@@ -119,16 +123,13 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
 	// Prepare arguments
-	auto index = _df.work_details->find(*this);
-	if (!index.isValid()) {
+	dfproto::workdetailtest::EditWorkDetail args;
+	if (!setId(*args.mutable_id())) {
 		qWarning() << "invalid work detail index";
 		co_return;
 	}
 	std::vector<int8_t> old_assignment(units.size());
 	std::ranges::transform(units, old_assignment.begin(), [this](int id) { return isAssigned(id); });
-	dfproto::workdetailtest::EditWorkDetail args;
-	args.mutable_id()->set_index(index.row());
-	args.mutable_id()->set_name(_wd->name);
 	for (std::size_t i = 0; i < units.size(); ++i) {
 		auto assignment = args.mutable_changes()->mutable_assignments()->Add();
 		assignment->set_unit_id(units[i]);
@@ -196,6 +197,16 @@ static void initPropertiesArgs(dfproto::workdetailtest::WorkDetailProperties &ar
 	}
 }
 
+bool WorkDetail::setId(dfproto::workdetailtest::WorkDetailId &id) const
+{
+	auto index = _df.work_details->find(*this);
+	if (!index.isValid())
+		return false;
+	id.set_index(index.row());
+	id.set_name(_wd->name);
+	return true;
+}
+
 void WorkDetail::setProperties(const Properties &properties, const dfproto::workdetailtest::WorkDetailResult &r)
 {
 	if (!properties.name.isEmpty()) {
@@ -237,14 +248,11 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
 	// Prepare arguments
-	auto index = _df.work_details->find(*this);
-	if (!index.isValid()) {
+	dfproto::workdetailtest::EditWorkDetail args;
+	if (!setId(*args.mutable_id())) {
 		qWarning() << "invalid work detail index";
 		co_return;
 	}
-	dfproto::workdetailtest::EditWorkDetail args;
-	args.mutable_id()->set_index(index.row());
-	args.mutable_id()->set_name(_wd->name);
 	initPropertiesArgs(*args.mutable_changes(), changes);
 	// Call
 	if (!_dfhack) {
@@ -266,6 +274,35 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	aboutToBeUpdated();
 	setProperties(changes, *r);
 	updated();
+}
+
+QCoro::Task<> WorkDetail::remove()
+{
+	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
+	Q_ASSERT(thisptr);
+	dfproto::workdetailtest::RemoveWorkDetail args;
+	if (!setId(*args.mutable_id())) {
+		qWarning() << "invalid work detail index";
+		co_return;
+	}
+	// Call
+	if (!_dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
+	}
+	auto r = co_await RemoveWorkDetail(*_dfhack, args).first;
+	// Check results
+	if (!r) {
+		qCWarning(DFHackLog) << "RemoveWorkDetail failed" << make_error_code(r.cr).message();
+		co_return;
+	}
+	if (!r->success()) {
+		qCWarning(DFHackLog) << "RemoveWorkDetail failed" << r->error();
+		co_return;
+	}
+	// Apply changes
+	auto index = _df.work_details->find(*this);
+	_df.work_details->erase(index);
 }
 
 QCoro::Task<> WorkDetail::makeNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties)

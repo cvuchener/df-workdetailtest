@@ -27,7 +27,10 @@ class Unit;
 class DwarfFortressData;
 
 namespace DFHack { class Client; }
-namespace dfproto::workdetailtest { class WorkDetailResult; }
+namespace dfproto::workdetailtest {
+class WorkDetailId;
+class WorkDetailResult;
+}
 
 class WorkDetail: public QObject, public std::enable_shared_from_this<WorkDetail>
 {
@@ -75,6 +78,7 @@ public:
 	QCoro::Task<> assign(std::vector<int> units, bool assign);
 	QCoro::Task<> toggle(std::vector<int> units);
 	QCoro::Task<> edit(Properties properties);
+	QCoro::Task<> remove();
 
 	static QCoro::Task<> makeNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties);
 
@@ -88,6 +92,7 @@ private:
 	template<typename F>
 	QCoro::Task<> changeAssignments(std::vector<int> units, F assign);
 	void setAssignment(int unit_id, bool assign, ChangeStatus status);
+	bool setId(dfproto::workdetailtest::WorkDetailId &id) const;
 	void setProperties(const Properties &properties, const dfproto::workdetailtest::WorkDetailResult &results);
 
 	std::unique_ptr<df::work_detail> _wd;

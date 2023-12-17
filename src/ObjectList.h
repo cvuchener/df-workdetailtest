@@ -263,6 +263,13 @@ public:
 		endInsertRows();
 	}
 
+	void erase(const QModelIndex &index)
+	{
+		beginRemoveRows({}, index.row(), index.row());
+		_objects.erase(_objects.begin() + index.row());
+		endRemoveRows();
+	}
+
 private:
 	std::vector<std::shared_ptr<T>> _objects;
 

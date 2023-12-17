@@ -32,6 +32,7 @@
 #include <QBrush>
 #include <QMenu>
 #include <QAction>
+#include <QMessageBox>
 
 
 using namespace Columns;
@@ -297,8 +298,9 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 	menu->addSeparator();
 	auto edit_action = new QAction(tr("Edit %1...").arg(wd->displayName()), menu);
+	auto remove_action = new QAction(tr("Remove %1").arg(wd->displayName()), menu);
 	auto add_new_action = new QAction(tr("Add new work detail..."), menu);
-	menu->addActions({edit_action, add_new_action});
+	menu->addActions({edit_action, remove_action, add_new_action});
 
 	connect(edit_action, &QAction::triggered, [wd, parent]() {
 		WorkDetailEditor editor(parent);
@@ -314,6 +316,14 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 				.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
 			});
 		}
+	});
+
+	connect(remove_action, &QAction::triggered, [wd, parent]() {
+		auto result = QMessageBox::question(parent,
+				tr("Removing %1").arg(wd->displayName()),
+				tr("Are you sure you want to remove the work detail \"%1\"?").arg(wd->displayName()));
+		if (result == QMessageBox::Yes)
+			wd->remove();
 	});
 
 	connect(add_new_action, &QAction::triggered, [df = _df.shared_from_this(), dfhack = _dfhack, parent]() {
