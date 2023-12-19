@@ -29,6 +29,7 @@ class DwarfFortressData;
 namespace DFHack { class Client; }
 namespace dfproto::workdetailtest {
 class WorkDetailId;
+class WorkDetailProperties;
 class WorkDetailResult;
 }
 
@@ -72,15 +73,13 @@ public:
 		std::optional<df::work_detail_mode_t> mode;
 		std::optional<df::work_detail_icon_t> icon;
 		std::vector<std::pair<df::unit_labor_t, bool>> labors;
-		static decltype(labors) fromLabors(std::span<const bool, df::unit_labor::Count> labors);
+		static decltype(labors) allLabors(std::span<const bool, df::unit_labor::Count> labors);
+		void setArgs(dfproto::workdetailtest::WorkDetailProperties &) const;
 	};
 	QCoro::Task<> assign(int unit_id, bool assign);
 	QCoro::Task<> assign(std::vector<int> units, bool assign);
 	QCoro::Task<> toggle(std::vector<int> units);
 	QCoro::Task<> edit(Properties properties);
-	QCoro::Task<> remove();
-
-	static QCoro::Task<> addNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties, int position = -1);
 
 signals:
 	void unitDataChanged(int unit_id);
@@ -101,6 +100,8 @@ private:
 	std::map<int, ChangeStatus> _statuses;
 
 	QString _display_name;
+
+	friend class WorkDetailModel;
 };
 
 #endif

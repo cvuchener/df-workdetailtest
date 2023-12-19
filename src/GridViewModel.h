@@ -93,6 +93,9 @@ private slots:
 	void columnBeginRemove(int first, int last);
 	void columnEndRemove(int first, int last);
 
+	void columnBeginMove(int first, int last, int dest);
+	void columnEndMove(int first, int last, int dest);
+
 private:
 	std::shared_ptr<DwarfFortressData> _df;
 	QPointer<DFHack::Client> _dfhack;

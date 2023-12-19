@@ -20,7 +20,7 @@
 
 #include "df/utils.h"
 #include "DwarfFortressData.h"
-#include "ObjectList.h"
+#include "WorkDetailModel.h"
 #include <QCoroFuture>
 
 #include "workdetailtest.pb.h"
@@ -30,14 +30,6 @@ static const DFHack::Function<
 	dfproto::workdetailtest::EditWorkDetail,
 	dfproto::workdetailtest::WorkDetailResult
 > EditWorkDetail = {"workdetailtest", "EditWorkDetail"};
-static const DFHack::Function<
-	dfproto::workdetailtest::AddWorkDetail,
-	dfproto::workdetailtest::WorkDetailResult
-> AddWorkDetail = {"workdetailtest", "AddWorkDetail"};
-static const DFHack::Function<
-	dfproto::workdetailtest::RemoveWorkDetail,
-	dfproto::workdetailtest::Result
-> RemoveWorkDetail = {"workdetailtest", "RemoveWorkDetail"};
 
 WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
 	QObject(parent),
@@ -91,13 +83,41 @@ void WorkDetail::setAssignment(int unit_id, bool assign, ChangeStatus status)
 		unitDataChanged(unit_id);
 }
 
-std::vector<std::pair<df::unit_labor_t, bool>> WorkDetail::Properties::fromLabors(std::span<const bool, df::unit_labor::Count> labors)
+std::vector<std::pair<df::unit_labor_t, bool>> WorkDetail::Properties::allLabors(std::span<const bool, df::unit_labor::Count> labors)
 {
 	std::vector<std::pair<df::unit_labor_t, bool>> l;
 	l.reserve(df::unit_labor::Count);
 	for (int i = 0; i < df::unit_labor::Count; ++i)
 		l.emplace_back(static_cast<df::unit_labor_t>(i), labors[i]);
 	return l;
+}
+
+void WorkDetail::Properties::setArgs(dfproto::workdetailtest::WorkDetailProperties &args) const
+{
+	if (!name.isEmpty())
+		args.set_name(df::toCP437(name));
+	if (mode) {
+		switch (*mode) {
+		case df::work_detail_mode::EverybodyDoesThis:
+			args.set_mode(dfproto::workdetailtest::EverybodyDoesThis);
+			break;
+		case df::work_detail_mode::NobodyDoesThis:
+			args.set_mode(dfproto::workdetailtest::NobodyDoesThis);
+			break;
+		case df::work_detail_mode::OnlySelectedDoesThis:
+			args.set_mode(dfproto::workdetailtest::OnlySelectedDoesThis);
+			break;
+		default:
+			break;
+		}
+	}
+	if (icon)
+		args.set_icon(static_cast<int>(*icon));
+	for (const auto &[labor, enable]: labors) {
+		auto labor_change = args.mutable_labors()->Add();
+		labor_change->set_labor(labor);
+		labor_change->set_enable(enable);
+	}
 }
 
 QCoro::Task<> WorkDetail::assign(int unit_id, bool assign)
@@ -169,34 +189,6 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	}
 }
 
-static void initPropertiesArgs(dfproto::workdetailtest::WorkDetailProperties &args, const WorkDetail::Properties &props)
-{
-	if (!props.name.isEmpty())
-		args.set_name(df::toCP437(props.name));
-	if (props.mode) {
-		switch (*props.mode) {
-		case df::work_detail_mode::EverybodyDoesThis:
-			args.set_mode(dfproto::workdetailtest::EverybodyDoesThis);
-			break;
-		case df::work_detail_mode::NobodyDoesThis:
-			args.set_mode(dfproto::workdetailtest::NobodyDoesThis);
-			break;
-		case df::work_detail_mode::OnlySelectedDoesThis:
-			args.set_mode(dfproto::workdetailtest::OnlySelectedDoesThis);
-			break;
-		default:
-			break;
-		}
-	}
-	if (props.icon)
-		args.set_icon(static_cast<int>(*props.icon));
-	for (const auto &[labor, enable]: props.labors) {
-		auto labor_change = args.mutable_labors()->Add();
-		labor_change->set_labor(labor);
-		labor_change->set_enable(enable);
-	}
-}
-
 bool WorkDetail::setId(dfproto::workdetailtest::WorkDetailId &id) const
 {
 	auto index = _df.work_details->find(*this);
@@ -253,7 +245,7 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 		qWarning() << "invalid work detail index";
 		co_return;
 	}
-	initPropertiesArgs(*args.mutable_changes(), changes);
+	changes.setArgs(*args.mutable_changes());
 	// Call
 	if (!_dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
@@ -274,65 +266,4 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	aboutToBeUpdated();
 	setProperties(changes, *r);
 	updated();
-}
-
-QCoro::Task<> WorkDetail::remove()
-{
-	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
-	Q_ASSERT(thisptr);
-	dfproto::workdetailtest::RemoveWorkDetail args;
-	if (!setId(*args.mutable_id())) {
-		qWarning() << "invalid work detail index";
-		co_return;
-	}
-	// Call
-	if (!_dfhack) {
-		qCWarning(DFHackLog) << "DFHack client was deleted";
-		co_return;
-	}
-	auto r = co_await RemoveWorkDetail(*_dfhack, args).first;
-	// Check results
-	if (!r) {
-		qCWarning(DFHackLog) << "RemoveWorkDetail failed" << make_error_code(r.cr).message();
-		co_return;
-	}
-	if (!r->success()) {
-		qCWarning(DFHackLog) << "RemoveWorkDetail failed" << r->error();
-		co_return;
-	}
-	// Apply changes
-	auto index = _df.work_details->find(*this);
-	_df.work_details->erase(index);
-}
-
-QCoro::Task<> WorkDetail::addNewWorkDetail(std::shared_ptr<DwarfFortressData> df, QPointer<DFHack::Client> dfhack, Properties properties, int position)
-{
-	// Prepare arguments
-	dfproto::workdetailtest::AddWorkDetail args;
-	if (position >= 0)
-		args.set_position(position);
-	initPropertiesArgs(*args.mutable_properties(), properties);
-	// Call
-	if (!dfhack) {
-		qCWarning(DFHackLog) << "DFHack client was deleted";
-		co_return;
-	}
-	auto r = co_await AddWorkDetail(*dfhack, args).first;
-	// Check results
-	if (!r) {
-		qCWarning(DFHackLog) << "AddWorkDetail failed" << make_error_code(r.cr).message();
-		co_return;
-	}
-	const auto &wd_result = r->work_detail();
-	if (!wd_result.success()) {
-		qCWarning(DFHackLog) << "AddWorkDetail failed" << wd_result.error();
-		co_return;
-	}
-	// Apply changes
-	auto wd = std::make_shared<WorkDetail>(std::make_unique<df::work_detail>(), *df, *dfhack);
-	wd->setProperties(properties, *r);
-	if (position < 0)
-		df->work_details->push(std::move(wd));
-	else
-		df->work_details->insert(std::move(wd), position);
 }

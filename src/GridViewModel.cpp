@@ -118,6 +118,10 @@ GridViewModel::GridViewModel(const Parameters &parameters, std::shared_ptr<Dwarf
 			this, &GridViewModel::columnBeginRemove);
 		connect(col.get(), &AbstractColumn::columnsRemoved,
 			this, &GridViewModel::columnEndRemove);
+		connect(col.get(), &AbstractColumn::columnsAboutToBeMoved,
+			this, &GridViewModel::columnBeginMove);
+		connect(col.get(), &AbstractColumn::columnsMoved,
+			this, &GridViewModel::columnEndMove);
 	}
 }
 
@@ -591,10 +595,11 @@ void GridViewModel::columnBeginInsert(int first, int last)
 {
 	auto col = qobject_cast<AbstractColumn *>(sender());
 	Q_ASSERT(col);
-	beginInsertColumns({}, col->begin_column+first, col->begin_column+last);
+	auto offset = col->begin_column;
+	beginInsertColumns({}, offset+first, offset+last);
 	if (_group_by)
 		for (std::size_t i = 0; i < _groups.size(); ++i)
-			beginInsertColumns(createIndex(i, 0, NoParent), col->begin_column+first, col->begin_column+last);
+			beginInsertColumns(createIndex(i, 0, NoParent), offset+first, offset+last);
 	int count = last-first+1;
 	auto it = _columns.rbegin();
 	while (it->get() != col) {
@@ -617,10 +622,11 @@ void GridViewModel::columnBeginRemove(int first, int last)
 {
 	auto col = qobject_cast<AbstractColumn *>(sender());
 	Q_ASSERT(col);
-	beginRemoveColumns({}, col->begin_column+first, col->begin_column+last);
+	auto offset = col->begin_column;
+	beginRemoveColumns({}, offset+first, offset+last);
 	if (_group_by)
 		for (std::size_t i = 0; i < _groups.size(); ++i)
-			beginRemoveColumns(createIndex(i, 0, NoParent), col->begin_column+first, col->begin_column+last);
+			beginRemoveColumns(createIndex(i, 0, NoParent), offset+first, offset+last);
 	int count = last-first+1;
 	auto it = _columns.rbegin();
 	while (it->get() != col) {
@@ -637,6 +643,27 @@ void GridViewModel::columnEndRemove(int first, int last)
 	if (_group_by)
 		for (std::size_t i = 0; i < _groups.size(); ++i)
 			endRemoveColumns();
+}
+
+void GridViewModel::columnBeginMove(int first, int last, int dest)
+{
+	auto col = qobject_cast<AbstractColumn *>(sender());
+	Q_ASSERT(col);
+	auto offset = col->begin_column;
+	beginMoveColumns({}, offset+first, offset+last, {}, offset+dest);
+	if (_group_by)
+		for (std::size_t i = 0; i < _groups.size(); ++i) {
+			auto group = createIndex(i, 0, NoParent);
+			beginMoveColumns(group, offset+first, offset+last, group, offset+dest);
+		}
+}
+
+void GridViewModel::columnEndMove(int first, int last, int dest)
+{
+	endMoveColumns();
+	if (_group_by)
+		for (std::size_t i = 0; i < _groups.size(); ++i)
+			endMoveColumns();
 }
 
 std::pair<const AbstractColumn *, int> GridViewModel::getColumn(int col) const

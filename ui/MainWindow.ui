@@ -51,7 +51,14 @@
     </property>
     <addaction name="about_action"/>
    </widget>
+   <widget class="QMenu" name="manage_menu">
+    <property name="title">
+     <string>Manage</string>
+    </property>
+    <addaction name="workdetails_action"/>
+   </widget>
    <addaction name="connection_menu"/>
+   <addaction name="manage_menu"/>
    <addaction name="settings_menu"/>
    <addaction name="view_menu"/>
    <addaction name="help_menu"/>
@@ -152,6 +159,17 @@
    </property>
    <property name="menuRole">
     <enum>QAction::AboutRole</enum>
+   </property>
+  </action>
+  <action name="workdetails_action">
+   <property name="text">
+    <string>Work Details...</string>
+   </property>
+   <property name="toolTip">
+    <string>Manage Work Details</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
  </widget>

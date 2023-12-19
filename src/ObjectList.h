@@ -256,34 +256,10 @@ public:
 			return index(distance(_objects.begin(), it));
 	}
 
-	void push(std::shared_ptr<T> object)
-	{
-		beginInsertRows({}, _objects.size(), _objects.size());
-		_objects.push_back(std::move(object));
-		endInsertRows();
-	}
-
-	void insert(std::shared_ptr<T> object, int row)
-	{
-		if (row < 0 || unsigned(row) > _objects.size())
-			push(std::move(object));
-		else {
-			beginInsertRows({}, row, row);
-			_objects.insert(_objects.begin()+row, std::move(object));
-			endInsertRows();
-		}
-	}
-
-	void erase(const QModelIndex &index)
-	{
-		beginRemoveRows({}, index.row(), index.row());
-		_objects.erase(_objects.begin() + index.row());
-		endRemoveRows();
-	}
-
-private:
+protected:
 	std::vector<std::shared_ptr<T>> _objects;
 
+private:
 	using object_iterator = decltype(_objects)::iterator;
 
 	template <std::ranges::random_access_range Rng, ObjectFactory<T> Factory>

@@ -83,9 +83,9 @@ DwarfFortress::DwarfFortress(QObject *parent):
 	_state(Disconnected),
 	_world_loaded(0),
 	_map_loaded(0),
-	_last_viewscreen(Viewscreen::Other),
-	_data(std::make_shared<DwarfFortressData>())
+	_last_viewscreen(Viewscreen::Other)
 {
+	_data = std::make_shared<DwarfFortressData>(&_dfhack);
 	for (QDir data_dir: StandardPaths::data_locations()) {
 		QDir structs_dir = data_dir.filePath("structures");
 		if (!structs_dir.exists())

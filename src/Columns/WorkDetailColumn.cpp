@@ -20,7 +20,7 @@
 
 #include "DwarfFortressData.h"
 #include "WorkDetail.h"
-#include "ObjectList.h"
+#include "WorkDetailModel.h"
 #include "Unit.h"
 #include "DataRole.h"
 #include "Application.h"
@@ -61,6 +61,14 @@ WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QPointer<DFHack::Clien
 	connect(list, &QAbstractItemModel::rowsRemoved,
 		this, [this](const QModelIndex &, int first, int last) {
 			columnsRemoved(first, last);
+		});
+	connect(list, &QAbstractItemModel::rowsAboutToBeMoved,
+		this, [this](const QModelIndex &, int first, int last, const QModelIndex &, int dest) {
+			columnsAboutToBeMoved(first, last, dest);
+		});
+	connect(list, &QAbstractItemModel::rowsMoved,
+		this, [this](const QModelIndex &, int first, int last, const QModelIndex &, int dest) {
+			columnsMoved(first, last, dest);
 		});
 	connect(list, &QAbstractItemModel::dataChanged,
 		this, [this](const QModelIndex &first, const QModelIndex &last, const QList<int> &) {
@@ -326,31 +334,33 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 				.name = editor.name(),
 				.mode = editor.mode(),
 				.icon = editor.icon(),
-				.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
+				.labors = WorkDetail::Properties::allLabors(editor.labors().labors()),
 			});
 		}
 	});
 
-	connect(remove_action, &QAction::triggered, [wd, parent]() {
+	connect(remove_action, &QAction::triggered, [df = _df.shared_from_this(), wd, parent]() {
 		auto result = QMessageBox::question(parent,
 				tr("Removing %1").arg(wd->displayName()),
 				tr("Are you sure you want to remove the work detail \"%1\"?").arg(wd->displayName()));
-		if (result == QMessageBox::Yes)
-			wd->remove();
+		if (result == QMessageBox::Yes) {
+			auto index = df->work_details->find(*wd);
+			df->work_details->remove({index});
+		}
 	});
 
 	auto add_new = [&, this](int position) {
-		return [df = _df.shared_from_this(), dfhack = _dfhack, parent, position]() {
+		return [df = _df.shared_from_this(), parent, position]() {
 			WorkDetailEditor editor(parent);
 			editor.setName(tr("New work detail"));
 			editor.setMode(df::work_detail_mode::EverybodyDoesThis);
 			editor.setIcon(df::work_detail_icon::ICON_NONE);
 			if (QDialog::Accepted == editor.exec()) {
-				WorkDetail::addNewWorkDetail(std::move(df), dfhack, {
+				df->work_details->add({
 					.name = editor.name(),
 					.mode = editor.mode(),
 					.icon = editor.icon(),
-					.labors = WorkDetail::Properties::fromLabors(editor.labors().labors()),
+					.labors = WorkDetail::Properties::allLabors(editor.labors().labors()),
 				}, position);
 			}
 		};

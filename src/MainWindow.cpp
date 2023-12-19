@@ -40,6 +40,7 @@
 #include "GridViewTabs.h"
 #include "LogDock.h"
 #include "DwarfFortressData.h"
+#include "WorkDetailManager.h"
 
 #include "ui_MainWindow.h"
 #include "ui_AdvancedConnectionDialog.h"
@@ -229,5 +230,11 @@ void MainWindow::on_about_action_triggered()
 	ui.qt_version->setText(tr("Build with Qt %1, running with Qt %2")
 			.arg(QT_VERSION_STR)
 			.arg(qVersion()));
+	dialog.exec();
+}
+
+void MainWindow::on_workdetails_action_triggered()
+{
+	WorkDetailManager dialog(_df->data(), this);
 	dialog.exec();
 }

@@ -45,6 +45,7 @@ qt_wrap_ui(UI_SOURCES
 	ui/PreferencesDialog.ui
 	ui/UnitDetailsDock.ui
 	ui/WorkDetailEditor.ui
+	ui/WorkDetailManager.ui
 )
 add_executable(workdetailtest
 	src/main.cpp
@@ -91,6 +92,8 @@ add_executable(workdetailtest
 	src/UserUnitFilters.cpp
 	src/WorkDetail.cpp
 	src/WorkDetailEditor.cpp
+	src/WorkDetailManager.cpp
+	src/WorkDetailModel.cpp
 	src/df/raws.cpp
 	src/df/utils.cpp
 	${PROTO_SOURCES}

@@ -22,7 +22,7 @@
 #include "DwarfFortressData.h"
 #include "Unit.h"
 #include "WorkDetail.h"
-#include "ObjectList.h"
+#include "WorkDetailModel.h"
 
 using namespace Groups;
 

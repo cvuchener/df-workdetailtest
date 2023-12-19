@@ -21,12 +21,13 @@
 #include <ObjectList.h>
 #include <Unit.h>
 #include <WorkDetail.h>
+#include <WorkDetailModel.h>
 
 #include "df/utils.h"
 
-DwarfFortressData::DwarfFortressData():
+DwarfFortressData::DwarfFortressData(QPointer<DFHack::Client> dfhack):
 	units(std::make_unique<ObjectList<Unit>>()),
-	work_details(std::make_unique<ObjectList<WorkDetail>>())
+	work_details(std::make_unique<WorkDetailModel>(*this, dfhack))
 {
 }
 

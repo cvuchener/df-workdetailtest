@@ -53,6 +53,8 @@ signals:
 	void columnsRemoved(int first, int last);
 	void columnsAboutToBeInserted(int first, int last);
 	void columnsInserted(int first, int last);
+	void columnsAboutToBeMoved(int source_first, int source_last, int destination_row);
+	void columnsMoved(int source_first, int source_last, int destination_row);
 
 private:
 	// First and after-last column index, managed by GridViewModel

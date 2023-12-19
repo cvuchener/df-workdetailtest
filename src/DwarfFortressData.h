@@ -22,7 +22,7 @@
 #include "DwarfFortressReader.h"
 
 class Unit;
-class WorkDetail;
+class WorkDetailModel;
 template <typename T>
 class ObjectList;
 
@@ -39,7 +39,7 @@ struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
 	std::vector<std::unique_ptr<df::historical_figure>> histfigs;
 	std::vector<std::unique_ptr<df::identity>> identities;
 	std::unique_ptr<ObjectList<Unit>> units;
-	std::unique_ptr<ObjectList<WorkDetail>> work_details;
+	std::unique_ptr<WorkDetailModel> work_details;
 
 	using material_origin = std::variant<std::monostate,
 			const df::inorganic_raw *,
@@ -49,7 +49,7 @@ struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
 	>;
 	std::pair<const df::material *, material_origin> findMaterial(int type, int index) const;
 
-	DwarfFortressData();
+	DwarfFortressData(QPointer<DFHack::Client> dfhack);
 	~DwarfFortressData();
 
 	void updateRaws(std::unique_ptr<df::world_raws> &&new_raws);
