@@ -136,23 +136,26 @@ void GridViewModel::setUserFilters(std::shared_ptr<UserUnitFilters> user_filters
 }
 
 /*
- * QModelIndex internal id is used for the parent row. Top-level index has
+ * QModelIndex internal id is used for the group id. Top-level index has
  * NoParent as internal id.
  *
  * With no grouping, all QModelIndex have NoParent internal id. Rows are the
  * same as the source unit model.
  *
  * With grouping, group QModelIndex have NoParent internal id and rows are
- * index in _groups. Leaf QModelIndex have the group index/row as internal id,
+ * index in _groups. Leaf QModelIndex have the group id as internal id,
  * rows are index in group_t::units.
  */
 
-static constexpr quintptr NoParent = static_cast<quintptr>(-1);
+static_assert(std::same_as<quintptr, quint64>, "index internal id must be compatible with quint64");
+
+// NoParent should be a value that GroupBy::unitGroup will never return
+static constexpr quintptr NoParent = 0x8000'0000'0000'0000ull;
 
 QModelIndex GridViewModel::index(int row, int column, const QModelIndex &parent) const
 {
 	if (parent.isValid())
-		return createIndex(row, column, parent.row());
+		return createIndex(row, column, _groups.at(parent.row()).id);
 	else
 		return createIndex(row, column, NoParent);
 }
@@ -162,7 +165,7 @@ QModelIndex GridViewModel::parent(const QModelIndex &index) const
 	if (index.internalId() == NoParent)
 		return {};
 	else
-		return createIndex(index.internalId(), 0, NoParent);
+		return createIndex(distance(_groups.begin(), findGroup(index.internalId())), 0, NoParent);
 }
 
 QModelIndex GridViewModel::sibling(int row, int column, const QModelIndex &index) const
@@ -214,7 +217,7 @@ auto GridViewModel::applyToIndex(Model &&model, const QModelIndex &index, UnitAc
 			return group_action(model._groups[index.row()], index.column(), std::forward<Args>(args)...);
 		}
 		else {
-			auto unit = model._groups[index.internalId()].units[index.row()];
+			auto unit = model.findGroup(index.internalId())->units[index.row()];
 			Q_ASSERT(unit);
 			return unit_action(*unit, index.column(), std::forward<Args>(args)...);
 		}
@@ -278,7 +281,7 @@ const Unit *GridViewModel::unit(const QModelIndex &index) const
 		if (index.internalId() == NoParent)
 			return nullptr;
 		else {
-			return _groups[index.internalId()].units[index.row()];
+			return findGroup(index.internalId())->units[index.row()];
 		}
 	}
 	else
@@ -435,6 +438,11 @@ void GridViewModel::unitEndRemove(const QModelIndex &, int first, int last)
 		endRemoveRows();
 }
 
+QModelIndex GridViewModel::groupIndex(decltype(_groups)::const_iterator it) const
+{
+	return createIndex(distance(_groups.begin(), it), 0, NoParent);
+}
+
 QModelIndex GridViewModel::unitIndex(int unit_id) const
 {
 	if (_group_by) {
@@ -451,7 +459,7 @@ QModelIndex GridViewModel::unitIndex(int unit_id) const
 		return createIndex(
 				distance(group_it->units.begin(), unit_it),
 				0,
-				distance(_groups.begin(), group_it)
+				group_it->id
 		);
 	}
 	else {
@@ -463,6 +471,7 @@ QModelIndex GridViewModel::unitIndex(int unit_id) const
 
 void GridViewModel::addUnitToGroup(Unit &unit, quint64 group_id, bool reseting)
 {
+	Q_ASSERT(group_id != NoParent);
 	_unit_group[unit->id] = group_id;
 	auto new_group_it = std::ranges::lower_bound( _groups, group_id, {}, &group_t::id);
 	if (new_group_it == _groups.end() || new_group_it->id != group_id) {
@@ -479,7 +488,7 @@ void GridViewModel::addUnitToGroup(Unit &unit, quint64 group_id, bool reseting)
 		// Add in existing group
 		auto insert_pos = std::ranges::lower_bound( new_group_it->units, unit->id, {},
 				[](Unit *unit){ return (*unit)->id; });
-		auto group_index = createIndex(distance(_groups.begin(), new_group_it), 0, NoParent);
+		auto group_index = groupIndex(new_group_it);
 		if (!reseting) {
 			auto row = distance(new_group_it->units.begin(), insert_pos);
 			beginInsertRows(group_index, row, row);
@@ -496,18 +505,18 @@ void GridViewModel::addUnitToGroup(Unit &unit, quint64 group_id, bool reseting)
 
 void GridViewModel::removeFromGroup(const QModelIndex &index)
 {
-	auto &group = _groups[index.internalId()];
-	if (group.units.size() == 1) {
+	auto group = findGroup(index.internalId());
+	auto group_index = groupIndex(group);
+	if (group->units.size() == 1) {
 		// Last unit in the group, remove the whole group
-		beginRemoveRows({}, index.internalId(), index.internalId());
-		_groups.erase(next(_groups.begin(), index.internalId()));
+		beginRemoveRows({}, group_index.row(), group_index.row());
+		_groups.erase(group);
 		endRemoveRows();
 	}
 	else {
 		beginRemoveRows(index.parent(), index.row(), index.row());
-		group.units.erase(next(group.units.begin(), index.row()));
+		group->units.erase(next(group->units.begin(), index.row()));
 		endRemoveRows();
-		auto group_index = createIndex(index.internalId(), 0, NoParent);
 		dataChanged(
 			group_index.siblingAtColumn(0),
 			group_index.siblingAtColumn(columnCount()-1));
@@ -517,12 +526,13 @@ void GridViewModel::removeFromGroup(const QModelIndex &index)
 void GridViewModel::updateGroupedUnit(Unit &unit, int first_col, int last_col)
 {
 	auto unit_index = unitIndex(unit->id);
-	auto group_index = createIndex(unit_index.internalId(), 0, NoParent);
+	auto group_index = unit_index.parent();
 	auto new_group_id = _group_by->unitGroup(unit);
+	Q_ASSERT(new_group_id != NoParent);
 	if (new_group_id != _groups[group_index.row()].id) {
 		QPersistentModelIndex old_group_index = group_index; // old group index may be modified by the new group insertion
 		auto new_group_it = std::ranges::lower_bound( _groups, new_group_id, {}, &group_t::id);
-		QModelIndex new_group_index = createIndex(distance(_groups.begin(), new_group_it), 0, NoParent);
+		QModelIndex new_group_index = groupIndex(new_group_it);
 		if (new_group_it == _groups.end() || new_group_it->id != new_group_id) {
 			// Add new group
 			beginInsertRows({}, new_group_index.row(), new_group_index.row());
@@ -589,6 +599,15 @@ void GridViewModel::columnDataChanged(int first, int last)
 		index(0, col->begin_column+first),
 		index(rowCount(), col->begin_column+last)
 	);
+	if (_group_by) {
+		for (std::size_t i = 0; i < _groups.size(); ++i) {
+			auto group = index(i, 0);
+			dataChanged(
+				index(0, col->begin_column+first, group),
+				index(rowCount(group), col->begin_column+last, group)
+			);
+		}
+	}
 }
 
 void GridViewModel::columnBeginInsert(int first, int last)
@@ -599,7 +618,7 @@ void GridViewModel::columnBeginInsert(int first, int last)
 	beginInsertColumns({}, offset+first, offset+last);
 	if (_group_by)
 		for (std::size_t i = 0; i < _groups.size(); ++i)
-			beginInsertColumns(createIndex(i, 0, NoParent), offset+first, offset+last);
+			beginInsertColumns(index(i, 0), offset+first, offset+last);
 	int count = last-first+1;
 	auto it = _columns.rbegin();
 	while (it->get() != col) {
@@ -626,7 +645,7 @@ void GridViewModel::columnBeginRemove(int first, int last)
 	beginRemoveColumns({}, offset+first, offset+last);
 	if (_group_by)
 		for (std::size_t i = 0; i < _groups.size(); ++i)
-			beginRemoveColumns(createIndex(i, 0, NoParent), offset+first, offset+last);
+			beginRemoveColumns(index(i, 0), offset+first, offset+last);
 	int count = last-first+1;
 	auto it = _columns.rbegin();
 	while (it->get() != col) {
@@ -653,7 +672,7 @@ void GridViewModel::columnBeginMove(int first, int last, int dest)
 	beginMoveColumns({}, offset+first, offset+last, {}, offset+dest);
 	if (_group_by)
 		for (std::size_t i = 0; i < _groups.size(); ++i) {
-			auto group = createIndex(i, 0, NoParent);
+			auto group = index(i, 0);
 			beginMoveColumns(group, offset+first, offset+last, group, offset+dest);
 		}
 }

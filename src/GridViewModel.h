@@ -111,7 +111,18 @@ private:
 	};
 	std::vector<group_t> _groups; // sorted by id
 	std::map<int, quint64> _unit_group; // unit id -> group id
+	auto findGroup(quint64 id) {
+		auto it = std::ranges::lower_bound(_groups, id, {}, &group_t::id);
+		Q_ASSERT(it != _groups.end() && it->id == id);
+		return it;
+	}
+	auto findGroup(quint64 id) const {
+		auto it = std::ranges::lower_bound(_groups, id, {}, &group_t::id);
+		Q_ASSERT(it != _groups.end() && it->id == id);
+		return it;
+	}
 
+	QModelIndex groupIndex(decltype(_groups)::const_iterator it) const;
 	QModelIndex unitIndex(int unit_id) const;
 	void addUnitToGroup(Unit &unit, quint64 group_id, bool reseting = false);
 	void removeFromGroup(const QModelIndex &index);
