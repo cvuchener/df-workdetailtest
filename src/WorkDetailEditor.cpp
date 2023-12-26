@@ -75,3 +75,34 @@ void WorkDetailEditor::setIcon(df::work_detail_icon_t icon)
 {
 	_ui->icon->setCurrentIndex(_ui->icon->findData(icon));
 }
+
+void WorkDetailEditor::initFromWorkDetail(const WorkDetail &wd)
+{
+	setName(wd.displayName());
+	setMode(static_cast<df::work_detail_mode_t>(wd->flags.bits.mode));
+	setIcon(wd->icon);
+	_labors->setLabors(wd->allowed_labors);
+}
+
+void WorkDetailEditor::initFromProperties(const WorkDetail::Properties &properties)
+{
+	setName(properties.name);
+	if (properties.mode)
+		setMode(*properties.mode);
+	if (properties.icon)
+		setIcon(*properties.icon);
+	std::array<bool, df::unit_labor::Count> labors = {false};
+	for (const auto &[labor, enabled]: properties.labors)
+		labors[labor] = enabled;
+	_labors->setLabors(labors);
+}
+
+WorkDetail::Properties WorkDetailEditor::properties() const
+{
+	return {
+		.name = name(),
+		.mode = mode(),
+		.icon = icon(),
+		.labors = WorkDetail::Properties::allLabors(_labors->labors()),
+	};
+}

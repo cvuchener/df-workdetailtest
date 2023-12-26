@@ -23,6 +23,12 @@
 #include "WorkDetailModel.h"
 #include <QCoroFuture>
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
+Q_LOGGING_CATEGORY(WorkDetailLog, "workdetail");
+
 #include "workdetailtest.pb.h"
 #include <dfhack-client-qt/Function.h>
 
@@ -118,6 +124,70 @@ void WorkDetail::Properties::setArgs(dfproto::workdetailtest::WorkDetailProperti
 		labor_change->set_labor(labor);
 		labor_change->set_enable(enable);
 	}
+}
+
+QJsonObject WorkDetail::Properties::toJson() const
+{
+	QJsonObject object;
+	if (!name.isEmpty())
+		object.insert("name", name);
+	if (mode)
+		object.insert("mode", QString::fromLocal8Bit(to_string(*mode)));
+	if (icon)
+		object.insert("icon", QString::fromLocal8Bit(to_string(*icon)));
+	QJsonArray labor_array;
+	for (const auto &[labor, enabled]: labors)
+		if (enabled)
+			labor_array.append(QString::fromLocal8Bit(to_string(labor)));
+	if (!labor_array.isEmpty())
+		object.insert("labors", std::move(labor_array));
+	return object;
+}
+
+WorkDetail::Properties WorkDetail::Properties::fromJson(const QJsonObject &json)
+{
+	Properties props;
+	if (json.contains("name"))
+		props.name = json.value("name").toString();
+	if (json.contains("mode")) {
+		auto bytes = json.value("mode").toString().toLocal8Bit();
+		props.mode = df::work_detail_mode::from_string({bytes.data(), std::size_t(bytes.size())});
+		if (!props.mode)
+			qCCritical(WorkDetailLog) << "Invalid mode value" << bytes;
+	}
+	if (json.contains("icon")) {
+		auto bytes = json.value("icon").toString().toLocal8Bit();
+		props.icon = df::work_detail_icon::from_string({bytes.data(), std::size_t(bytes.size())});
+		if (!props.icon)
+			qCCritical(WorkDetailLog) << "Invalid icon value" << bytes;
+	}
+	std::array<bool, df::unit_labor::Count> labors = {false};
+	if (json.contains("labors")) {
+		if (!json.value("labors").isArray())
+			qCCritical(WorkDetailLog) << "Work detail json \"labors\" must be an array";
+		for (auto item: json.value("labors").toArray()) {
+			auto bytes = item.toString().toLocal8Bit();
+			auto labor = df::unit_labor::from_string({bytes.data(), std::size_t(bytes.size())});
+			if (labor)
+				labors[*labor] = true;
+			else
+				qCCritical(WorkDetailLog) << "Invalid labor vlaue" << bytes;
+		}
+		props.labors = allLabors(labors);
+	}
+	return props;
+}
+
+WorkDetail::Properties WorkDetail::Properties::fromWorkDetail(const df::work_detail &wd)
+{
+	Properties props;
+	props.name = df::fromCP437(wd.name);
+	props.mode = df::work_detail_mode_t(wd.flags.bits.mode);
+	props.icon = wd.icon;
+	props.labors.reserve(df::unit_labor::Count);
+	for (std::size_t i = 0; i < df::unit_labor::Count; ++i)
+		props.labors.emplace_back(df::unit_labor_t(i), wd.allowed_labors[i]);
+	return props;
 }
 
 QCoro::Task<> WorkDetail::assign(int unit_id, bool assign)

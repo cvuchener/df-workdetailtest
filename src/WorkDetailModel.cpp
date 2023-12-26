@@ -21,6 +21,7 @@
 #include "Application.h"
 #include "IconProvider.h"
 #include "DwarfFortressData.h"
+#include "ModelMimeData.h"
 
 #include <QLoggingCategory>
 Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
@@ -42,23 +43,9 @@ static const DFHack::Function<
 	dfproto::workdetailtest::Result
 > MoveWorkDetail = {"workdetailtest", "MoveWorkDetail"};
 
-#include <QMimeData>
-
-class IndexedMimeData: public QMimeData
-{
-	QList<QPersistentModelIndex> _indexes;
-public:
-	IndexedMimeData(const QModelIndexList &indexes)
-	{
-		for (const auto &index: indexes)
-			_indexes.push_back(index);
-	}
-	~IndexedMimeData() override
-	{
-	}
-
-	const auto &indexes() const { return _indexes; }
-};
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 WorkDetailModel::WorkDetailModel(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent):
 	ObjectList<WorkDetail>(parent),
@@ -96,35 +83,115 @@ Qt::ItemFlags WorkDetailModel::flags(const QModelIndex &index) const
 
 QMimeData *WorkDetailModel::mimeData(const QModelIndexList &indexes) const
 {
-	auto data = new IndexedMimeData(indexes);
-	data->setData("text/plain", "");
+	auto data = new ModelMimeData(this, indexes);
+	QJsonDocument doc;
+	if (indexes.size() == 1) {
+		auto wd = get(indexes.front().row());
+		doc.setObject(WorkDetail::Properties::fromWorkDetail(**wd).toJson());
+	}
+	else {
+		QJsonArray array;
+		for (const auto &index: indexes) {
+			auto wd = get(index.row());
+			array.append(WorkDetail::Properties::fromWorkDetail(**wd).toJson());
+		}
+		doc.setArray(array);
+	}
+	data->setData("application/json", doc.toJson(QJsonDocument::Compact));
+	data->setText(doc.toJson(QJsonDocument::Indented));
 	return data;
 }
 
 QStringList WorkDetailModel::mimeTypes() const
 {
-	return {"text/plain"};
+	return {"application/json", "text/plain"};
 }
 
 Qt::DropActions WorkDetailModel::supportedDropActions() const
 {
-	return Qt::MoveAction;
+	return Qt::MoveAction | Qt::CopyAction;
+}
+
+bool WorkDetailModel::canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const
+{
+	if (!QAbstractListModel::canDropMimeData(data, action, row, column, parent))
+		return false;
+	switch (action) {
+	case Qt::MoveAction:
+		if (auto model_data = dynamic_cast<const ModelMimeData *>(data))
+			return model_data->sourceModel() == this;
+		else
+			return false;
+	case Qt::CopyAction:
+		return true;
+	default:
+		return false;
+	}
 }
 
 bool WorkDetailModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
 {
-	if (auto indexed_data = dynamic_cast<const IndexedMimeData *>(data)) {
-		move(indexed_data->indexes(), row);
-		return true;
+	switch (action) {
+	case Qt::MoveAction:
+		if (auto model_data = dynamic_cast<const ModelMimeData *>(data)) {
+			if (model_data->sourceModel() != this)
+				return false;
+			move(model_data->indexes(), row);
+			return true;
+		}
+		else
+			return false;
+	case Qt::CopyAction: {
+		QJsonDocument doc;
+		QJsonParseError error;
+		if (data->hasFormat("application/json"))
+			doc = QJsonDocument::fromJson(data->data("application/json"), &error);
+		else if (data->hasFormat("text/plain"))
+			doc = QJsonDocument::fromJson(data->data("text/plain"), &error);
+		else
+			return false;
+		if (error.error != QJsonParseError::NoError) {
+			qCWarning(WorkDetailLog) << "Invalid dropped json" << error.errorString();
+			return false;
+		}
+		std::vector<WorkDetail::Properties> properties;
+		if (doc.isObject())
+			properties.push_back(WorkDetail::Properties::fromJson(doc.object()));
+		else if (doc.isArray()) {
+			auto array = doc.array();
+			properties.reserve(array.size());
+			for (auto item: array)
+				properties.push_back(WorkDetail::Properties::fromJson(item.toObject()));
+		}
+		if (properties.empty())
+			return false;
+		add(std::move(properties), row);
 	}
-	else
+	default:
 		return false;
+	}
 }
 
 QCoro::Task<> WorkDetailModel::add(WorkDetail::Properties properties, int row)
 {
 	auto df = _df.shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(df);
+	co_await add_impl(properties, row);
+}
+
+QCoro::Task<> WorkDetailModel::add(std::vector<WorkDetail::Properties> workdetails, int row)
+{
+	auto df = _df.shared_from_this(); // make sure the object live for the whole coroutine
+	Q_ASSERT(df);
+	for (const auto &properties: workdetails) {
+		co_await add_impl(properties, row);
+		if (row >= 0)
+			++row;
+	}
+}
+
+QCoro::Task<> WorkDetailModel::add_impl(const WorkDetail::Properties &properties, int row)
+{
 	// Prepare arguments
 	dfproto::workdetailtest::AddWorkDetail args;
 	if (row >= 0)

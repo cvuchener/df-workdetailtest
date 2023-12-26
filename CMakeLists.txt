@@ -78,6 +78,7 @@ add_executable(workdetailtest
 	src/LogDock.cpp
 	src/MainWindow.cpp
 	src/MessageHandler.cpp
+	src/ModelMimeData.cpp
 	src/ObjectList.cpp
 	src/PreferencesDialog.cpp
 	src/ProcessStats.cpp
@@ -94,6 +95,7 @@ add_executable(workdetailtest
 	src/WorkDetailEditor.cpp
 	src/WorkDetailManager.cpp
 	src/WorkDetailModel.cpp
+	src/WorkDetailPresets.cpp
 	src/df/raws.cpp
 	src/df/utils.cpp
 	${PROTO_SOURCES}

@@ -24,6 +24,7 @@
 
 class WorkDetailModel: public ObjectList<WorkDetail>
 {
+	Q_OBJECT
 public:
 	WorkDetailModel(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
 	~WorkDetailModel() override;
@@ -34,13 +35,17 @@ public:
 	QMimeData *mimeData(const QModelIndexList &indexes) const override;
 	QStringList mimeTypes() const override;
 	Qt::DropActions supportedDropActions() const override;
+	bool canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const override;
 	bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
 
 	QCoro::Task<> add(WorkDetail::Properties properties, int row = -1);
+	QCoro::Task<> add(std::vector<WorkDetail::Properties> workdetails, int row = -1);
 	QCoro::Task<> remove(QList<QPersistentModelIndex> indexes);
 	QCoro::Task<> move(QList<QPersistentModelIndex> indexes, int row);
 
 private:
+	QCoro::Task<> add_impl(const WorkDetail::Properties &properties, int row);
+
 	DwarfFortressData &_df;
 	QPointer<DFHack::Client> _dfhack;
 };

@@ -24,6 +24,7 @@
 namespace Ui { class WorkDetailEditor; }
 
 #include "df_enums.h"
+#include "WorkDetail.h"
 
 class LaborModel;
 
@@ -42,6 +43,10 @@ public:
 	void setIcon(df::work_detail_icon_t icon);
 	LaborModel &labors() { return *_labors; }
 	const LaborModel &labors() const { return *_labors; }
+
+	void initFromWorkDetail(const WorkDetail &wd);
+	void initFromProperties(const WorkDetail::Properties &properties);
+	WorkDetail::Properties properties() const;
 
 private:
 	std::unique_ptr<Ui::WorkDetailEditor> _ui;

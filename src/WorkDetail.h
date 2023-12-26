@@ -23,6 +23,10 @@
 #include <QCoroTask>
 #include "df/types.h"
 
+#include <QLoggingCategory>
+
+Q_DECLARE_LOGGING_CATEGORY(WorkDetailLog);
+
 class Unit;
 class DwarfFortressData;
 
@@ -75,6 +79,10 @@ public:
 		std::vector<std::pair<df::unit_labor_t, bool>> labors;
 		static decltype(labors) allLabors(std::span<const bool, df::unit_labor::Count> labors);
 		void setArgs(dfproto::workdetailtest::WorkDetailProperties &) const;
+
+		QJsonObject toJson() const;
+		static Properties fromJson(const QJsonObject &json);
+		static Properties fromWorkDetail(const df::work_detail &wd);
 	};
 	QCoro::Task<> assign(int unit_id, bool assign);
 	QCoro::Task<> assign(std::vector<int> units, bool assign);

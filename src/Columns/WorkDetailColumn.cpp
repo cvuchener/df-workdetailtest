@@ -325,17 +325,9 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 	connect(edit_action, &QAction::triggered, [wd, parent]() {
 		WorkDetailEditor editor(parent);
-		editor.setName(wd->displayName());
-		editor.setMode(static_cast<work_detail_mode>((*wd)->flags.bits.mode));
-		editor.setIcon((*wd)->icon);
-		editor.labors().setLabors((*wd)->allowed_labors);
+		editor.initFromWorkDetail(*wd);
 		if (QDialog::Accepted == editor.exec()) {
-			wd->edit({
-				.name = editor.name(),
-				.mode = editor.mode(),
-				.icon = editor.icon(),
-				.labors = WorkDetail::Properties::allLabors(editor.labors().labors()),
-			});
+			wd->edit(editor.properties());
 		}
 	});
 
@@ -355,14 +347,8 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 			editor.setName(tr("New work detail"));
 			editor.setMode(df::work_detail_mode::EverybodyDoesThis);
 			editor.setIcon(df::work_detail_icon::ICON_NONE);
-			if (QDialog::Accepted == editor.exec()) {
-				df->work_details->add({
-					.name = editor.name(),
-					.mode = editor.mode(),
-					.icon = editor.icon(),
-					.labors = WorkDetail::Properties::allLabors(editor.labors().labors()),
-				}, position);
-			}
+			if (QDialog::Accepted == editor.exec())
+				df->work_details->add(editor.properties(), position);
 		};
 	};
 	connect(insert_before_action, &QAction::triggered, add_new(section));
