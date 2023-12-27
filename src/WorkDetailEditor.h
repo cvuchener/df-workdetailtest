@@ -41,6 +41,10 @@ public:
 	void setMode(df::work_detail_mode_t mode);
 	df::work_detail_icon_t icon() const;
 	void setIcon(df::work_detail_icon_t icon);
+	bool noModify() const;
+	void setNoModify(bool enabled);
+	bool cannotBeEverybody() const;
+	void setCannotBeEverybody(bool enabled);
 	LaborModel &labors() { return *_labors; }
 	const LaborModel &labors() const { return *_labors; }
 
@@ -49,6 +53,8 @@ public:
 	WorkDetail::Properties properties() const;
 
 private:
+	void updateEverybodyDoesThis();
+
 	std::unique_ptr<Ui::WorkDetailEditor> _ui;
 	std::unique_ptr<LaborModel> _labors;
 };

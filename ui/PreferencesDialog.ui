@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>261</width>
-    <height>510</height>
+    <height>540</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -102,17 +102,17 @@
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
        <layout class="QFormLayout" name="advanced_layout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="use_native_process_label">
-          <property name="text">
-           <string>Use Native API:</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="1">
          <widget class="QCheckBox" name="use_native_process">
           <property name="text">
-           <string/>
+           <string>Use Native API</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QCheckBox" name="bypass_work_detail_protection">
+          <property name="text">
+           <string>Bypass work detail protection</string>
           </property>
          </widget>
         </item>

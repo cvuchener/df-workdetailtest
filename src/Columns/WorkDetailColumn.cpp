@@ -27,6 +27,7 @@
 #include "IconProvider.h"
 #include "WorkDetailEditor.h"
 #include "LaborModel.h"
+#include "Settings.h"
 
 #include <QIcon>
 #include <QBrush>
@@ -301,6 +302,7 @@ Qt::ItemFlags WorkDetailColumn::groupFlags(int section, std::span<const Unit *> 
 
 void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 {
+	const auto &settings = Application::settings();
 	using namespace df::work_detail_mode;
 	auto wd = _df.work_details->get(section);
 
@@ -330,6 +332,7 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 			wd->edit(editor.properties());
 		}
 	});
+	edit_action->setEnabled(settings.bypass_work_detail_protection() || !(*wd)->flags.bits.no_modify);
 
 	connect(remove_action, &QAction::triggered, [df = _df.shared_from_this(), wd, parent]() {
 		auto result = QMessageBox::question(parent,
@@ -340,6 +343,7 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 			df->work_details->remove({index});
 		}
 	});
+	remove_action->setEnabled(settings.bypass_work_detail_protection() || !(*wd)->flags.bits.no_modify);
 
 	auto add_new = [&, this](int position) {
 		return [df = _df.shared_from_this(), parent, position]() {
@@ -356,10 +360,12 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 	_sort.makeSortMenu(menu);
 
-	auto make_mode_action = [menu, wd]<work_detail_mode Mode>(const QString &name) {
+	auto make_mode_action = [menu, wd, &settings]<work_detail_mode Mode>(const QString &name) {
 		auto action = new QAction(name, menu);
 		action->setCheckable(true);
 		action->setChecked(static_cast<work_detail_mode>((*wd)->flags.bits.mode) == Mode);
+		if constexpr (Mode == EverybodyDoesThis)
+			action->setEnabled(settings.bypass_work_detail_protection() || !(*wd)->flags.bits.cannot_be_everybody);
 		connect(action, &QAction::triggered, [wd]() {
 			wd->edit({ .mode = Mode });
 		});

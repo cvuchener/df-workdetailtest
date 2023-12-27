@@ -76,6 +76,8 @@ public:
 		QString name;
 		std::optional<df::work_detail_mode_t> mode;
 		std::optional<df::work_detail_icon_t> icon;
+		std::optional<bool> no_modify;
+		std::optional<bool> cannot_be_everybody;
 		std::vector<std::pair<df::unit_labor_t, bool>> labors;
 		static decltype(labors) allLabors(std::span<const bool, df::unit_labor::Count> labors);
 		void setArgs(dfproto::workdetailtest::WorkDetailProperties &) const;

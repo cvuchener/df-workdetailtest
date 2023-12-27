@@ -46,6 +46,7 @@ void PreferencesDialog::loadSettings()
 	_ui->autorefresh_enable->setChecked(settings.autorefresh_enabled());
 	_ui->autorefresh_interval->setValue(settings.autorefresh_interval());
 	_ui->use_native_process->setChecked(settings.use_native_process());
+	_ui->bypass_work_detail_protection->setChecked(settings.bypass_work_detail_protection());
 	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by());
 	_ui->gridview_perview_filters->setChecked(settings.per_view_filters());
 }
@@ -59,6 +60,7 @@ void PreferencesDialog::loadDefaultSettings()
 	_ui->autorefresh_enable->setChecked(settings.autorefresh_enabled.defaultValue());
 	_ui->autorefresh_interval->setValue(settings.autorefresh_interval.defaultValue());
 	_ui->use_native_process->setChecked(settings.use_native_process.defaultValue());
+	_ui->bypass_work_detail_protection->setChecked(settings.bypass_work_detail_protection.defaultValue());
 	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by.defaultValue());
 	_ui->gridview_perview_filters->setChecked(settings.per_view_filters.defaultValue());
 }
@@ -68,10 +70,11 @@ void PreferencesDialog::saveSettings() const
 	auto &settings = Application::settings();
 	settings.host_address = _ui->host_address->text();
 	settings.host_port = _ui->host_port->text().toInt();
-	settings.autoconnect = _ui->host_autoconnect->checkState() == Qt::Checked;
-	settings.autorefresh_enabled = _ui->autorefresh_enable->checkState() == Qt::Checked;
+	settings.autoconnect = _ui->host_autoconnect->isChecked();
+	settings.autorefresh_enabled = _ui->autorefresh_enable->isChecked();
 	settings.autorefresh_interval = _ui->autorefresh_interval->value();
-	settings.use_native_process = _ui->use_native_process->checkState() == Qt::Checked;
-	settings.per_view_group_by = _ui->gridview_perview_groups->checkState() == Qt::Checked;
-	settings.per_view_filters = _ui->gridview_perview_filters->checkState() == Qt::Checked;
+	settings.use_native_process = _ui->use_native_process->isChecked();
+	settings.bypass_work_detail_protection = _ui->bypass_work_detail_protection->isChecked();
+	settings.per_view_group_by = _ui->gridview_perview_groups->isChecked();
+	settings.per_view_filters = _ui->gridview_perview_filters->isChecked();
 }

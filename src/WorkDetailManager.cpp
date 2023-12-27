@@ -19,6 +19,8 @@
 #include "WorkDetailManager.h"
 
 #include "ui_WorkDetailManager.h"
+#include "Application.h"
+#include "Settings.h"
 #include "DwarfFortressData.h"
 #include "WorkDetailModel.h"
 #include "WorkDetailPresets.h"
@@ -101,6 +103,8 @@ bool WorkDetailView::edit(const QModelIndex &index, QAbstractItemView::EditTrigg
 		Q_ASSERT(wd_model);
 		auto wd = wd_model->get(index.row());
 		Q_ASSERT(wd);
+		if (!Application::settings().bypass_work_detail_protection() && (*wd)->flags.bits.no_modify)
+			return false;
 		WorkDetailEditor editor(this);
 		editor.initFromWorkDetail(*wd);
 		if (editor.exec() == QDialog::Accepted)
@@ -201,11 +205,18 @@ WorkDetailManager::WorkDetailManager(std::shared_ptr<DwarfFortressData> df, QWid
 	connect(_ui->workdetails_view->selectionModel(), &QItemSelectionModel::selectionChanged,
 		this, [this]() {
 			bool has_selection = _ui->workdetails_view->selectionModel()->hasSelection();
+			const auto &selection = _ui->workdetails_view->selectionModel()->selectedRows();
+			auto editable = Application::settings().bypass_work_detail_protection() ||
+					std::ranges::none_of(selection, [this](const auto &index) {
+						auto wd = _df->work_details->get(index.row());
+						return (*wd)->flags.bits.no_modify;
+					});
 			_ui->move_top_button->setEnabled(has_selection);
 			_ui->move_up_button->setEnabled(has_selection);
 			_ui->move_down_button->setEnabled(has_selection);
 			_ui->move_bottom_button->setEnabled(has_selection);
-			_ui->remove_workdetails_button->setEnabled(has_selection);
+			_ui->remove_workdetails_button->setEnabled(has_selection && editable);
+			_shorcuts->delete_work_detail->setEnabled(has_selection && editable);
 		});
 }
 
@@ -229,9 +240,11 @@ static QList<QPersistentModelIndex> make_persistent(const QModelIndexList &index
 
 void WorkDetailManager::on_workdetails_view_customContextMenuRequested(const QPoint &pos)
 {
+	const auto &settings = Application::settings();
 	QMenu menu(this);
 	auto index = _ui->workdetails_view->indexAt(pos);
 	if (index.isValid()) {
+		auto wd = _df->work_details->get(index.row());
 		// Edit action
 		auto edit_action = new QAction(QIcon::fromTheme("document-edit"), tr("Edit %1...").arg(index.data().toString()), &menu);
 		connect(edit_action, &QAction::triggered, this, [this, index = make_persistent(index)]() {
@@ -245,6 +258,7 @@ void WorkDetailManager::on_workdetails_view_customContextMenuRequested(const QPo
 			if (editor.exec() == QDialog::Accepted)
 				wd->edit(editor.properties());
 		});
+		edit_action->setEnabled(settings.bypass_work_detail_protection() || !(*wd)->flags.bits.no_modify);
 		menu.addAction(edit_action);
 	}
 	auto selection = _ui->workdetails_view->selectionModel()->selectedRows();
@@ -267,6 +281,11 @@ void WorkDetailManager::on_workdetails_view_customContextMenuRequested(const QPo
 					removeWorkDetails(indexes);
 				});
 		}
+		remove_action->setEnabled(settings.bypass_work_detail_protection() ||
+			std::ranges::none_of(selection, [this](const auto &index) {
+				auto wd = _df->work_details->get(index.row());
+				return (*wd)->flags.bits.no_modify;
+			}));
 		menu.addAction(remove_action);
 		// Export menu
 		auto export_menu = new QMenu(tr("Export"), &menu);

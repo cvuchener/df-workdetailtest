@@ -119,6 +119,10 @@ void WorkDetail::Properties::setArgs(dfproto::workdetailtest::WorkDetailProperti
 	}
 	if (icon)
 		args.set_icon(static_cast<int>(*icon));
+	if (no_modify)
+		args.set_no_modify(*no_modify);
+	if (cannot_be_everybody)
+		args.set_cannot_be_everybody(*cannot_be_everybody);
 	for (const auto &[labor, enable]: labors) {
 		auto labor_change = args.mutable_labors()->Add();
 		labor_change->set_labor(labor);
@@ -135,6 +139,8 @@ QJsonObject WorkDetail::Properties::toJson() const
 		object.insert("mode", QString::fromLocal8Bit(to_string(*mode)));
 	if (icon)
 		object.insert("icon", QString::fromLocal8Bit(to_string(*icon)));
+	if (cannot_be_everybody)
+		object.insert("cannot_be_everybody", *cannot_be_everybody);
 	QJsonArray labor_array;
 	for (const auto &[labor, enabled]: labors)
 		if (enabled)
@@ -161,6 +167,8 @@ WorkDetail::Properties WorkDetail::Properties::fromJson(const QJsonObject &json)
 		if (!props.icon)
 			qCCritical(WorkDetailLog) << "Invalid icon value" << bytes;
 	}
+	if (json.contains("cannot_be_everybody"))
+		props.cannot_be_everybody = json.value("cannot_be_everybody").toBool();
 	std::array<bool, df::unit_labor::Count> labors = {false};
 	if (json.contains("labors")) {
 		if (!json.value("labors").isArray())
@@ -184,6 +192,8 @@ WorkDetail::Properties WorkDetail::Properties::fromWorkDetail(const df::work_det
 	props.name = df::fromCP437(wd.name);
 	props.mode = df::work_detail_mode_t(wd.flags.bits.mode);
 	props.icon = wd.icon;
+	props.no_modify = wd.flags.bits.no_modify;
+	props.cannot_be_everybody = wd.flags.bits.cannot_be_everybody;
 	props.labors.reserve(df::unit_labor::Count);
 	for (std::size_t i = 0; i < df::unit_labor::Count; ++i)
 		props.labors.emplace_back(df::unit_labor_t(i), wd.allowed_labors[i]);
@@ -293,6 +303,10 @@ void WorkDetail::setProperties(const Properties &properties, const dfproto::work
 			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
 		}
 	}
+	if (properties.no_modify)
+		_wd->flags.bits.no_modify = *properties.no_modify;
+	if (properties.cannot_be_everybody)
+		_wd->flags.bits.cannot_be_everybody = *properties.cannot_be_everybody;
 	for (std::size_t i = 0; i < properties.labors.size(); ++i) {
 		const auto &labor_result = r.labors(i);
 		const auto &[labor, enable] = properties.labors[i];
