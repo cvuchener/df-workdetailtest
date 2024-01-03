@@ -1,6 +1,6 @@
 {
-	"title": "Default",
-	"filter": "builtin:Fort controlled",
+	"title": "Citizens",
+	"filter": "builtin:Citizens",
 	"columns": [
 		{ "type": "WorkDetail" },
 		{ "type": "Specialist" }

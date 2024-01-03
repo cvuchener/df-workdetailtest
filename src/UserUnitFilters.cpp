@@ -44,8 +44,10 @@ bool ScriptedUnitFilter::operator()(const Unit &unit) const
 }
 
 const std::vector<std::pair<const char *, UnitFilter>> BuiltinUnitFilters = {
-	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "FortControlled"), &Unit::isFortControlled},
+	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "Fort controlled"), &Unit::isFortControlled},
 	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "Workers"), &Unit::canAssignWork},
+	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "Citizens"), [](const Unit &unit) { return unit.category() == Unit::Category::Citizens; }},
+	{QT_TRANSLATE_NOOP("BuiltinUnitFilters", "Pets or Livestock"), [](const Unit &unit) { return unit.category() == Unit::Category::PetsOrLivestock; }},
 };
 
 UserUnitFilters::UserUnitFilters(QObject *parent):

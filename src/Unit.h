@@ -55,12 +55,22 @@ public:
 	bool isOpposedToLife() const;
 	bool isOwnGroup() const;
 	bool canLearn() const;
+	bool canSpeak() const;
 	bool canAssignWork() const;
 	bool isTamable() const;
 	bool isBaby() const;
 	bool isChild() const;
 	bool isAdult() const;
 	bool hasMenialWorkExemption() const;
+
+	enum class Category {
+		Citizens,
+		PetsOrLivestock,
+		Others,
+		Dead,
+		Invisible,
+	};
+	Category category() const;
 
 	struct Properties {
 		std::optional<QString> nickname;

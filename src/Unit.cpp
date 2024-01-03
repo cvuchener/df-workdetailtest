@@ -176,6 +176,18 @@ bool Unit::canLearn() const
 		return false;
 }
 
+bool Unit::canSpeak() const
+{
+	if (_u->curse.rem_tags1.bits.CAN_SPEAK)
+		return false;
+	if (_u->curse.add_tags1.bits.CAN_SPEAK)
+		return true;
+	if (auto caste = caste_raw())
+		return caste->flags.isSet(df::caste_raw_flags::CAN_SPEAK);
+	else
+		return false;
+}
+
 bool Unit::isOwnGroup() const
 {
 	if (auto hf = df::find(_df.histfigs, _u->hist_figure_id))
@@ -278,6 +290,26 @@ bool Unit::hasMenialWorkExemption() const
 	return false;
 }
 
+Unit::Category Unit::category() const
+{
+	if (_u->flags1.bits.left || _u->flags1.bits.incoming)
+		return Category::Invisible;
+	if (!isFortControlled() && _u->flags1.bits.hidden_in_ambush)
+		return Category::Invisible;
+	// TODO: check map visibility
+	if (_u->flags1.bits.inactive | _u->flags3.bits.ghostly)
+		return Category::Dead;
+	if (!isFortControlled())
+		return Category::Others;
+	if (isTamable() || _u->undead)
+		return Category::PetsOrLivestock;
+	if (canSpeak())
+		return Category::Citizens;
+	else
+		return Category::PetsOrLivestock;
+
+}
+
 Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
 QCoro::Task<> Unit::edit(Properties changes)
 {
@@ -318,4 +350,3 @@ QCoro::Task<> Unit::edit(Properties changes)
 	}
 	updated();
 }
-

@@ -49,6 +49,7 @@ public:
 	Q_INVOKABLE bool isOpposedToLife() const;
 	Q_INVOKABLE bool isOwnGroup() const;
 	Q_INVOKABLE bool canLearn() const;
+	Q_INVOKABLE bool canSpeak() const;
 	Q_INVOKABLE bool canAssignWork() const;
 	Q_INVOKABLE bool isTamable() const;
 	Q_INVOKABLE bool isBaby() const;

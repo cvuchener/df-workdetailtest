@@ -1,0 +1,5 @@
+{
+	"title": "Animals",
+	"filter": "builtin:Pets or Livestock",
+	"columns": []
+}
