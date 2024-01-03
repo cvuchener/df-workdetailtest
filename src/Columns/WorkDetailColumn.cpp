@@ -98,10 +98,9 @@ QVariant WorkDetailColumn::headerData(int section, int role) const
 	case Qt::DisplayRole:
 		return wd->displayName();
 	case Qt::DecorationRole:
-		if ((*wd)->icon != df::work_detail_icon::ICON_NONE)
-			return Application::instance()->icons().workdetail((*wd)->icon);
-		else
-			return {};
+		return Application::icons().workdetail((*wd)->icon);
+	case Qt::ToolTipRole:
+		return wd->makeToolTip();
 	default:
 		return {};
 	}

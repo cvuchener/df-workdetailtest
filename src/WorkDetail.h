@@ -62,6 +62,7 @@ public:
 	const df::work_detail *operator->() const { return _wd.get(); }
 
 	const QString &displayName() const { return _display_name; }
+	QString makeToolTip() const;
 	ChangeStatus status(int unit_id) const  {
 		auto it = _statuses.find(unit_id);
 		if (it == _statuses.end())

@@ -64,6 +64,33 @@ void WorkDetail::refresh()
 	_statuses.clear();
 }
 
+QString WorkDetail::makeToolTip() const
+{
+	QString tip = "<h3>" + _display_name + "</h3><ul>";
+	tip += "<p>";
+	switch (_wd->flags.bits.mode) {
+	case df::work_detail_mode::EverybodyDoesThis:
+		tip += tr("Everybody does this");
+		break;
+	case df::work_detail_mode::OnlySelectedDoesThis:
+		tip += tr("Only selected does this");
+		break;
+	case df::work_detail_mode::NobodyDoesThis:
+		tip += tr("Nobody does this");
+		break;
+	default:
+		break;
+	}
+	tip += "</p>";
+	for (std::size_t i = 0; i < df::unit_labor::Count; ++i) {
+		auto labor = static_cast<df::unit_labor_t>(i);
+		if (_wd->allowed_labors[i])
+			tip += "<li>" + QString::fromLocal8Bit(caption(labor)) + "</li>";
+	}
+	tip += "</ul>";
+	return tip;
+}
+
 bool WorkDetail::isAssigned(int unit_id) const
 {
 	return std::ranges::binary_search(_wd->assigned_units, unit_id);

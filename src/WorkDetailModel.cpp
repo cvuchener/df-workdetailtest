@@ -60,12 +60,14 @@ WorkDetailModel::~WorkDetailModel()
 
 QVariant WorkDetailModel::data(const QModelIndex &index, int role) const
 {
-	auto wd = get(index.row());
+	const auto &wd = *_objects.at(index.row());
 	switch (role) {
 	case Qt::DisplayRole:
-		return wd->displayName();
+		return wd.displayName();
 	case Qt::DecorationRole:
-		return Application::icons().workdetail((*wd)->icon);
+		return Application::icons().workdetail(wd->icon);
+	case Qt::ToolTipRole:
+		return wd.makeToolTip();
 	default:
 		return {};
 	}
