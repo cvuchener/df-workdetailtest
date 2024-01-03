@@ -1,0 +1,105 @@
+[
+    {
+        "cannot_be_everybody": true,
+        "icon": "ICON_MINERS",
+        "labors": [
+            "MINE"
+        ],
+        "mode": "OnlySelectedDoesThis",
+        "name": "Miners"
+    },
+    {
+        "cannot_be_everybody": true,
+        "icon": "ICON_WOODCUTTERS",
+        "labors": [
+            "CUTWOOD"
+        ],
+        "mode": "OnlySelectedDoesThis",
+        "name": "Woodcutters"
+    },
+    {
+        "cannot_be_everybody": true,
+        "icon": "ICON_HUNTERS",
+        "labors": [
+            "HUNT"
+        ],
+        "mode": "OnlySelectedDoesThis",
+        "name": "Hunters"
+    },
+    {
+        "cannot_be_everybody": false,
+        "icon": "ICON_PLANTERS",
+        "labors": [
+            "PLANT"
+        ],
+        "mode": "EverybodyDoesThis",
+        "name": "Planters"
+    },
+    {
+        "cannot_be_everybody": true,
+        "icon": "ICON_FISHERMEN",
+        "labors": [
+            "FISH"
+        ],
+        "mode": "OnlySelectedDoesThis",
+        "name": "Fisherdwarves"
+    },
+    {
+        "cannot_be_everybody": false,
+        "icon": "ICON_PLANT_GATHERERS",
+        "labors": [
+            "HERBALIST"
+        ],
+        "mode": "EverybodyDoesThis",
+        "name": "Plant gatherers"
+    },
+    {
+        "cannot_be_everybody": false,
+        "icon": "ICON_STONECUTTERS",
+        "labors": [
+            "STONECUTTER"
+        ],
+        "mode": "EverybodyDoesThis",
+        "name": "Stonecutters"
+    },
+    {
+        "cannot_be_everybody": false,
+        "icon": "ICON_ENGRAVERS",
+        "labors": [
+            "ENGRAVER"
+        ],
+        "mode": "EverybodyDoesThis",
+        "name": "Engravers"
+    },
+    {
+        "cannot_be_everybody": false,
+        "icon": "ICON_HAULERS",
+        "labors": [
+            "HAUL_STONE",
+            "HAUL_WOOD",
+            "HAUL_BODY",
+            "HAUL_FOOD",
+            "HAUL_REFUSE",
+            "HAUL_ITEM",
+            "HAUL_FURNITURE",
+            "HAUL_ANIMALS",
+            "HANDLE_VEHICLES",
+            "HAUL_TRADE",
+            "HAUL_WATER"
+        ],
+        "mode": "EverybodyDoesThis",
+        "name": "Haulers"
+    },
+    {
+        "cannot_be_everybody": false,
+        "icon": "ICON_ORDERLIES",
+        "labors": [
+            "SUTURING",
+            "DRESSING_WOUNDS",
+            "FEED_WATER_CIVILIANS",
+            "RECOVER_WOUNDED"
+        ],
+        "mode": "EverybodyDoesThis",
+        "name": "Orderlies"
+    }
+]
