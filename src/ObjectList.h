@@ -171,31 +171,47 @@ public:
 						lcs[stride * new_i + old_i+1]);
 			}
 
+		// Start processing objects from the end, objects before old_i/new_i are unprocessed
 		std::size_t old_i = _objects.size(), new_i = new_objects.size();
 		while (old_i > 0 || new_i > 0) {
-			std::size_t count = 0;
-			while (count < new_i && lcs[stride*new_i+old_i] == lcs[stride*(new_i-1-count)+old_i])
-				++count;
-			if (count > 0) {
-				insertNewObjects(
-						next(_objects.begin(), old_i),
-						std::views::counted(
-							next(new_objects.begin(), new_i-count),
-							count),
-						factory);
-				new_i -= count;
-				continue;
+			// How many new objects can be added without changing the longest common subsequence
+			std::size_t added_count = 0;
+			while (added_count < new_i && lcs[stride*new_i+old_i] == lcs[stride*(new_i-1-added_count)+old_i])
+				++added_count;
+			new_i -= added_count;
+			// How many old objects can be removed without changing the longest common subsequence
+			std::size_t removed_count = 0;
+			while (removed_count < old_i && lcs[stride*new_i+old_i] == lcs[stride*new_i+old_i-1-removed_count])
+				++removed_count;
+			old_i -= removed_count;
+			if (added_count > 0 || removed_count > 0) {
+				// Group adding/removing into renaming
+				std::size_t renamed_count = std::min(added_count, removed_count);
+				if (added_count > removed_count) {
+					// Insert new objects after renamed ones
+					insertNewObjects(
+							next(_objects.begin(), old_i+renamed_count),
+							std::views::counted(
+								next(new_objects.begin(), new_i+renamed_count),
+								added_count-renamed_count),
+							factory);
+				}
+				else if (removed_count > added_count) {
+					// Remove extra objects after renamed ones
+					removeObjects(next(_objects.begin(), old_i+renamed_count),
+							next(_objects.begin(), old_i+removed_count));
+				}
+				// Rename objects
+				for (std::size_t i = 0; i < renamed_count; ++i) {
+					_objects[old_i+i]->update(std::move(new_objects[new_i+i]));
+					dataChanged(index(old_i+i), index(old_i+i));
+				}
 			}
-			while (count < old_i && lcs[stride*new_i+old_i] == lcs[stride*new_i+old_i-1-count])
-				++count;
-			if (count > 0) {
-				removeObjects(next(_objects.begin(), old_i-count),
-						next(_objects.begin(), old_i));
-				old_i -= count;
-				continue;
+			else {
+				// Update an object as part of the longest common subsequence
+				_objects[--old_i]->update(std::move(new_objects[--new_i]));
+				dataChanged(index(old_i), index(old_i));
 			}
-			_objects[--old_i]->update(std::move(new_objects[--new_i]));
-			dataChanged(index(old_i), index(old_i));
 		}
 	}
 
