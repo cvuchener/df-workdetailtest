@@ -25,8 +25,9 @@
 
 using namespace Columns;
 
-SpecialistColumn::SpecialistColumn(QObject *parent):
-	AbstractColumn(parent)
+SpecialistColumn::SpecialistColumn(QPointer<DFHack::Client> dfhack, QObject *parent):
+	AbstractColumn(parent),
+	_dfhack(dfhack)
 {
 }
 
@@ -106,10 +107,22 @@ bool SpecialistColumn::setGroupData(int section, std::span<Unit *> units, const 
 {
 	if (role != Qt::CheckStateRole)
 		return false;
-	for (auto unit: units) {
-		if (!unit->canAssignWork())
-			continue;
-		unit->edit({ .only_do_assigned_jobs = value.value<Qt::CheckState>() == Qt::Checked });
+	if (units.size() == 1 && units.front()->canAssignWork()) {
+		units.front()->edit({
+			.only_do_assigned_jobs = value.value<Qt::CheckState>() == Qt::Checked
+		});
+	}
+	else {
+		std::vector<std::shared_ptr<Unit>> unitptrs;
+		unitptrs.reserve(units.size());
+		for (auto unit: units) {
+			if (!unit->canAssignWork())
+				continue;
+			unitptrs.push_back(unit->shared_from_this());
+		}
+		Unit::edit(_dfhack, std::move(unitptrs), {
+			.only_do_assigned_jobs = value.value<Qt::CheckState>() == Qt::Checked
+		});
 	}
 	return true;
 }
@@ -132,7 +145,7 @@ Qt::ItemFlags SpecialistColumn::groupFlags(int section, std::span<const Unit *> 
 
 Factory SpecialistColumn::makeFactory(const QJsonObject &)
 {
-	return [](DwarfFortressData &df, QPointer<DFHack::Client>) {
-		return std::make_unique<SpecialistColumn>();
+	return [](DwarfFortressData &df, QPointer<DFHack::Client> dfhack) {
+		return std::make_unique<SpecialistColumn>(dfhack);
 	};
 }

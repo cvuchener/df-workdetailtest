@@ -26,9 +26,13 @@
 #include "workdetailtest.pb.h"
 
 static const DFHack::Function<
-	dfproto::workdetailtest::UnitProperties,
-	dfproto::workdetailtest::Result
+	dfproto::workdetailtest::EditUnit,
+	dfproto::workdetailtest::UnitResult
 > EditUnit = {"workdetailtest", "EditUnit"};
+static const DFHack::Function<
+	dfproto::workdetailtest::EditUnits,
+	dfproto::workdetailtest::UnitResults
+> EditUnits = {"workdetailtest", "EditUnits"};
 
 Unit::Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
 	QObject(parent),
@@ -310,20 +314,62 @@ Unit::Category Unit::category() const
 
 }
 
+void Unit::Properties::setArgs(dfproto::workdetailtest::UnitProperties &args) const
+{
+	if (nickname) {
+		args.set_nickname(df::toCP437(*nickname));
+	}
+	if (only_do_assigned_jobs) {
+		args.set_only_do_assigned_jobs(*only_do_assigned_jobs);
+	}
+	if (slaughter) {
+		args.set_slaughter(*slaughter);
+	}
+	if (geld) {
+		args.set_geld(*geld);
+	}
+}
+
 Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
+void Unit::setProperties(const Properties &properties, const dfproto::workdetailtest::UnitResult &results)
+{
+	aboutToBeUpdated();
+	if (properties.nickname) {
+		_u->name.nickname = df::toCP437(*properties.nickname);
+		refresh();
+	}
+	if (properties.only_do_assigned_jobs) {
+		const auto &r = results.only_do_assigned_jobs();
+		if (r.success())
+			_u->flags4.bits.only_do_assigned_jobs = *properties.only_do_assigned_jobs;
+		else
+			qCWarning(DFHackLog) << "Unit change failed" << r.error();
+	}
+	if (properties.slaughter) {
+		const auto &r = results.slaughter();
+		if (r.success())
+			_u->flags2.bits.slaughter = *properties.slaughter;
+		else
+			qCWarning(DFHackLog) << "Unit change failed" << r.error();
+	}
+	if (properties.geld) {
+		const auto &r = results.geld();
+		if (r.success())
+			_u->flags3.bits.marked_for_gelding = *properties.geld;
+		else
+			qCWarning(DFHackLog) << "Unit change failed" << r.error();
+	}
+	updated();
+}
+
 QCoro::Task<> Unit::edit(Properties changes)
 {
 	auto thisptr = shared_from_this(); // make sure the object live for the whole coroutine
 	Q_ASSERT(thisptr);
 	// Prepare arguments
-	dfproto::workdetailtest::UnitProperties args;
-	args.set_id(_u->id);
-	if (changes.nickname) {
-		args.set_nickname(df::toCP437(*changes.nickname));
-	}
-	if (changes.only_do_assigned_jobs) {
-		args.set_only_do_assigned_jobs(*changes.only_do_assigned_jobs);
-	}
+	dfproto::workdetailtest::EditUnit args;
+	args.mutable_id()->set_id(_u->id);
+	changes.setArgs(*args.mutable_changes());
 	// Call
 	if (!_dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
@@ -332,21 +378,42 @@ QCoro::Task<> Unit::edit(Properties changes)
 	auto r = co_await EditUnit(*_dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "editUnit failed" << make_error_code(r.cr).message();
+		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
 		co_return;
 	}
-	if (!r->success()) {
-		qCWarning(DFHackLog) << "editUnit failed" << r->error();
+	if (!r->unit().success()) {
+		qCWarning(DFHackLog) << "EditUnit failed" << r->unit().error();
 		co_return;
 	}
-	// Apply changes
-	aboutToBeUpdated();
-	if (changes.nickname) {
-		_u->name.nickname = df::toCP437(*changes.nickname);
-		refresh();
+	setProperties(changes, *r);
+}
+
+QCoro::Task<> Unit::edit(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Properties changes)
+{
+	// Prepare arguments
+	dfproto::workdetailtest::EditUnits args;
+	for (auto &unit: units) {
+		auto id = args.mutable_units()->Add();
+		id->set_id((*unit)->id);
 	}
-	if (changes.only_do_assigned_jobs) {
-		_u->flags4.bits.only_do_assigned_jobs = *changes.only_do_assigned_jobs;
+	changes.setArgs(*args.mutable_changes());
+	// Call
+	if (!dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
 	}
-	updated();
+	auto r = co_await EditUnits(*dfhack, args).first;
+	// Check results
+	if (!r) {
+		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
+		co_return;
+	}
+	for (std::size_t i = 0; i < units.size(); ++i) {
+		auto unit_result = r->results(i);
+		if (!unit_result.unit().success()) {
+			qCWarning(DFHackLog) << "EditUnit failed" << unit_result.unit().error();
+			co_return;
+		}
+		units[i]->setProperties(changes, unit_result);
+	}
 }

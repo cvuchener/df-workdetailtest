@@ -26,6 +26,12 @@
 class DwarfFortressData;
 
 namespace DFHack { class Client; }
+namespace dfproto::workdetailtest {
+class UnitId;
+class UnitProperties;
+class UnitResult;
+}
+
 
 class Unit: public QObject, public std::enable_shared_from_this<Unit>
 {
@@ -75,8 +81,13 @@ public:
 	struct Properties {
 		std::optional<QString> nickname;
 		std::optional<bool> only_do_assigned_jobs;
+		std::optional<bool> slaughter;
+		std::optional<bool> geld;
+
+		void setArgs(dfproto::workdetailtest::UnitProperties &) const;
 	};
 	QCoro::Task<> edit(Properties properties);
+	static QCoro::Task<> edit(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Properties properties);
 
 signals:
 	void aboutToBeUpdated();
@@ -84,6 +95,7 @@ signals:
 
 private:
 	void refresh();
+	void setProperties(const Properties &properties, const dfproto::workdetailtest::UnitResult &results);
 
 	std::unique_ptr<df::unit> _u;
 	DwarfFortressData &_df;

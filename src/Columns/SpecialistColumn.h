@@ -28,7 +28,7 @@ class SpecialistColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	SpecialistColumn(QObject *parent = nullptr);
+	SpecialistColumn(QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
 	~SpecialistColumn() override;
 
 	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
@@ -42,6 +42,7 @@ public:
 	static Factory makeFactory(const QJsonObject &);
 
 private:
+	QPointer<DFHack::Client> _dfhack;
 };
 
 }
