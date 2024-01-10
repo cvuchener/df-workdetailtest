@@ -26,7 +26,7 @@ class WorkDetailModel: public ObjectList<WorkDetail>
 {
 	Q_OBJECT
 public:
-	WorkDetailModel(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
+	WorkDetailModel(DwarfFortressData &df, QObject *parent = nullptr);
 	~WorkDetailModel() override;
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -47,7 +47,6 @@ private:
 	QCoro::Task<> add_impl(const WorkDetail::Properties &properties, int row);
 
 	DwarfFortressData &_df;
-	QPointer<DFHack::Client> _dfhack;
 };
 
 #endif

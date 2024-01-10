@@ -37,7 +37,7 @@ class Unit: public QObject, public std::enable_shared_from_this<Unit>
 {
 	Q_OBJECT
 public:
-	Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent = nullptr);
+	Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, QObject *parent = nullptr);
 	~Unit() override;
 
 	using df_type = df::unit;
@@ -146,7 +146,6 @@ private:
 
 	std::unique_ptr<df::unit> _u;
 	DwarfFortressData &_df;
-	QPointer<DFHack::Client> _dfhack;
 
 	QString _display_name;
 };

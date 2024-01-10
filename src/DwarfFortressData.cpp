@@ -26,8 +26,9 @@
 #include "df/utils.h"
 
 DwarfFortressData::DwarfFortressData(QPointer<DFHack::Client> dfhack):
+	dfhack(dfhack),
 	units(std::make_unique<ObjectList<Unit>>()),
-	work_details(std::make_unique<WorkDetailModel>(*this, dfhack))
+	work_details(std::make_unique<WorkDetailModel>(*this))
 {
 }
 
@@ -106,8 +107,7 @@ void DwarfFortressData::updateRaws(std::unique_ptr<df::world_raws> &&new_raws)
 
 void DwarfFortressData::updateGameData(
 		std::unique_ptr<df_game_data> &&new_data,
-		std::vector<std::unique_ptr<df::unit>> &&new_units,
-		DFHack::Client &dfhack)
+		std::vector<std::unique_ptr<df::unit>> &&new_units)
 {
 	current_civ_id = new_data->current_civ_id;
 	current_group_id = new_data->current_group_id;
@@ -115,11 +115,11 @@ void DwarfFortressData::updateGameData(
 	entities = std::move(new_data->entities);
 	histfigs = std::move(new_data->histfigs);
 	identities = std::move(new_data->identities);
-	units->update(std::move(new_units), [this, &dfhack](auto &&u) {
-		return std::make_shared<Unit>(std::move(u), *this, dfhack);
+	units->update(std::move(new_units), [this](auto &&u) {
+		return std::make_shared<Unit>(std::move(u), *this);
 	});
-	work_details->update(std::move(new_data->work_details), [this, &dfhack](auto &&wd) {
-		return std::make_shared<WorkDetail>(std::move(wd), *this, dfhack);
+	work_details->update(std::move(new_data->work_details), [this](auto &&wd) {
+		return std::make_shared<WorkDetail>(std::move(wd), *this);
 	});
 }
 

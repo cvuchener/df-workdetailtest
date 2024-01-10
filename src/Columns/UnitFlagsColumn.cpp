@@ -208,6 +208,7 @@ QString UnitFlagsColumn::countText(Unit::Flag flag, int count)
 	Q_UNREACHABLE();
 }
 
+#include "DwarfFortressData.h"
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QMetaEnum>
@@ -226,7 +227,7 @@ Factory UnitFlagsColumn::makeFactory(const QJsonObject &json)
 		else
 			qCWarning(GridViewLog) << "Invalid flag value for UnitFlags column" << flag_name;
 	}
-	return [flags = std::move(flags)](DwarfFortressData &df, QPointer<DFHack::Client> dfhack) {
-		return std::make_unique<UnitFlagsColumn>(flags, dfhack);
+	return [flags = std::move(flags)](DwarfFortressData &df) {
+		return std::make_unique<UnitFlagsColumn>(flags, df.dfhack);
 	};
 }

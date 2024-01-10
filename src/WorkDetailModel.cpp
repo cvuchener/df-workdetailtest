@@ -47,10 +47,9 @@ static const DFHack::Function<
 #include <QJsonDocument>
 #include <QJsonObject>
 
-WorkDetailModel::WorkDetailModel(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent):
+WorkDetailModel::WorkDetailModel(DwarfFortressData &df, QObject *parent):
 	ObjectList<WorkDetail>(parent),
-	_df(df),
-	_dfhack(dfhack)
+	_df(df)
 {
 }
 
@@ -200,11 +199,11 @@ QCoro::Task<> WorkDetailModel::add_impl(const WorkDetail::Properties &properties
 		args.set_position(row);
 	properties.setArgs(*args.mutable_properties());
 	// Call
-	if (!_dfhack) {
+	if (!_df.dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
 		co_return;
 	}
-	auto r = co_await AddWorkDetail(*_dfhack, args).first;
+	auto r = co_await AddWorkDetail(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "AddWorkDetail failed" << make_error_code(r.cr).message();
@@ -216,7 +215,7 @@ QCoro::Task<> WorkDetailModel::add_impl(const WorkDetail::Properties &properties
 		co_return;
 	}
 	// Apply changes
-	auto wd = std::make_shared<WorkDetail>(std::make_unique<df::work_detail>(), _df, *_dfhack);
+	auto wd = std::make_shared<WorkDetail>(std::make_unique<df::work_detail>(), _df);
 	wd->setProperties(properties, *r);
 	if (row < 0) {
 		beginInsertRows({}, _objects.size(), _objects.size());
@@ -240,11 +239,11 @@ QCoro::Task<> WorkDetailModel::remove(QList<QPersistentModelIndex> indexes)
 		args.mutable_id()->set_index(index.row());
 		args.mutable_id()->set_name((*wd)->name);
 		// Call
-		if (!_dfhack) {
+		if (!_df.dfhack) {
 			qCWarning(DFHackLog) << "DFHack client was deleted";
 			co_return;
 		}
-		auto r = co_await RemoveWorkDetail(*_dfhack, args).first;
+		auto r = co_await RemoveWorkDetail(*_df.dfhack, args).first;
 		// Check results
 		if (!r) {
 			qCWarning(DFHackLog) << "RemoveWorkDetail failed" << make_error_code(r.cr).message();
@@ -274,9 +273,9 @@ QCoro::Task<> WorkDetailModel::move(QList<QPersistentModelIndex> indexes, int ro
 			dfproto::workdetailtest::MoveWorkDetail args;
 			(*wd)->setId(*args.mutable_id());
 			args.set_new_position(row);
-			if (!_dfhack)
+			if (!_df.dfhack)
 				break;
-			auto r = co_await MoveWorkDetail(*_dfhack, args).first;
+			auto r = co_await MoveWorkDetail(*_df.dfhack, args).first;
 			if (!r) {
 				qCWarning(DFHackLog) << "MoveWorkDetail failed" << make_error_code(r.cr).message();
 				co_return;

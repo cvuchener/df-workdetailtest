@@ -37,11 +37,10 @@ static const DFHack::Function<
 	dfproto::workdetailtest::WorkDetailResult
 > EditWorkDetail = {"workdetailtest", "EditWorkDetail"};
 
-WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
+WorkDetail::WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, QObject *parent):
 	QObject(parent),
 	_wd(std::move(work_detail)),
-	_df(df),
-	_dfhack(&dfhack)
+	_df(df)
 {
 	refresh();
 }
@@ -265,11 +264,11 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 		setAssignment(units[i], assign, WorkDetail::Pending);
 	}
 	// Call
-	if (!_dfhack) {
+	if (!_df.dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
 		co_return;
 	}
-	auto r = co_await EditWorkDetail(*_dfhack, args).first;
+	auto r = co_await EditWorkDetail(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
@@ -358,11 +357,11 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	}
 	changes.setArgs(*args.mutable_changes());
 	// Call
-	if (!_dfhack) {
+	if (!_df.dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
 		co_return;
 	}
-	auto r = co_await EditWorkDetail(*_dfhack, args).first;
+	auto r = co_await EditWorkDetail(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "EditWorkDetail failed" << make_error_code(r.cr).message();

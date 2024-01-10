@@ -342,7 +342,7 @@ QCoro::Task<bool> DwarfFortress::update()
 							break;
 						}
 					}
-					_data->updateGameData(std::move(data), std::move(*units), _dfhack);
+					_data->updateGameData(std::move(data), std::move(*units));
 				}, Qt::BlockingQueuedConnection);
 			}
 			return true;

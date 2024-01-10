@@ -21,6 +21,8 @@
 
 #include "DwarfFortressReader.h"
 
+#include <QPointer>
+
 class Unit;
 class WorkDetailModel;
 template <typename T>
@@ -30,6 +32,8 @@ namespace DFHack { class Client; }
 
 struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
 {
+	QPointer<DFHack::Client> dfhack;
+
 	std::unique_ptr<df::world_raws> raws;
 
 	int current_civ_id;
@@ -55,8 +59,7 @@ struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
 	void updateRaws(std::unique_ptr<df::world_raws> &&new_raws);
 	void updateGameData(
 			std::unique_ptr<df_game_data> &&new_data,
-			std::vector<std::unique_ptr<df::unit>> &&new_units,
-			DFHack::Client &dfhack);
+			std::vector<std::unique_ptr<df::unit>> &&new_units);
 
 	void clear();
 };

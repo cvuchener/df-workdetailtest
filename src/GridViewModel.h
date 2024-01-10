@@ -33,8 +33,6 @@ class AbstractColumn;
 class GroupBy;
 class Unit;
 
-namespace DFHack { class Client; }
-
 class GridViewModel: public QAbstractItemModel
 {
 	Q_OBJECT
@@ -46,7 +44,7 @@ public:
 
 		static Parameters fromJson(const QJsonDocument &);
 	};
-	GridViewModel(const Parameters &parameters, std::shared_ptr<DwarfFortressData> df, DFHack::Client &dfhack, QObject *parent = nullptr);
+	GridViewModel(const Parameters &parameters, std::shared_ptr<DwarfFortressData> df, QObject *parent = nullptr);
 	~GridViewModel() override;
 
 	const QString &title() const { return _title; }
@@ -98,7 +96,6 @@ private slots:
 
 private:
 	std::shared_ptr<DwarfFortressData> _df;
-	QPointer<DFHack::Client> _dfhack;
 	QString _title;
 	UnitFilterProxyModel _unit_filter;
 	std::shared_ptr<UserUnitFilters> _user_filters;

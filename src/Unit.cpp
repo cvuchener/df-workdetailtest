@@ -34,11 +34,10 @@ static const DFHack::Function<
 	dfproto::workdetailtest::UnitResults
 > EditUnits = {"workdetailtest", "EditUnits"};
 
-Unit::Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent):
+Unit::Unit(std::unique_ptr<df::unit> &&unit, DwarfFortressData &df, QObject *parent):
 	QObject(parent),
 	_u(std::move(unit)),
-	_df(df),
-	_dfhack(&dfhack)
+	_df(df)
 {
 	refresh();
 }
@@ -422,11 +421,11 @@ QCoro::Task<> Unit::edit(Properties changes)
 	args.mutable_id()->set_id(_u->id);
 	changes.setArgs(*args.mutable_changes());
 	// Call
-	if (!_dfhack) {
+	if (!_df.dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
 		co_return;
 	}
-	auto r = co_await EditUnit(*_dfhack, args).first;
+	auto r = co_await EditUnit(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();

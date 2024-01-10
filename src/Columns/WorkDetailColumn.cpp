@@ -38,10 +38,9 @@
 
 using namespace Columns;
 
-WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QPointer<DFHack::Client> dfhack, QObject *parent):
+WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QObject *parent):
 	AbstractColumn(parent),
 	_df(df),
-	_dfhack(dfhack),
 	_sort{*this, SortBy::Skill, {
 			{SortBy::Skill, tr("skill")},
 			{SortBy::Assigned, tr("assigned")}}}
@@ -381,7 +380,7 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 
 Factory WorkDetailColumn::makeFactory(const QJsonObject &)
 {
-	return [](DwarfFortressData &df, QPointer<DFHack::Client> dfhack) {
-		return std::make_unique<WorkDetailColumn>(df, dfhack);
+	return [](DwarfFortressData &df) {
+		return std::make_unique<WorkDetailColumn>(df);
 	};
 }

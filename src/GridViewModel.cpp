@@ -78,17 +78,16 @@ GridViewModel::Parameters GridViewModel::Parameters::fromJson(const QJsonDocumen
 	return params;
 }
 
-GridViewModel::GridViewModel(const Parameters &parameters, std::shared_ptr<DwarfFortressData> df, DFHack::Client &dfhack, QObject *parent):
+GridViewModel::GridViewModel(const Parameters &parameters, std::shared_ptr<DwarfFortressData> df, QObject *parent):
 	QAbstractItemModel(parent),
 	_df(std::move(df)),
-	_dfhack(&dfhack),
 	_group_index(0)
 {
 	_title = parameters.title;
 	_unit_filter.setBaseFilter(parameters.filter);
 	_columns.push_back(std::make_unique<Columns::NameColumn>());
 	for (const auto &factory: parameters.columns)
-		_columns.push_back(factory(*_df, _dfhack));
+		_columns.push_back(factory(*_df));
 
 	_unit_filter.setSourceModel(_df->units.get());
 	connect(&_unit_filter, &QAbstractItemModel::dataChanged,

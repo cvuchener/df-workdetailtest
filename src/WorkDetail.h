@@ -30,7 +30,6 @@ Q_DECLARE_LOGGING_CATEGORY(WorkDetailLog);
 class Unit;
 class DwarfFortressData;
 
-namespace DFHack { class Client; }
 namespace dfproto::workdetailtest {
 class WorkDetailId;
 class WorkDetailProperties;
@@ -49,7 +48,7 @@ public:
 	};
 	Q_ENUM(ChangeStatus)
 
-	WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, DFHack::Client &dfhack, QObject *parent = nullptr);
+	WorkDetail(std::unique_ptr<df::work_detail> &&work_detail, DwarfFortressData &df, QObject *parent = nullptr);
 	~WorkDetail() override;
 
 	using df_type = df::work_detail;
@@ -107,7 +106,6 @@ private:
 
 	std::unique_ptr<df::work_detail> _wd;
 	DwarfFortressData &_df;
-	QPointer<DFHack::Client> _dfhack;
 	std::map<int, ChangeStatus> _statuses;
 
 	QString _display_name;

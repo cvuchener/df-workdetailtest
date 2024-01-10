@@ -174,7 +174,7 @@ void GridViewTabs::addView(const QString &name)
 	try {
 		const auto &settings = Application::settings();
 		const auto &params = Application::gridviews().find(name);
-		auto view = new GridView(std::make_unique<GridViewModel>(params, _df->data(), _df->dfhack()), this);
+		auto view = new GridView(std::make_unique<GridViewModel>(params, _df->data()), this);
 		view->setProperty(GRIDVIEW_NAME_PROPERTY, name);
 		if (!settings.per_view_group_by())
 			view->gridViewModel().setGroupBy(_group_bar ? _group_bar->groupIndex() : 0);
