@@ -3,6 +3,6 @@
 	"filter": "builtin:Citizens",
 	"columns": [
 		{ "type": "WorkDetail" },
-		{ "type": "Specialist" }
+		{ "type": "UnitFlags", "flags": ["OnlyDoAssignedJobs"] }
 	]
 }

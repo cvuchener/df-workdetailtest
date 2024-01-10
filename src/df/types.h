@@ -102,6 +102,7 @@ struct unit
 	year birth_year;
 	tick birth_tick;
 	time time_on_site;
+	int pet_owner;
 
 	using reader_type = StructureReader<unit, "unit",
 		Field<&unit::name, "name">,
@@ -124,7 +125,8 @@ struct unit
 		Field<&unit::inventory, "inventory">,
 		Field<&unit::birth_year, "birth_year">,
 		Field<&unit::birth_tick, "birth_time">,
-		Field<&unit::time_on_site, "curse.time_on_site">
+		Field<&unit::time_on_site, "curse.time_on_site">,
+		Field<&unit::pet_owner, "relationship_ids[Pet]">
 	>;
 };
 

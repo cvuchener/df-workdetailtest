@@ -53,7 +53,7 @@ add_executable(workdetailtest
 	src/Application.cpp
 	src/Columns/Factory.cpp
 	src/Columns/NameColumn.cpp
-	src/Columns/SpecialistColumn.cpp
+	src/Columns/UnitFlagsColumn.cpp
 	src/Columns/WorkDetailColumn.cpp
 	src/Counter.cpp
 	src/DFHackProcess.cpp

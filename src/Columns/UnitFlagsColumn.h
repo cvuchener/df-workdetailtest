@@ -16,32 +16,38 @@
  *
  */
 
-#ifndef COLUMNS_SPECIALIST_COLUMN_H
-#define COLUMNS_SPECIALIST_COLUMN_H
+#ifndef COLUMNS_UNIT_FLAGS_COLUMN_H
+#define COLUMNS_UNIT_FLAGS_COLUMN_H
 
 #include "AbstractColumn.h"
 #include "Columns/Factory.h"
+#include "Unit.h"
 
 namespace Columns {
 
-class SpecialistColumn: public AbstractColumn
+class UnitFlagsColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	SpecialistColumn(QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
-	~SpecialistColumn() override;
+	UnitFlagsColumn(std::span<const Unit::Flag> flags, QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
+	~UnitFlagsColumn() override;
 
+	int count() const override;
 	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
 	QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const override;
 	QVariant groupData(int section, GroupBy::Group group, std::span<const Unit *> units, int role = Qt::DisplayRole) const override;
 	bool setUnitData(int section, Unit &unit, const QVariant &value, int role = Qt::EditRole) override;
 	bool setGroupData(int section, std::span<Unit *> units, const QVariant &value, int role = Qt::EditRole) override;
+	void toggleUnits(int section, std::span<Unit *> units) override;
 	Qt::ItemFlags unitFlags(int section, const Unit &unit) const override;
 	Qt::ItemFlags groupFlags(int section, std::span<const Unit *> units) const override;
 
 	static Factory makeFactory(const QJsonObject &);
 
 private:
+	static QString title(Unit::Flag flag);
+	static QString countText(Unit::Flag flag, int count);
+	std::vector<Unit::Flag> _flags;
 	QPointer<DFHack::Client> _dfhack;
 };
 

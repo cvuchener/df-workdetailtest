@@ -1,5 +1,11 @@
 {
 	"title": "Animals",
 	"filter": "builtin:Pets or Livestock",
-	"columns": []
+	"columns": [
+		{ "type": "UnitFlags", "flags": [
+			"AvailableForAdoption",
+			"MarkedForSlaugter",
+			"MarkedForGelding"
+		] }
+	]
 }

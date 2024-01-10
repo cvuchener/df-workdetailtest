@@ -150,10 +150,7 @@ bool Unit::isCrazed() const
 		return false;
 	if (_u->curse.add_tags1.bits.CRAZED)
 		return true;
-	if (auto caste = caste_raw())
-		return caste->flags.isSet(df::caste_raw_flags::CRAZED);
-	else
-		return false;
+	return hasCasteFlag(df::caste_raw_flags::CRAZED);
 }
 
 bool Unit::isOpposedToLife() const
@@ -162,10 +159,7 @@ bool Unit::isOpposedToLife() const
 		return false;
 	if (_u->curse.add_tags1.bits.OPPOSED_TO_LIFE)
 		return true;
-	if (auto caste = caste_raw())
-		return caste->flags.isSet(df::caste_raw_flags::OPPOSED_TO_LIFE);
-	else
-		return false;
+	return hasCasteFlag(df::caste_raw_flags::OPPOSED_TO_LIFE);
 }
 
 bool Unit::canLearn() const
@@ -174,10 +168,7 @@ bool Unit::canLearn() const
 		return false;
 	if (_u->curse.add_tags1.bits.CAN_LEARN)
 		return true;
-	if (auto caste = caste_raw())
-		return caste->flags.isSet(df::caste_raw_flags::CAN_LEARN);
-	else
-		return false;
+	return hasCasteFlag(df::caste_raw_flags::CAN_LEARN);
 }
 
 bool Unit::canSpeak() const
@@ -186,10 +177,7 @@ bool Unit::canSpeak() const
 		return false;
 	if (_u->curse.add_tags1.bits.CAN_SPEAK)
 		return true;
-	if (auto caste = caste_raw())
-		return caste->flags.isSet(df::caste_raw_flags::CAN_SPEAK);
-	else
-		return false;
+	return hasCasteFlag(df::caste_raw_flags::CAN_SPEAK);
 }
 
 bool Unit::isOwnGroup() const
@@ -250,11 +238,9 @@ bool Unit::isAdult() const
 
 bool Unit::isTamable() const
 {
-	if (auto caste = caste_raw())
-		return caste->flags.isSet(df::caste_raw_flags::PET)
-			|| caste->flags.isSet(df::caste_raw_flags::PET_EXOTIC);
-	else
-		return false;
+	return hasCasteFlag(
+			df::caste_raw_flags::PET,
+			df::caste_raw_flags::PET_EXOTIC);
 }
 
 bool Unit::hasMenialWorkExemption() const
@@ -294,6 +280,27 @@ bool Unit::hasMenialWorkExemption() const
 	return false;
 }
 
+bool Unit::canBeAdopted() const
+{
+	if (!_u->flags1.bits.tame)
+		return false;
+	if (_u->pet_owner != -1)
+		return false;
+	return !hasCasteFlag(df::caste_raw_flags::ADOPTS_OWNER);
+}
+
+bool Unit::canBeSlaughtered() const
+{
+	return _u->pet_owner == -1;
+}
+
+bool Unit::canBeGelded() const
+{
+	if (_u->flags3.bits.ghostly || _u->flags3.bits.gelded || _u->undead)
+		return false;
+	return hasCasteFlag(df::caste_raw_flags::GELDABLE);
+}
+
 Unit::Category Unit::category() const
 {
 	if (_u->flags1.bits.left || _u->flags1.bits.incoming)
@@ -314,19 +321,46 @@ Unit::Category Unit::category() const
 
 }
 
+static auto toProto(Unit::Flag flag)
+{
+	switch (flag) {
+	case Unit::Flag::OnlyDoAssignedJobs:
+		return dfproto::workdetailtest::OnlyDoAssignedJobs;
+	case Unit::Flag::AvailableForAdoption:
+		return dfproto::workdetailtest::AvailableForAdoption;
+	case Unit::Flag::MarkedForSlaugter:
+		return dfproto::workdetailtest::MarkedForSlaughter;
+	case Unit::Flag::MarkedForGelding:
+		return dfproto::workdetailtest::MarkedForGelding;
+	}
+	Q_UNREACHABLE();
+}
+
+static std::optional<Unit::Flag> fromProto(dfproto::workdetailtest::UnitFlag flag)
+{
+	switch (flag) {
+	case dfproto::workdetailtest::OnlyDoAssignedJobs:
+		return Unit::Flag::OnlyDoAssignedJobs;
+	case dfproto::workdetailtest::AvailableForAdoption:
+		return Unit::Flag::AvailableForAdoption;
+	case dfproto::workdetailtest::MarkedForSlaughter:
+		return Unit::Flag::MarkedForSlaugter;
+	case dfproto::workdetailtest::MarkedForGelding:
+		return Unit::Flag::MarkedForGelding;
+	default:
+		return {};
+	}
+}
+
 void Unit::Properties::setArgs(dfproto::workdetailtest::UnitProperties &args) const
 {
 	if (nickname) {
 		args.set_nickname(df::toCP437(*nickname));
 	}
-	if (only_do_assigned_jobs) {
-		args.set_only_do_assigned_jobs(*only_do_assigned_jobs);
-	}
-	if (slaughter) {
-		args.set_slaughter(*slaughter);
-	}
-	if (geld) {
-		args.set_geld(*geld);
+	for (auto [flag, value]: flags) {
+		auto flag_arg = args.mutable_flags()->Add();
+		flag_arg->set_value(value);
+		flag_arg->set_flag(toProto(flag));
 	}
 }
 
@@ -338,26 +372,43 @@ void Unit::setProperties(const Properties &properties, const dfproto::workdetail
 		_u->name.nickname = df::toCP437(*properties.nickname);
 		refresh();
 	}
-	if (properties.only_do_assigned_jobs) {
-		const auto &r = results.only_do_assigned_jobs();
-		if (r.success())
-			_u->flags4.bits.only_do_assigned_jobs = *properties.only_do_assigned_jobs;
-		else
-			qCWarning(DFHackLog) << "Unit change failed" << r.error();
-	}
-	if (properties.slaughter) {
-		const auto &r = results.slaughter();
-		if (r.success())
-			_u->flags2.bits.slaughter = *properties.slaughter;
-		else
-			qCWarning(DFHackLog) << "Unit change failed" << r.error();
-	}
-	if (properties.geld) {
-		const auto &r = results.geld();
-		if (r.success())
-			_u->flags3.bits.marked_for_gelding = *properties.geld;
-		else
-			qCWarning(DFHackLog) << "Unit change failed" << r.error();
+	for (const auto &flag_result: results.flags()) {
+		auto flag = fromProto(flag_result.flag());
+		if (!flag) {
+			qCWarning(DFHackLog) << "Unknown flag in result" << flag_result.flag();
+			continue;
+		}
+		auto it = properties.flags.find(*flag);
+		if (it == properties.flags.end()) {
+			qCWarning(DFHackLog) << "Unexpected flag in result" << *flag;
+			continue;
+		}
+		if (!flag_result.result().success()) {
+			qCWarning(DFHackLog) << "Unit change failed" << flag_result.result().error();
+			continue;
+		}
+		switch (*flag) {
+		case Flag::OnlyDoAssignedJobs:
+			_u->flags4.bits.only_do_assigned_jobs = it->second;
+			break;
+		case Flag::AvailableForAdoption:
+			_u->flags3.bits.available_for_adoption = it->second;
+			if (it->second)
+				_u->flags2.bits.slaughter = false;
+			break;
+		case Flag::MarkedForSlaugter:
+			_u->flags2.bits.slaughter = it->second;
+			if (it->second) {
+				_u->flags3.bits.available_for_adoption = false;
+				_u->flags3.bits.marked_for_gelding = false;
+			}
+			break;
+		case Flag::MarkedForGelding:
+			_u->flags3.bits.marked_for_gelding = it->second;
+			if (it->second)
+				_u->flags2.bits.slaughter = false;
+			break;
+		}
 	}
 	updated();
 }
@@ -393,10 +444,10 @@ QCoro::Task<> Unit::edit(QPointer<DFHack::Client> dfhack, std::vector<std::share
 	// Prepare arguments
 	dfproto::workdetailtest::EditUnits args;
 	for (auto &unit: units) {
-		auto id = args.mutable_units()->Add();
-		id->set_id((*unit)->id);
+		auto edit = args.mutable_units()->Add();
+		edit->mutable_id()->set_id((*unit)->id);
+		changes.setArgs(*edit->mutable_changes());
 	}
-	changes.setArgs(*args.mutable_changes());
 	// Call
 	if (!dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
@@ -415,5 +466,37 @@ QCoro::Task<> Unit::edit(QPointer<DFHack::Client> dfhack, std::vector<std::share
 			co_return;
 		}
 		units[i]->setProperties(changes, unit_result);
+	}
+}
+
+QCoro::Task<> Unit::toggle(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Flag flag)
+{
+	// Prepare arguments
+	std::vector<Properties> changes(units.size());
+	dfproto::workdetailtest::EditUnits args;
+	for (std::size_t i = 0; i < units.size(); ++i) {
+		changes[i].flags[flag] = !units[i]->hasFlag(flag);
+		auto edit = args.mutable_units()->Add();
+		edit->mutable_id()->set_id((*units[i])->id);
+		changes[i].setArgs(*edit->mutable_changes());
+	}
+	// Call
+	if (!dfhack) {
+		qCWarning(DFHackLog) << "DFHack client was deleted";
+		co_return;
+	}
+	auto r = co_await EditUnits(*dfhack, args).first;
+	// Check results
+	if (!r) {
+		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
+		co_return;
+	}
+	for (std::size_t i = 0; i < units.size(); ++i) {
+		auto unit_result = r->results(i);
+		if (!unit_result.unit().success()) {
+			qCWarning(DFHackLog) << "EditUnit failed" << unit_result.unit().error();
+			co_return;
+		}
+		units[i]->setProperties(changes[i], unit_result);
 	}
 }

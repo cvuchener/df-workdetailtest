@@ -23,15 +23,15 @@
 #include "GridViewModel.h"
 
 #include "WorkDetailColumn.h"
-#include "SpecialistColumn.h"
+#include "UnitFlagsColumn.h"
 
 Columns::Factory Columns::makeFactory(const QJsonObject &col)
 {
 	auto type = col.value("type").toString();
 	if (type == "WorkDetail")
 		return WorkDetailColumn::makeFactory(col);
-	else if (type == "Specialist")
-		return SpecialistColumn::makeFactory(col);
+	else if (type == "UnitFlags")
+		return UnitFlagsColumn::makeFactory(col);
 	else {
 		qCCritical(GridViewLog) << "Unsupported column type:" << type;
 		return {};

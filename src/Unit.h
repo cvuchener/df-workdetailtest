@@ -54,6 +54,15 @@ public:
 	const df::creature_raw *creature_raw() const;
 	const df::caste_raw *caste_raw() const;
 
+	template <std::same_as<df::caste_raw_flags_t>... Args>
+	bool hasCasteFlag(Args... args) const
+	{
+		if (auto caste = caste_raw())
+			return (caste->flags.isSet(args) || ...);
+		else
+			return false;
+	}
+
 	df::time age() const;
 
 	bool isFortControlled() const;
@@ -68,6 +77,9 @@ public:
 	bool isChild() const;
 	bool isAdult() const;
 	bool hasMenialWorkExemption() const;
+	bool canBeAdopted() const;
+	bool canBeSlaughtered() const;
+	bool canBeGelded() const;
 
 	enum class Category {
 		Citizens,
@@ -78,16 +90,51 @@ public:
 	};
 	Category category() const;
 
+	enum class Flag {
+		OnlyDoAssignedJobs,
+		AvailableForAdoption,
+		MarkedForSlaugter,
+		MarkedForGelding,
+	};
+	Q_ENUM(Flag)
+
+	inline bool hasFlag(Flag flag) const {
+		switch (flag) {
+		case Flag::OnlyDoAssignedJobs:
+			return _u->flags4.bits.only_do_assigned_jobs;
+		case Flag::AvailableForAdoption:
+			return _u->flags3.bits.available_for_adoption;
+		case Flag::MarkedForSlaugter:
+			return _u->flags2.bits.slaughter;
+		case Flag::MarkedForGelding:
+			return _u->flags3.bits.marked_for_gelding;
+		}
+		Q_UNREACHABLE();
+	}
+
+	inline bool canEdit(Flag flag) const {
+		switch (flag) {
+		case Flag::OnlyDoAssignedJobs:
+			return canAssignWork();
+		case Flag::AvailableForAdoption:
+			return canBeAdopted();
+		case Flag::MarkedForSlaugter:
+			return canBeSlaughtered();
+		case Flag::MarkedForGelding:
+			return canBeGelded();
+		}
+		Q_UNREACHABLE();
+	}
+
 	struct Properties {
 		std::optional<QString> nickname;
-		std::optional<bool> only_do_assigned_jobs;
-		std::optional<bool> slaughter;
-		std::optional<bool> geld;
+		std::map<Flag, bool> flags;
 
 		void setArgs(dfproto::workdetailtest::UnitProperties &) const;
 	};
 	QCoro::Task<> edit(Properties properties);
 	static QCoro::Task<> edit(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Properties properties);
+	static QCoro::Task<> toggle(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Flag flag);
 
 signals:
 	void aboutToBeUpdated();
