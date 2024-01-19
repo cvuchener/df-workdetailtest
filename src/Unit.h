@@ -53,6 +53,7 @@ public:
 
 	const df::creature_raw *creature_raw() const;
 	const df::caste_raw *caste_raw() const;
+	const df::identity *currentIdentity() const;
 
 	template <std::same_as<df::caste_raw_flags_t>... Args>
 	bool hasCasteFlag(Args... args) const
@@ -64,6 +65,28 @@ public:
 	}
 
 	df::time age() const;
+
+	using attribute_t = std::variant<df::physical_attribute_type_t, df::mental_attribute_type_t>;
+
+	template <typename T>
+	const df::unit_attribute *attribute(T attr) const;
+	template <typename T>
+	int attributeValue(T attr) const;
+	template <typename T>
+	int attributeCasteRating(T attr) const;
+	inline const df::unit_attribute *attribute(const attribute_t &attr) const
+	{
+		return visit([this](auto attr) { return attribute(attr); }, attr);
+	}
+	inline int attributeValue(const attribute_t &attr) const
+	{
+		return visit([this](auto attr) { return attributeValue(attr); }, attr);
+	}
+	inline int attributeCasteRating(const attribute_t &attr) const
+	{
+		return visit([this](auto attr) { return attributeCasteRating(attr); }, attr);
+	}
+
 
 	bool isFortControlled() const;
 	bool isCrazed() const;
@@ -149,5 +172,12 @@ private:
 
 	QString _display_name;
 };
+
+extern template const df::unit_attribute *Unit::attribute<df::physical_attribute_type_t>(df::physical_attribute_type_t) const;
+extern template const df::unit_attribute *Unit::attribute<df::mental_attribute_type_t>(df::mental_attribute_type_t) const;
+extern template int Unit::attributeValue<df::physical_attribute_type_t>(df::physical_attribute_type_t) const;
+extern template int Unit::attributeValue<df::mental_attribute_type_t>(df::mental_attribute_type_t) const;
+extern template int Unit::attributeCasteRating<df::physical_attribute_type_t>(df::physical_attribute_type_t) const;
+extern template int Unit::attributeCasteRating<df::mental_attribute_type_t>(df::mental_attribute_type_t) const;
 
 #endif

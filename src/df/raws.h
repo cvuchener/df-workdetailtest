@@ -96,13 +96,17 @@ struct caste_raw
 	std::array<std::string, 2> baby_name;
 	std::array<std::string, 2> child_name;
 	FlagArray<caste_raw_flags_t> flags;
+	std::array<std::array<int, 7>, physical_attribute_type::Count> physical_att_range;
+	std::array<std::array<int, 7>, mental_attribute_type::Count> mental_att_range;
 
 	using reader_type = StructureReader<caste_raw, "caste_raw",
-	      Field<&caste_raw::caste_id, "caste_id">,
-	      Field<&caste_raw::caste_name, "caste_name">,
-	      Field<&caste_raw::baby_name, "baby_name">,
-	      Field<&caste_raw::child_name, "child_name">,
-	      Field<&caste_raw::flags, "flags">
+		Field<&caste_raw::caste_id, "caste_id">,
+		Field<&caste_raw::caste_name, "caste_name">,
+		Field<&caste_raw::baby_name, "baby_name">,
+		Field<&caste_raw::child_name, "child_name">,
+		Field<&caste_raw::flags, "flags">,
+		Field<&caste_raw::physical_att_range, "attributes.phys_att_range">,
+		Field<&caste_raw::mental_att_range, "attributes.ment_att_range">
 	>;
 };
 

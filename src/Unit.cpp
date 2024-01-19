@@ -57,15 +57,11 @@ void Unit::update(std::unique_ptr<df::unit> &&unit)
 void Unit::refresh()
 {
 	using df::fromCP437;
-	auto hf = df::find(_df.histfigs, _u->hist_figure_id);
-	auto identity = hf && hf->info && hf->info->reputation
-		? df::find(_df.identities, hf->info->reputation->cur_identity)
-		: nullptr;
 	if (!_df.raws) {
 		_display_name = tr("Invalid raws");
 		return;
 	}
-	if (identity)
+	if (auto identity = currentIdentity())
 		_display_name = _df.raws->language.translate_name(identity->name);
 	else
 		_display_name = _df.raws->language.translate_name(_u->name);
@@ -109,10 +105,99 @@ const df::caste_raw *Unit::caste_raw() const
 		return nullptr;
 }
 
+const df::identity *Unit::currentIdentity() const
+{
+	if (auto hf = df::find(_df.histfigs, _u->hist_figure_id))
+		if (hf->info && hf->info->reputation)
+			return df::find(_df.identities, hf->info->reputation->cur_identity);
+	return nullptr;
+}
+
 df::time Unit::age() const
 {
 	return _df.current_time - _u->birth_year - _u->birth_tick;
 }
+
+template <typename T>
+struct attribute_traits;
+
+template <>
+struct attribute_traits<df::physical_attribute_type_t>
+{
+	static constexpr auto change_perc = &df::curse_attr_change::physical_att_perc;
+	static constexpr auto change_add = &df::curse_attr_change::physical_att_add;
+	static constexpr auto caste_range = &df::caste_raw::physical_att_range;
+};
+
+template <>
+struct attribute_traits<df::mental_attribute_type_t>
+{
+	static constexpr auto change_perc = &df::curse_attr_change::mental_att_perc;
+	static constexpr auto change_add = &df::curse_attr_change::mental_att_add;
+	static constexpr auto caste_range = &df::caste_raw::mental_att_range;
+};
+
+template <typename T>
+const df::unit_attribute *Unit::attribute(T attr) const
+{
+	static_assert(std::same_as<T, df::physical_attribute_type_t>
+			|| std::same_as<T, df::mental_attribute_type_t>,
+			"T is not an attribute type");
+	if constexpr (std::same_as<T, df::physical_attribute_type_t>) {
+		return &_u->physical_attrs[attr];
+	}
+	else { // std::same_as<T, df::mental_attribute_type_t>
+		if (auto soul = _u->current_soul.get())
+			return &soul->mental_attrs[attr];
+		else
+			return nullptr;
+	}
+}
+
+// Explicit instantiations
+template const df::unit_attribute *Unit::attribute<df::physical_attribute_type_t>(df::physical_attribute_type_t) const;
+template const df::unit_attribute *Unit::attribute<df::mental_attribute_type_t>(df::mental_attribute_type_t) const;
+
+template <typename T>
+int Unit::attributeValue(T attr) const
+{
+	using traits = attribute_traits<T>;
+	auto unit_attr = attribute(attr);
+	if (!unit_attr)
+		return 0;
+	auto base_value = std::max(unit_attr->value - unit_attr->soft_demotion, 0);
+	if (auto change = _u->curse.attr_change.get()) {
+		auto changed_value = base_value;
+		changed_value *= (change->*traits::change_perc)[attr];
+		changed_value /= 100;
+		changed_value += (change->*traits::change_add)[attr];
+		if (auto identity = currentIdentity()) {
+			if (identity->type == df::identity_type::HidingCurse)
+				changed_value = std::min(base_value, changed_value);
+		}
+		return changed_value;
+	}
+	else
+		return base_value;
+}
+
+// Explicit instantiations
+template int Unit::attributeValue<df::physical_attribute_type_t>(df::physical_attribute_type_t) const;
+template int Unit::attributeValue<df::mental_attribute_type_t>(df::mental_attribute_type_t) const;
+
+template <typename T>
+int Unit::attributeCasteRating(T attr) const
+{
+	using traits = attribute_traits<T>;
+	if (auto caste = caste_raw())
+		return (attributeValue(attr) - (caste->*traits::caste_range)[attr][3]) / 10;
+	else
+		return 0;
+}
+
+// Explicit instantiations
+template int Unit::attributeCasteRating<df::physical_attribute_type_t>(df::physical_attribute_type_t) const;
+template int Unit::attributeCasteRating<df::mental_attribute_type_t>(df::mental_attribute_type_t) const;
 
 bool Unit::isFortControlled() const
 {

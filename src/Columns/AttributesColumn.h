@@ -16,27 +16,32 @@
  *
  */
 
-#include "Factory.h"
+#ifndef COLUMNS_ATTRIBUTES_COLUMN_H
+#define COLUMNS_ATTRIBUTES_COLUMN_H
 
-#include <QJsonObject>
+#include "AbstractColumn.h"
+#include "Columns/Factory.h"
+#include "Unit.h"
 
-#include "GridViewModel.h"
+namespace Columns {
 
-#include "WorkDetailColumn.h"
-#include "UnitFlagsColumn.h"
-#include "AttributesColumn.h"
-
-Columns::Factory Columns::makeFactory(const QJsonObject &col)
+class AttributesColumn: public AbstractColumn
 {
-	auto type = col.value("type").toString();
-	if (type == "WorkDetail")
-		return WorkDetailColumn::makeFactory(col);
-	else if (type == "UnitFlags")
-		return UnitFlagsColumn::makeFactory(col);
-	else if (type == "Attributes")
-		return AttributesColumn::makeFactory(col);
-	else {
-		qCCritical(GridViewLog) << "Unsupported column type:" << type;
-		return {};
-	}
+	Q_OBJECT
+public:
+	AttributesColumn(std::span<const Unit::attribute_t> attrs, QObject *parent = nullptr);
+	~AttributesColumn() override;
+
+	int count() const override;
+	QVariant headerData(int section, int role = Qt::DisplayRole) const override;
+	QVariant unitData(int section, const Unit &unit, int role = Qt::DisplayRole) const override;
+
+	static Factory makeFactory(const QJsonObject &);
+
+private:
+	std::vector<Unit::attribute_t> _attrs;
+};
+
 }
+
+#endif

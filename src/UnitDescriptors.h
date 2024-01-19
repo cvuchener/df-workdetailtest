@@ -16,27 +16,23 @@
  *
  */
 
-#include "Factory.h"
+#ifndef UNIT_DESCRIPTORS_H
+#define UNIT_DESCRIPTORS_H
 
-#include <QJsonObject>
+#include <QObject>
 
-#include "GridViewModel.h"
+#include "df_enums.h"
 
-#include "WorkDetailColumn.h"
-#include "UnitFlagsColumn.h"
-#include "AttributesColumn.h"
-
-Columns::Factory Columns::makeFactory(const QJsonObject &col)
+class UnitDescriptors: public QObject
 {
-	auto type = col.value("type").toString();
-	if (type == "WorkDetail")
-		return WorkDetailColumn::makeFactory(col);
-	else if (type == "UnitFlags")
-		return UnitFlagsColumn::makeFactory(col);
-	else if (type == "Attributes")
-		return AttributesColumn::makeFactory(col);
-	else {
-		qCCritical(GridViewLog) << "Unsupported column type:" << type;
-		return {};
-	}
-}
+	Q_OBJECT
+	UnitDescriptors() = delete;
+public:
+
+	static QString attributeName(df::physical_attribute_type_t attr);
+	static QString attributeName(df::mental_attribute_type_t attr);
+	static QString attributeDescription(df::physical_attribute_type_t attr, int caste_rating);
+	static QString attributeDescription(df::mental_attribute_type_t attr, int caste_rating);
+};
+
+#endif

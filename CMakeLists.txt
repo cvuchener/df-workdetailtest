@@ -51,6 +51,7 @@ add_executable(workdetailtest
 	src/main.cpp
 	src/AbstractColumn.cpp
 	src/Application.cpp
+	src/Columns/AttributesColumn.cpp
 	src/Columns/Factory.cpp
 	src/Columns/NameColumn.cpp
 	src/Columns/UnitFlagsColumn.cpp
@@ -86,6 +87,7 @@ add_executable(workdetailtest
 	src/Settings.cpp
 	src/StandardPaths.cpp
 	src/Unit.cpp
+	src/UnitDescriptors.cpp
 	src/UnitDetailsDock.cpp
 	src/UnitFilterProxyModel.cpp
 	src/UnitInventoryModel.cpp
@@ -141,6 +143,9 @@ dfs_generate_df_types(TARGET workdetailtest
 		matter_state
 		tool_uses
 		builtin_mats
+		identity_type
+		physical_attribute_type
+		mental_attribute_type
 )
 set_property(SOURCE
 	${PROTO_SOURCES} ${PROTO_HEADERS}

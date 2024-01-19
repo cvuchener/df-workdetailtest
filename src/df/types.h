@@ -42,6 +42,19 @@ struct occupation
 	>;
 };
 
+struct unit_attribute
+{
+	int value;
+	int max_value;
+	int soft_demotion;
+
+	using reader_type = StructureReader<unit_attribute, "unit_attribute",
+		Field<&unit_attribute::value, "value">,
+		Field<&unit_attribute::max_value, "max_value">,
+		Field<&unit_attribute::soft_demotion, "soft_demotion">
+	>;
+};
+
 struct unit_skill
 {
 	job_skill_t id;
@@ -55,9 +68,11 @@ struct unit_skill
 
 struct unit_soul
 {
+	std::array<unit_attribute, mental_attribute_type::Count> mental_attrs;
 	std::vector<std::unique_ptr<unit_skill>> skills;
 
 	using reader_type = StructureReader<unit_soul, "unit_soul",
+		Field<&unit_soul::mental_attrs, "mental_attrs">,
 		Field<&unit_soul::skills, "skills">
 	>;
 };
@@ -70,6 +85,21 @@ struct unit_inventory_item
 	using reader_type = StructureReader<unit_inventory_item, "unit_inventory_item",
 		Field<&unit_inventory_item::item, "item">,
 		Field<&unit_inventory_item::mode, "mode">
+	>;
+};
+
+struct curse_attr_change
+{
+	std::array<int, physical_attribute_type::Count> physical_att_perc;
+	std::array<int, physical_attribute_type::Count> physical_att_add;
+	std::array<int, mental_attribute_type::Count> mental_att_perc;
+	std::array<int, mental_attribute_type::Count> mental_att_add;
+
+	using reader_type = StructureReader<curse_attr_change, "curse_attr_change",
+		Field<&curse_attr_change::physical_att_perc, "phys_att_perc">,
+		Field<&curse_attr_change::physical_att_add, "phys_att_add">,
+		Field<&curse_attr_change::mental_att_perc, "ment_att_perc">,
+		Field<&curse_attr_change::mental_att_add, "ment_att_add">
 	>;
 };
 
@@ -86,11 +116,15 @@ struct unit
 	int32_t id;
 	int32_t civ_id;
 	mood_type_t mood;
+	std::array<unit_attribute, physical_attribute_type::Count> physical_attrs;
 	struct curse_t {
 		cie_add_tag_mask1 add_tags1, rem_tags1;
+		std::unique_ptr<curse_attr_change> attr_change;
+
 		using reader_type = StructureReader<curse_t, "unit.curse",
-		      Field<&curse_t::add_tags1, "add_tags1">,
-		      Field<&curse_t::rem_tags1, "rem_tags1">
+			Field<&curse_t::add_tags1, "add_tags1">,
+			Field<&curse_t::rem_tags1, "rem_tags1">,
+			Field<&curse_t::attr_change, "attr_change">
 		>;
 	} curse;
 	uintptr_t undead;
@@ -116,6 +150,7 @@ struct unit
 		Field<&unit::id, "id">,
 		Field<&unit::civ_id, "civ_id">,
 		Field<&unit::mood, "mood">,
+		Field<&unit::physical_attrs, "body.physical_attrs">,
 		Field<&unit::curse, "curse">,
 		Field<&unit::undead, "enemy.undead">,
 		Field<&unit::labors, "status.labors">,
@@ -134,10 +169,12 @@ struct identity
 {
 	int id;
 	language_name name;
+	identity_type_t type;
 
 	using reader_type = StructureReader<identity, "identity",
-	      Field<&identity::id, "id">,
-	      Field<&identity::name, "name">
+		Field<&identity::id, "id">,
+		Field<&identity::name, "name">,
+		Field<&identity::type, "type">
 	>;
 };
 
