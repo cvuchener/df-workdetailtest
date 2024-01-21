@@ -25,6 +25,29 @@
 static constexpr int ItemMargin = 3;
 static constexpr int ItemBorder = 2;
 
+static QColor withAlpha(const QColor &c, int alpha)
+{
+	return { c.red(), c.green(), c.blue(), alpha };
+}
+
+static QColor mix(const QColor &a, const QColor &b)
+{
+	return {
+		(a.red()+b.red())/2,
+		(a.green()+b.green())/2,
+		(a.blue()+b.blue())/2,
+		(a.alpha()+b.alpha())/2
+	};
+}
+
+static void drawBorder(QPainter *painter, const QRect &rect, const QPen &pen)
+{
+	PainterSaver ps(*painter);
+	painter->setBrush(Qt::NoBrush);
+	painter->setPen(pen);
+	painter->drawRect(rect);
+}
+
 GridViewStyle::GridViewStyle(QStyle *style):
 	QProxyStyle(style)
 {
@@ -92,46 +115,22 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 		break;
 	case CE_ItemViewItem:
 		if (auto item = qstyleoption_cast<const QStyleOptionViewItem *>(option)) {
-			if (option->state & QStyle::State_MouseOver) {
-				// Draw row highlight
-				PainterSaver ps(*painter);
-				auto highlight = option->palette.color(QPalette::Highlight);
-				auto text = option->palette.color(QPalette::Active, QPalette::WindowText);
-				painter->setBrush(QColor(
-						highlight.red(),
-						highlight.green(),
-						highlight.blue(),
-						50));
-				painter->setPen(Qt::NoPen);
-				painter->drawRect(option->rect);
-				painter->setPen(QColor(
-						(highlight.red()+text.red())/2,
-						(highlight.green()+text.green())/2,
-						(highlight.blue()+text.blue())/2,
-						(highlight.alpha()+text.alpha())/2));
-				painter->drawLine(option->rect.topLeft(), option->rect.topRight());
-				painter->drawLine(option->rect.bottomLeft(), option->rect.bottomRight());
-			}
 			if (item->index.column() == 0)
 				break;
 			// Panel
 			proxy()->drawPrimitive(QStyle::PE_PanelItemViewItem, item, painter);
 			// Check indicator
-			QPalette content_palette = option->palette;
+			auto text_role = QPalette::Text;
 			if (item->features & QStyleOptionViewItem::HasCheckIndicator) {
 				switch (item->checkState) {
 				case Qt::Checked:
 					painter->fillRect(
 							option->rect.adjusted(ItemMargin, ItemMargin, -ItemMargin, -ItemMargin),
 							option->palette.text());
-					for (auto group: { QPalette::Disabled, QPalette::Active, QPalette::Inactive }) {
-						auto oldbase = option->palette.brush(group, QPalette::Base);
-						content_palette.setBrush(group, QPalette::Base, option->palette.brush(group, QPalette::Text));
-						content_palette.setBrush(group, QPalette::Text, oldbase);
-					}
+					text_role = QPalette::Base;
 					break;
 				case Qt::PartiallyChecked:
-					painter->drawRect(option->rect.adjusted(ItemMargin, ItemMargin, -ItemMargin, -ItemMargin));
+					painter->drawRect(option->rect.adjusted(ItemMargin, ItemMargin, -ItemMargin-1, -ItemMargin-1));
 
 					break;
 				default:
@@ -139,12 +138,46 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 				}
 			}
 
-			{ // Text content
+			auto rating_data = item->index.data(DataRole::RatingRole);
+			if (!rating_data.isNull()) {
+				auto rating = rating_data.toDouble();
+				PainterSaver ps(*painter);
+				QColor color = rating < 0.0
+					? Qt::red
+					: option->palette.color(text_role);
+				painter->setPen(Qt::NoPen);
+				painter->setBrush(color);
+
+				rating = std::abs(rating);
+				if (rating >= 1.0) {
+					// Draw diamond
+					int size = std::min(option->rect.width(), option->rect.height()) - 2*ItemMargin;
+					painter->setRenderHint(QPainter::Antialiasing);
+					auto center = option->rect.toRectF().center();
+					painter->drawPolygon(QList<QPointF>{
+							center + QPointF{0.0, -size/2.0},
+							center + QPointF{size/3.0, 0.0},
+							center + QPointF{0.0, size/2.0},
+							center + QPointF{-size/3.0, 0.0},
+							});
+				}
+				else if (rating >= 0.05) {
+					// Draw square proportional to rating
+					int size = (std::min(option->rect.width(), option->rect.height()) - 3*ItemMargin) * rating + 0.5;
+					painter->drawRect(option->rect.adjusted(
+							(option->rect.width()-size+1)/2,
+							(option->rect.height()-size+1)/2,
+							-(option->rect.width()-size+1)/2,
+							-(option->rect.height()-size+1)/2));
+				}
+
+			}
+			else { // Text content
 				PainterSaver ps(*painter);
 				painter->setFont(item->font);
 				proxy()->drawItemText(painter, option->rect, Qt::AlignCenter,
-						content_palette, option->state & QStyle::State_Enabled,
-						item->text, QPalette::Text);
+						option->palette, option->state & QStyle::State_Enabled,
+						item->text, text_role);
 			}
 
 			// Disabled cells
@@ -169,6 +202,51 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 		break;
 	}
 	baseStyle()->drawControl(element, option, painter, widget);
+}
+
+void GridViewStyle::drawPrimitive(PrimitiveElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const
+{
+	switch (element) {
+	case PE_PanelItemViewItem:
+		if (auto item = qstyleoption_cast<const QStyleOptionViewItem *>(option)) {
+			auto cg = (widget ? widget->isEnabled() : item->state & QStyle::State_Enabled)
+				? (item->state & QStyle::State_Active
+					? QPalette::Normal
+					: QPalette::Inactive)
+				: QPalette::Disabled;
+			auto highlight = item->palette.color(cg, QPalette::Highlight);
+			auto text = item->palette.color(cg, QPalette::WindowText);
+			if (item->index.column() == 0) {
+				baseStyle()->drawPrimitive(element, option, painter, widget);
+			}
+			else {
+				if (item->backgroundBrush.style() != Qt::NoBrush) {
+					painter->fillRect(item->rect, item->backgroundBrush);
+				}
+				if (item->state & QStyle::State_Selected) {
+					// Draw selected highlight
+					painter->fillRect(item->rect, withAlpha(highlight, 100));
+				}
+				// Draw grid
+				drawBorder(painter,
+						item->rect.adjusted(0, 0, -1, -1),
+						QColor(withAlpha(text, 50)));
+			}
+			if (item->state & QStyle::State_MouseOver) {
+				// Draw mouse over highlight for all columns
+				PainterSaver ps(*painter);
+				painter->fillRect(item->rect, withAlpha(highlight, 50));
+				painter->setPen(mix(highlight, text));
+				painter->drawLine(item->rect.topLeft(), item->rect.topRight());
+				painter->drawLine(item->rect.bottomLeft(), item->rect.bottomRight());
+			}
+			return;
+		}
+		[[fallthrough]];
+	default:
+		baseStyle()->drawPrimitive(element, option, painter, widget);
+		break;
+	}
 }
 
 int GridViewStyle::pixelMetric(PixelMetric metric, const QStyleOption *option, const QWidget *widget) const

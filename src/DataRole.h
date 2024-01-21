@@ -28,6 +28,7 @@ Q_NAMESPACE
 
 enum {
 	SortRole = Qt::UserRole,
+	RatingRole,
 	BorderRole,
 };
 

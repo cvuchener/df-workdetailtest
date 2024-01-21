@@ -269,7 +269,7 @@ Qt::ItemFlags GridViewModel::flags(const QModelIndex &index) const
 		[this](const group_t &group, int column) -> Qt::ItemFlags {
 			auto [col, section] = getColumn(column);
 			return col->groupFlags(section, as_const_span(group.units));
-		});
+		}) | Qt::ItemIsSelectable;
 }
 
 const Unit *GridViewModel::unit(const QModelIndex &index) const

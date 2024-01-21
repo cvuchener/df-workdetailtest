@@ -126,6 +126,13 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 		else
 			return static_cast<int>((*best_skill)->rating);
 	}
+	case DataRole::RatingRole: {
+		auto best_skill = std::ranges::max_element(skills, std::less{}, [](auto skill){return skill->rating;});
+		if (best_skill == skills.end())
+			return 0.0;
+		else
+			return static_cast<int>((*best_skill)->rating)/15.0;
+	}
 	case Qt::CheckStateRole:
 		return wd->isAssigned(unit->id)
 			? Qt::Checked : Qt::Unchecked;

@@ -73,6 +73,8 @@ QVariant AttributesColumn::unitData(int section, const Unit &unit, int role) con
 	switch (role) {
 	case Qt::DisplayRole:
 		return unit.attributeCasteRating(attr);
+	case DataRole::RatingRole:
+		return unit.attributeCasteRating(attr)/100.0;
 	case DataRole::SortRole:
 		return unit.attributeValue(attr);
 	case Qt::ToolTipRole: {
