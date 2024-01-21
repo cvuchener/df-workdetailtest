@@ -291,7 +291,7 @@ bool Unit::canAssignWork() const
 		return false;
 	if (!canLearn())
 		return false;
-	if (!isOwnGroup() && std::ranges::any_of(_u->occupations, [](const auto &occ) {
+	if (_u->hist_figure_id != -1 && !isOwnGroup() && std::ranges::any_of(_u->occupations, [](const auto &occ) {
 				using namespace df::occupation_type;
 				return occ->type == PERFORMER || occ->type == SCHOLAR;
 			}))
