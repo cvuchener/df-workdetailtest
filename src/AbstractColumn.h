@@ -24,6 +24,7 @@
 #include "GroupBy.h"
 
 class QMenu;
+class QItemSelection;
 class Unit;
 
 class AbstractColumn: public QObject
@@ -47,7 +48,7 @@ public:
 	virtual void makeHeaderMenu(int section, QMenu *menu, QWidget *parent);
 
 signals:
-	void unitDataChanged(int first, int last, int unit_id);
+	void unitDataChanged(int first, int last, const QItemSelection &units);
 	void columnDataChanged(int first, int last);
 	void columnsAboutToBeRemoved(int first, int last);
 	void columnsRemoved(int first, int last);

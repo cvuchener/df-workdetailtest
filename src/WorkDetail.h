@@ -23,6 +23,8 @@
 #include <QCoroTask>
 #include "df/types.h"
 
+class QItemSelection;
+
 #include <QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(WorkDetailLog);
@@ -92,9 +94,7 @@ public:
 	QCoro::Task<> edit(Properties properties);
 
 signals:
-	void unitDataChanged(int unit_id);
-	void aboutToBeUpdated();
-	void updated();
+	void unitDataChanged(const QItemSelection &units);
 
 private:
 	void refresh();

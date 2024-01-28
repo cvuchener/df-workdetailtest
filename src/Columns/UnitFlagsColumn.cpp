@@ -19,14 +19,15 @@
 #include "UnitFlagsColumn.h"
 
 #include "DataRole.h"
+#include "DwarfFortressData.h"
 
 #include <QVariant>
 
 using namespace Columns;
 
-UnitFlagsColumn::UnitFlagsColumn(std::span<const Unit::Flag> flags, QPointer<DFHack::Client> dfhack, QObject *parent):
+UnitFlagsColumn::UnitFlagsColumn(std::span<const Unit::Flag> flags, DwarfFortressData &df, QObject *parent):
 	AbstractColumn(parent),
-	_dfhack(dfhack)
+	_df(df)
 {
 	_flags.resize(flags.size());
 	std::ranges::copy(flags, _flags.begin());
@@ -129,7 +130,7 @@ bool UnitFlagsColumn::setGroupData(int section, std::span<Unit *> units, const Q
 				continue;
 			unitptrs.push_back(unit->shared_from_this());
 		}
-		Unit::edit(_dfhack, std::move(unitptrs), makeProperties(flag, value));
+		Unit::edit(_df.shared_from_this(), std::move(unitptrs), makeProperties(flag, value));
 	}
 	return true;
 }
@@ -144,7 +145,7 @@ void UnitFlagsColumn::toggleUnits(int section, std::span<Unit *> units)
 			continue;
 		unitptrs.push_back(unit->shared_from_this());
 	}
-	Unit::toggle(_dfhack, std::move(unitptrs), flag);
+	Unit::toggle(_df.shared_from_this(), std::move(unitptrs), flag);
 }
 
 Qt::ItemFlags UnitFlagsColumn::unitFlags(int section, const Unit &unit) const
@@ -228,6 +229,6 @@ Factory UnitFlagsColumn::makeFactory(const QJsonObject &json)
 			qCWarning(GridViewLog) << "Invalid flag value for UnitFlags column" << flag_name;
 	}
 	return [flags = std::move(flags)](DwarfFortressData &df) {
-		return std::make_unique<UnitFlagsColumn>(flags, df.dfhack);
+		return std::make_unique<UnitFlagsColumn>(flags, df);
 	};
 }

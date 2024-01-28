@@ -19,6 +19,7 @@
 #include "Unit.h"
 
 #include "DwarfFortressData.h"
+#include "ObjectList.h"
 #include <QCoroFuture>
 #include "df/utils.h"
 
@@ -48,10 +49,8 @@ Unit::~Unit()
 
 void Unit::update(std::unique_ptr<df::unit> &&unit)
 {
-	aboutToBeUpdated();
 	_u = std::move(unit);
 	refresh();
-	updated();
 }
 
 void Unit::refresh()
@@ -451,7 +450,6 @@ void Unit::Properties::setArgs(dfproto::workdetailtest::UnitProperties &args) co
 Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
 void Unit::setProperties(const Properties &properties, const dfproto::workdetailtest::UnitResult &results)
 {
-	aboutToBeUpdated();
 	if (properties.nickname) {
 		_u->name.nickname = df::toCP437(*properties.nickname);
 		refresh();
@@ -494,7 +492,6 @@ void Unit::setProperties(const Properties &properties, const dfproto::workdetail
 			break;
 		}
 	}
-	updated();
 }
 
 QCoro::Task<> Unit::edit(Properties changes)
@@ -521,9 +518,10 @@ QCoro::Task<> Unit::edit(Properties changes)
 		co_return;
 	}
 	setProperties(changes, *r);
+	_df.units->updated(_df.units->find(*this));
 }
 
-QCoro::Task<> Unit::edit(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Properties changes)
+QCoro::Task<> Unit::edit(std::shared_ptr<DwarfFortressData> df, std::vector<std::shared_ptr<Unit>> units, Properties changes)
 {
 	// Prepare arguments
 	dfproto::workdetailtest::EditUnits args;
@@ -533,11 +531,11 @@ QCoro::Task<> Unit::edit(QPointer<DFHack::Client> dfhack, std::vector<std::share
 		changes.setArgs(*edit->mutable_changes());
 	}
 	// Call
-	if (!dfhack) {
+	if (!df->dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
 		co_return;
 	}
-	auto r = co_await EditUnits(*dfhack, args).first;
+	auto r = co_await EditUnits(*df->dfhack, args).first;
 	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
@@ -551,9 +549,10 @@ QCoro::Task<> Unit::edit(QPointer<DFHack::Client> dfhack, std::vector<std::share
 		}
 		units[i]->setProperties(changes, unit_result);
 	}
+	df->units->updated(df->units->makeSelection(units | std::views::transform([](const auto &unit) { return (*unit)->id; })));
 }
 
-QCoro::Task<> Unit::toggle(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Flag flag)
+QCoro::Task<> Unit::toggle(std::shared_ptr<DwarfFortressData> df, std::vector<std::shared_ptr<Unit>> units, Flag flag)
 {
 	// Prepare arguments
 	std::vector<Properties> changes(units.size());
@@ -565,11 +564,11 @@ QCoro::Task<> Unit::toggle(QPointer<DFHack::Client> dfhack, std::vector<std::sha
 		changes[i].setArgs(*edit->mutable_changes());
 	}
 	// Call
-	if (!dfhack) {
+	if (!df->dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
 		co_return;
 	}
-	auto r = co_await EditUnits(*dfhack, args).first;
+	auto r = co_await EditUnits(*df->dfhack, args).first;
 	// Check results
 	if (!r) {
 		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
@@ -583,4 +582,5 @@ QCoro::Task<> Unit::toggle(QPointer<DFHack::Client> dfhack, std::vector<std::sha
 		}
 		units[i]->setProperties(changes[i], unit_result);
 	}
+	df->units->updated(df->units->makeSelection(units | std::views::transform([](const auto &unit) { return (*unit)->id; })));
 }

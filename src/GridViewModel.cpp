@@ -369,28 +369,45 @@ void GridViewModel::setGroupBy(int index)
 	layoutChanged();
 }
 
-void GridViewModel::cellDataChanged(int first, int last, int unit_id)
+// Regroup indexes in ranges
+static QItemSelection optimizeSelection(QModelIndexList indexes)
+{
+	std::ranges::sort(indexes, {}, &QModelIndex::row);
+	QItemSelection selection;
+	for (int i = 0; i < indexes.size(); ++i) {
+		auto first = indexes[i];
+		while (i+1 < indexes.size() && indexes[i+1].row() == indexes[i].row()+1)
+			++i;
+		auto last = indexes[i];
+		selection.select(first, last);
+	}
+	return selection;
+};
+
+void GridViewModel::cellDataChanged(int first, int last, const QItemSelection &units)
 {
 	auto col = qobject_cast<AbstractColumn *>(sender());
 	Q_ASSERT(col);
-	auto index = unitIndex(unit_id);
-	Q_ASSERT(index.isValid());
+	auto filtered_units = _unit_filter.mapSelectionFromSource(units);
+	if (filtered_units.empty())
+		return;
 	if (_group_by) {
-		auto unit = _df->units->get(_df->units->find(unit_id).row());
-		updateGroupedUnit(*unit, col->begin_column+first, col->begin_column+last);
+		updateGroupedUnit(filtered_units,
+				col->begin_column+first,
+				col->begin_column+last);
 	}
 	else {
-		dataChanged(
-			index.siblingAtColumn(col->begin_column+first),
-			index.siblingAtColumn(col->begin_column+last));
+		for (const auto &range: optimizeSelection(filtered_units.indexes()))
+			dataChanged(
+				createIndex(range.top(), col->begin_column+first, NoParent),
+				createIndex(range.bottom(), col->begin_column+last, NoParent));
 	}
 }
 
 void GridViewModel::unitDataChanged(const QModelIndex &first, const QModelIndex &last, const QList<int> &roles)
 {
 	if (_group_by) {
-		for (int unit_index = first.row(); unit_index <= last.row(); ++unit_index)
-			updateGroupedUnit(*_unit_filter.get(unit_index), 0, columnCount()-1);
+		updateGroupedUnit({first, last}, 0, columnCount()-1);
 	}
 	else {
 		dataChanged(
@@ -447,7 +464,7 @@ QModelIndex GridViewModel::unitIndex(int unit_id) const
 	if (_group_by) {
 		auto it = _unit_group.find(unit_id);
 		Q_ASSERT(it != _unit_group.end());
-		auto group_it = std::ranges::lower_bound( _groups, it->second, {}, &group_t::id);
+		auto group_it = std::ranges::lower_bound(_groups, it->second, {}, &group_t::id);
 		Q_ASSERT(group_it != _groups.end() && group_it->id == it->second);
 		auto unit_it = std::ranges::lower_bound(
 				group_it->units,
@@ -472,7 +489,7 @@ void GridViewModel::addUnitToGroup(Unit &unit, quint64 group_id, bool reseting)
 {
 	Q_ASSERT(group_id != NoParent);
 	_unit_group[unit->id] = group_id;
-	auto new_group_it = std::ranges::lower_bound( _groups, group_id, {}, &group_t::id);
+	auto new_group_it = std::ranges::lower_bound(_groups, group_id, {}, &group_t::id);
 	if (new_group_it == _groups.end() || new_group_it->id != group_id) {
 		// Add new group
 		if (!reseting) {
@@ -485,7 +502,7 @@ void GridViewModel::addUnitToGroup(Unit &unit, quint64 group_id, bool reseting)
 	}
 	else {
 		// Add in existing group
-		auto insert_pos = std::ranges::lower_bound( new_group_it->units, unit->id, {},
+		auto insert_pos = std::ranges::lower_bound(new_group_it->units, unit->id, {},
 				[](Unit *unit){ return (*unit)->id; });
 		auto group_index = groupIndex(new_group_it);
 		if (!reseting) {
@@ -522,59 +539,115 @@ void GridViewModel::removeFromGroup(const QModelIndex &index)
 	}
 }
 
-void GridViewModel::updateGroupedUnit(Unit &unit, int first_col, int last_col)
+void GridViewModel::updateGroupedUnit(const QItemSelection &units, int first_col, int last_col)
 {
-	auto unit_index = unitIndex(unit->id);
-	auto group_index = unit_index.parent();
-	auto new_group_id = _group_by->unitGroup(unit);
-	Q_ASSERT(new_group_id != NoParent);
-	if (new_group_id != _groups[group_index.row()].id) {
-		QPersistentModelIndex old_group_index = group_index; // old group index may be modified by the new group insertion
-		auto new_group_it = std::ranges::lower_bound( _groups, new_group_id, {}, &group_t::id);
-		QModelIndex new_group_index = groupIndex(new_group_it);
-		if (new_group_it == _groups.end() || new_group_it->id != new_group_id) {
-			// Add new group
-			beginInsertRows({}, new_group_index.row(), new_group_index.row());
-			new_group_it = _groups.insert(new_group_it, {new_group_id, {}});
-			endInsertRows();
+	// Sort units by group change, key is {old group, new group}, indexes
+	// are from _unit_filter
+	std::map<std::pair<quintptr, quintptr>, QModelIndexList> group_changes;
+	for (const auto &range: units)
+		for (int i = range.top(); i <= range.bottom(); ++i) {
+			const auto &unit = *_unit_filter.get(i);
+			auto current_group = _unit_group.find(unit->id);
+			group_changes[std::pair<quintptr, quintptr>{
+				current_group->second,
+				_group_by->unitGroup(unit)
+			}].push_back(_unit_filter.index(i, 0));
 		}
-		auto old_group_it = next(_groups.begin(), old_group_index.row());
 
-		// Move row
-		auto insert_pos = std::ranges::lower_bound(new_group_it->units, unit->id, {},
-				[](Unit *unit){ return (*unit)->id; });
-		auto insert_row = distance(new_group_it->units.begin(), insert_pos);
-		beginMoveRows(old_group_index, unit_index.row(), unit_index.row(), new_group_index, insert_row);
-		_unit_group[unit->id] = new_group_id;
-		old_group_it->units.erase(next(old_group_it->units.begin(), unit_index.row()));
-		new_group_it->units.insert(insert_pos, &unit);
-		endMoveRows();
-
-		// Update new group
-		dataChanged(
-			new_group_index.siblingAtColumn(0),
-			new_group_index.siblingAtColumn(columnCount()-1));
-		if (old_group_it->units.size() == 0) {
-			// Remove empty old group
-			beginRemoveRows({}, old_group_index.row(), old_group_index.row());
-			_groups.erase(old_group_it);
-			endRemoveRows();
-		}
-		else {
-			// Update old group
-			dataChanged(
-				QModelIndex(old_group_index).siblingAtColumn(0),
-				QModelIndex(old_group_index).siblingAtColumn(columnCount()-1));
+	// Apply grouped changes
+	for (auto &[group_ids, indexes]: group_changes) {
+		const auto &[old_group_id, new_group_id] = group_ids;
+		auto group_it = findGroup(old_group_id);
+		// group index may be modified by a new group insertion, it
+		// needs to be persistent
+		QPersistentModelIndex group_index = groupIndex(group_it);
+		for (const auto &range: optimizeSelection(std::move(indexes))) {
+			// Since _unit_filter and group_t::units are sorted, the unit
+			// range from _unit_filter should be a contiguous subrange of
+			// group_units
+			static const auto get_id = [](Unit *unit){ return (*unit)->id; };
+			auto units = std::ranges::subrange(
+				std::ranges::lower_bound(
+					group_it->units,
+					get_id(_unit_filter.get(range.top())),
+					{}, get_id),
+				std::ranges::upper_bound(
+					group_it->units,
+					get_id(_unit_filter.get(range.bottom())),
+					{}, get_id));
+			if (units.empty())
+				continue;
+			if (old_group_id != new_group_id) {
+				moveGroupedUnitRange(group_index, new_group_id, units);
+			}
+			else { // group has not changed, only update data
+				QModelIndex parent = group_index;
+				dataChanged(
+					index(distance(group_it->units.begin(), units.begin()),
+						first_col,
+						parent),
+					index(distance(group_it->units.begin(), units.end())-1,
+						last_col,
+						parent));
+				dataChanged(
+					parent.siblingAtColumn(first_col),
+					parent.siblingAtColumn(last_col));
+			}
 		}
 	}
+}
+
+void GridViewModel::moveGroupedUnitRange(const QPersistentModelIndex &old_group_index, quint64 new_group_id, std::ranges::subrange<decltype(group_t::units)::iterator> units)
+{
+	static const auto get_id = [](Unit *unit){ return (*unit)->id; };
+
+	// Find new group
+	auto new_group_it = std::ranges::lower_bound(_groups, new_group_id, {}, &group_t::id);
+	QModelIndex new_group_index = groupIndex(new_group_it);
+	if (new_group_it == _groups.end() || new_group_it->id != new_group_id) {
+		// Add new group
+		beginInsertRows({}, new_group_index.row(), new_group_index.row());
+		new_group_it = _groups.insert(new_group_it, {new_group_id, {}});
+		endInsertRows();
+	}
+	auto old_group_it = next(_groups.begin(), old_group_index.row());
+
+	auto insert_pos = std::ranges::lower_bound(
+			new_group_it->units,
+			get_id(units.front()),
+			{}, get_id);
+	auto insert_row = distance(new_group_it->units.begin(), insert_pos);
+	// Since units is also a subrange of the source model, the whole range
+	// should be insertable at insert_pos
+	Q_ASSERT(insert_pos == new_group_it->units.end() ||
+			get_id(units.back()) < get_id(*insert_pos));
+	// Move rows
+	beginMoveRows(old_group_index,
+			distance(old_group_it->units.begin(), units.begin()),
+			distance(old_group_it->units.begin(), units.end())-1,
+			new_group_index,
+			insert_row);
+	for (auto unit: units)
+		_unit_group[(*unit)->id] = new_group_id;
+	new_group_it->units.insert(insert_pos, units.begin(), units.end());
+	old_group_it->units.erase(units.begin(), units.end());
+	endMoveRows();
+
+	// Update new group
+	dataChanged(
+		new_group_index.siblingAtColumn(0),
+		new_group_index.siblingAtColumn(columnCount()-1));
+	if (old_group_it->units.size() == 0) {
+		// Remove empty old group
+		beginRemoveRows({}, old_group_index.row(), old_group_index.row());
+		_groups.erase(old_group_it);
+		endRemoveRows();
+	}
 	else {
-		// group has not changed, only update data
+		// Update old group
 		dataChanged(
-			unit_index.siblingAtColumn(first_col),
-			unit_index.siblingAtColumn(last_col));
-		dataChanged(
-			group_index.siblingAtColumn(first_col),
-			group_index.siblingAtColumn(last_col));
+			QModelIndex(old_group_index).siblingAtColumn(0),
+			QModelIndex(old_group_index).siblingAtColumn(columnCount()-1));
 	}
 }
 

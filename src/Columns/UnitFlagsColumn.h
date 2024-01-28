@@ -29,7 +29,7 @@ class UnitFlagsColumn: public AbstractColumn
 {
 	Q_OBJECT
 public:
-	UnitFlagsColumn(std::span<const Unit::Flag> flags, QPointer<DFHack::Client> dfhack, QObject *parent = nullptr);
+	UnitFlagsColumn(std::span<const Unit::Flag> flags, DwarfFortressData &df, QObject *parent = nullptr);
 	~UnitFlagsColumn() override;
 
 	int count() const override;
@@ -48,7 +48,7 @@ private:
 	static QString title(Unit::Flag flag);
 	static QString countText(Unit::Flag flag, int count);
 	std::vector<Unit::Flag> _flags;
-	QPointer<DFHack::Client> _dfhack;
+	DwarfFortressData &_df;
 };
 
 }

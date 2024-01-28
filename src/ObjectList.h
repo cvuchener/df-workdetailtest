@@ -20,6 +20,7 @@
 #define OBJECT_LIST_H
 
 #include <QAbstractListModel>
+#include <QItemSelection>
 
 #include <ranges>
 
@@ -31,13 +32,12 @@ public:
 	~ObjectListBase() override;
 
 signals:
-	void unitDataChanged(int row, int unid_id);
+	void unitDataChanged(int row, const QItemSelection &units);
 };
 
 template <typename T>
 concept UpdatableObject = requires (T object, std::unique_ptr<typename T::df_type> df_object) {
 	object.update(std::move(df_object));
-	QObject::connect(&object, &T::updated, [](){});
 };
 
 template <typename T>
@@ -55,7 +55,7 @@ concept NamedObject = requires (T object, typename T::df_type df_object) {
 
 template <typename T>
 concept HasUnitDataChangedSignal = requires (T object) {
-	QObject::connect(&object, &T::unitDataChanged, [](int unit_id){});
+	QObject::connect(&object, &T::unitDataChanged, [](const QItemSelection &unit_id){});
 };
 
 template <SortedByKey T>
@@ -272,6 +272,29 @@ public:
 			return index(distance(_objects.begin(), it));
 	}
 
+	template <std::ranges::sized_range Rng> requires (SortedByKey<T> && std::totally_ordered_with<std::ranges::range_value_t<Rng>, std::invoke_result_t<GetKey<T>, T>>)
+	QItemSelection makeSelection(Rng &&rng) const
+	{
+		QItemSelection selection;
+		selection.reserve(size(rng));
+		for (auto key: rng) {
+			auto index = find(key);
+			selection.select(index, index);
+		}
+		return selection;
+	}
+
+	void updated(const QModelIndex &index)
+	{
+		dataChanged(index, index);
+	}
+
+	void updated(const QItemSelection &selection)
+	{
+		for (const auto &range: selection)
+			dataChanged(range.topLeft(), range.bottomRight());
+	}
+
 protected:
 	std::vector<std::shared_ptr<T>> _objects;
 
@@ -286,22 +309,14 @@ private:
 		beginInsertRows({}, first_row, first_row + rows_inserted - 1);
 		auto created = range | std::views::transform([&, this](auto &&df_object) {
 			auto ptr = factory(std::move(df_object));
-			connect(ptr.get(), &T::updated,
-				this, [this]() {
-					auto obj = qobject_cast<const T *>(sender());
-					Q_ASSERT(obj);
-					auto idx = find(*obj);
-					if (idx.isValid())
-						dataChanged(idx, idx);
-				});
 			if constexpr (HasUnitDataChangedSignal<T>) {
 				connect(ptr.get(), &T::unitDataChanged,
-					this, [this](int unit_id) {
+					this, [this](const QItemSelection &units) {
 						auto obj = qobject_cast<const T *>(sender());
 						Q_ASSERT(obj);
 						auto idx = find(*obj);
 						if (idx.isValid())
-							unitDataChanged(idx.row(), unit_id);
+							unitDataChanged(idx.row(), units);
 					});
 			}
 			return ptr;

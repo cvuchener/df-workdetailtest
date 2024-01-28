@@ -75,8 +75,8 @@ WorkDetailColumn::WorkDetailColumn(DwarfFortressData &df, QObject *parent):
 			columnDataChanged(first.row(), last.row());
 		});
 	connect(list, &ObjectListBase::unitDataChanged,
-		this, [this](int row, int unit_id) {
-			unitDataChanged(row, row, unit_id);
+		this, [this](int row, const QItemSelection &units) {
+			unitDataChanged(row, row, units);
 		});
 }
 

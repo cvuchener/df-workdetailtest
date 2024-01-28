@@ -156,12 +156,8 @@ public:
 		void setArgs(dfproto::workdetailtest::UnitProperties &) const;
 	};
 	QCoro::Task<> edit(Properties properties);
-	static QCoro::Task<> edit(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Properties properties);
-	static QCoro::Task<> toggle(QPointer<DFHack::Client> dfhack, std::vector<std::shared_ptr<Unit>> units, Flag flag);
-
-signals:
-	void aboutToBeUpdated();
-	void updated();
+	static QCoro::Task<> edit(std::shared_ptr<DwarfFortressData> df, std::vector<std::shared_ptr<Unit>> units, Properties properties);
+	static QCoro::Task<> toggle(std::shared_ptr<DwarfFortressData> df, std::vector<std::shared_ptr<Unit>> units, Flag flag);
 
 private:
 	void refresh();

@@ -18,6 +18,7 @@
 
 #include "UnitInventoryModel.h"
 
+#include "ObjectList.h"
 #include "Unit.h"
 #include "df/items.h"
 #include "df/utils.h"
@@ -43,10 +44,14 @@ void UnitInventoryModel::setUnit(const Unit *unit)
 	}
 	_u = unit;
 	if (_u) {
-		connect(_u, &Unit::aboutToBeUpdated,
-			this, [this]() { beginResetModel(); });
-		connect(_u, &Unit::updated, this,
-			[this]() { endResetModel(); });
+		connect(_df.units.get(), &QAbstractItemModel::dataChanged,
+			this, [this](const QModelIndex &top_left, const QModelIndex &bottom_right, const QList<int> &roles) {
+				auto current = _df.units->find(*_u);
+				if (QItemSelectionRange(top_left, bottom_right).contains(current)) {
+					beginResetModel();
+					endResetModel();
+				}
+			});
 	}
 	endResetModel();
 }

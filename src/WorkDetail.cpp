@@ -20,6 +20,7 @@
 
 #include "df/utils.h"
 #include "DwarfFortressData.h"
+#include "Unit.h"
 #include "WorkDetailModel.h"
 #include <QCoroFuture>
 
@@ -51,10 +52,8 @@ WorkDetail::~WorkDetail()
 
 void WorkDetail::update(std::unique_ptr<df::work_detail> &&work_detail)
 {
-	aboutToBeUpdated();
 	_wd = std::move(work_detail);
 	refresh();
-	updated();
 }
 
 void WorkDetail::refresh()
@@ -103,16 +102,10 @@ void WorkDetail::setAssignment(int unit_id, bool assign, ChangeStatus status)
 		_wd->assigned_units.insert(it, unit_id);
 	if (!assign && assigned)
 		_wd->assigned_units.erase(it);
-	bool status_changed;
 	if (status == NoChange)
-		status_changed = 0 != _statuses.erase(unit_id);
-	else {
-		auto [sit, inserted] = _statuses.try_emplace(unit_id, NoChange);
-		status_changed = sit->second != status;
-		sit->second = status;
-	}
-	if (assign != assigned || status_changed)
-		unitDataChanged(unit_id);
+		_statuses.erase(unit_id);
+	else
+		_statuses[unit_id] = status;
 }
 
 std::vector<std::pair<df::unit_labor_t, bool>> WorkDetail::Properties::allLabors(std::span<const bool, df::unit_labor::Count> labors)
@@ -263,6 +256,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 		assignment->set_enable(assign);
 		setAssignment(units[i], assign, WorkDetail::Pending);
 	}
+	unitDataChanged(_df.units->makeSelection(units));
 	// Call
 	if (!_df.dfhack) {
 		qCWarning(DFHackLog) << "DFHack client was deleted";
@@ -274,6 +268,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 		qCWarning(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
 		for (std::size_t i = 0; i < units.size(); ++i)
 			setAssignment(units[i], old_assignment[i], WorkDetail::Failed);
+		unitDataChanged(_df.units->makeSelection(units));
 		co_return;
 	}
 	const auto &wd_result = r->work_detail();
@@ -281,6 +276,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 		qCWarning(DFHackLog) << "editWorkDetail failed" << wd_result.error();
 		for (std::size_t i = 0; i < units.size(); ++i)
 			setAssignment(units[i], old_assignment[i], WorkDetail::Failed);
+		unitDataChanged(_df.units->makeSelection(units));
 		co_return;
 	}
 	// Apply changes
@@ -293,6 +289,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 		else
 			setAssignment(units[i], get_assign(old_assignment[i]), WorkDetail::NoChange);
 	}
+	unitDataChanged(_df.units->makeSelection(units));
 }
 
 bool WorkDetail::setId(dfproto::workdetailtest::WorkDetailId &id) const
@@ -373,7 +370,6 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 		co_return;
 	}
 	// Apply changes
-	aboutToBeUpdated();
 	setProperties(changes, *r);
-	updated();
+	_df.work_details->updated(_df.work_details->find(*this));
 }

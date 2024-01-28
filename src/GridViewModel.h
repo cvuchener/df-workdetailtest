@@ -73,7 +73,7 @@ public:
 	void toggleCells(const QModelIndexList &indexes);
 
 private slots:
-	void cellDataChanged(int first, int last, int unit_id);
+	void cellDataChanged(int first, int last, const QItemSelection &units);
 
 	void unitDataChanged(const QModelIndex &first, const QModelIndex &last, const QList<int> &roles);
 
@@ -123,7 +123,8 @@ private:
 	QModelIndex unitIndex(int unit_id) const;
 	void addUnitToGroup(Unit &unit, quint64 group_id, bool reseting = false);
 	void removeFromGroup(const QModelIndex &index);
-	void updateGroupedUnit(Unit &unit, int first_col, int last_col);
+	void updateGroupedUnit(const QItemSelection &units, int first_col, int last_col);
+	void moveGroupedUnitRange(const QPersistentModelIndex &old_group_index, quint64 new_group_id, std::ranges::subrange<decltype(group_t::units)::iterator> units);
 	void rebuildGroups();
 
 	template <typename Model, typename UnitAction, typename GroupAction, typename... Args>
