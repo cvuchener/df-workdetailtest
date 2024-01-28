@@ -158,16 +158,6 @@ void GridView::mouseMoveEvent(QMouseEvent *event)
 			_last_index = QModelIndex{};
 		}
 	}
-	QTreeView::mouseMoveEvent(event);
-}
-
-QItemSelectionModel::SelectionFlags GridView::selectionCommand(const QModelIndex &index, const QEvent *event) const
-{
-	// Do not update selection when toggling cells
-	if (index.isValid()
-			&& index.flags() & Qt::ItemIsUserCheckable
-			&& selectionModel()->isRowSelected(index.row(), index.parent()))
-		return QItemSelectionModel::NoUpdate;
 	else
-		return QTreeView::selectionCommand(index, event);
+		QTreeView::mouseMoveEvent(event);
 }

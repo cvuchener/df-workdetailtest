@@ -43,7 +43,6 @@ signals:
 
 protected:
 	void rowsInserted(const QModelIndex &index, int start, int end) override;
-	QItemSelectionModel::SelectionFlags selectionCommand(const QModelIndex &index, const QEvent *event = nullptr) const override;
 
 	// For cell painting
 	void mousePressEvent(QMouseEvent *event) override;
