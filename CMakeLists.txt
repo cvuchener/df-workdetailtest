@@ -54,6 +54,7 @@ add_executable(workdetailtest
 	src/Columns/AttributesColumn.cpp
 	src/Columns/Factory.cpp
 	src/Columns/NameColumn.cpp
+	src/Columns/SkillsColumn.cpp
 	src/Columns/UnitFlagsColumn.cpp
 	src/Columns/WorkDetailColumn.cpp
 	src/Counter.cpp

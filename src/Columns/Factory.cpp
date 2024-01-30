@@ -25,6 +25,7 @@
 #include "WorkDetailColumn.h"
 #include "UnitFlagsColumn.h"
 #include "AttributesColumn.h"
+#include "SkillsColumn.h"
 
 Columns::Factory Columns::makeFactory(const QJsonObject &col)
 {
@@ -35,6 +36,8 @@ Columns::Factory Columns::makeFactory(const QJsonObject &col)
 		return UnitFlagsColumn::makeFactory(col);
 	else if (type == "Attributes")
 		return AttributesColumn::makeFactory(col);
+	else if (type == "Skills")
+		return SkillsColumn::makeFactory(col);
 	else {
 		qCCritical(GridViewLog) << "Unsupported column type:" << type;
 		return {};

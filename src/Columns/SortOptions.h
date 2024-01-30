@@ -42,7 +42,7 @@ struct SortOptions
 			menu->addAction(action);
 			QObject::connect(action, &QAction::triggered, [this, value]() {
 				option = value;
-				parent.columnDataChanged(0, parent.count());
+				parent.columnDataChanged(0, parent.count()-1);
 			});
 		}
 	}

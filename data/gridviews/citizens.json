@@ -3,27 +3,6 @@
 	"filter": "builtin:Citizens",
 	"columns": [
 		{ "type": "WorkDetail" },
-		{ "type": "UnitFlags", "flags": ["OnlyDoAssignedJobs"] },
-		{ "type": "Attributes", "attributes": [
-			"STRENGTH",
-			"AGILITY",
-			"TOUGHNESS",
-			"ENDURANCE",
-			"RECUPERATION",
-			"DISEASE_RESISTANCE",
-			"ANALYTICAL_ABILITY",
-			"FOCUS",
-			"WILLPOWER",
-			"CREATIVITY",
-			"INTUITION",
-			"PATIENCE",
-			"MEMORY",
-			"LINGUISTIC_ABILITY",
-			"SPATIAL_SENSE",
-			"MUSICALITY",
-			"KINESTHETIC_SENSE",
-			"EMPATHY",
-			"SOCIAL_AWARENESS"
-		] }
+		{ "type": "UnitFlags", "flags": ["OnlyDoAssignedJobs"] }
 	]
 }
