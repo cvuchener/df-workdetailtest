@@ -46,7 +46,7 @@ std::unique_ptr<dfs::Process> DwarfFortress::findNativeProcess(const dfproto::wo
 	for (auto entry: std::filesystem::directory_iterator("/proc")) {
 		if (!entry.is_directory())
 			continue;
-		const auto &name = entry.path().filename().native();
+		std::string name = entry.path().filename().native();
 		uint32_t pid;
 		auto res = std::from_chars(name.data(), name.data()+name.size(), pid);
 		if (res.ec != std::errc{} || res.ptr != name.data()+name.size())
