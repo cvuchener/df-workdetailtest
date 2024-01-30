@@ -32,10 +32,15 @@ struct AllUnits
 	bool operator()(const Unit &) const noexcept { return true; }
 };
 
-struct UnitNameFilter
+class UnitNameFilter
 {
-	QString text;
+public:
+	UnitNameFilter (const QString &text);
 	bool operator()(const Unit &) const;
+
+private:
+	static QString removeMarks(const QString &);
+	QString _text;
 };
 
 struct UnitNameRegexFilter

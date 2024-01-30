@@ -23,9 +23,19 @@
 #include "Unit.h"
 #include "UnitScriptWrapper.h"
 
+UnitNameFilter::UnitNameFilter(const QString &text):
+	_text(removeMarks(text))
+{
+}
+
 bool UnitNameFilter::operator()(const Unit &unit) const
 {
-	return unit.displayName().contains(text);
+	return removeMarks(unit.displayName()).contains(_text, Qt::CaseInsensitive);
+}
+
+QString UnitNameFilter::removeMarks(const QString &text)
+{
+	return text.normalized(QString::NormalizationForm_KD).remove(QRegularExpression("\\p{M}"));
 }
 
 bool UnitNameRegexFilter::operator()(const Unit &unit) const
