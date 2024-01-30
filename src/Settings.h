@@ -89,6 +89,12 @@ private:
 	validator_t _validator;
 };
 
+enum class RatingDisplay
+{
+	Text,
+	GrowingBox,
+};
+
 struct Settings
 {
 	SettingProperty<QString> host_address = {"host/address", "localhost"};
@@ -104,6 +110,8 @@ struct Settings
 	SettingProperty<bool> per_view_filters = {"gridview/per_view_filter", false};
 
 	SettingProperty<bool> bypass_work_detail_protection = {"work_details/bypass_protection", false};
+
+	SettingProperty<RatingDisplay> rating_display_mode = {"gridview/display_rating", RatingDisplay::GrowingBox};
 };
 
 #endif

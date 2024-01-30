@@ -19,6 +19,7 @@
 #include "GridViewStyle.h"
 
 #include <QStyleOptionHeader>
+#include "Application.h"
 #include "PainterSaver.h"
 #include "DataRole.h"
 
@@ -141,36 +142,45 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 			auto rating_data = item->index.data(DataRole::RatingRole);
 			if (!rating_data.isNull()) {
 				auto rating = rating_data.toDouble();
+				QPalette palette = option->palette;
+				if (rating < 0.0)
+					palette.setColor(QPalette::Text, Qt::red);
 				PainterSaver ps(*painter);
-				QColor color = rating < 0.0
-					? Qt::red
-					: option->palette.color(text_role);
-				painter->setPen(Qt::NoPen);
-				painter->setBrush(color);
+				switch (Application::settings().rating_display_mode()) {
+				case RatingDisplay::GrowingBox:
+					painter->setPen(Qt::NoPen);
+					painter->setBrush(palette.text());
 
-				rating = std::abs(rating);
-				if (rating >= 1.0) {
-					// Draw diamond
-					int size = std::min(option->rect.width(), option->rect.height()) - 2*ItemMargin;
-					painter->setRenderHint(QPainter::Antialiasing);
-					auto center = option->rect.toRectF().center();
-					painter->drawPolygon(QList<QPointF>{
-							center + QPointF{0.0, -size/2.0},
-							center + QPointF{size/3.0, 0.0},
-							center + QPointF{0.0, size/2.0},
-							center + QPointF{-size/3.0, 0.0},
-							});
+					rating = std::abs(rating);
+					if (rating >= 1.0) {
+						// Draw diamond
+						int size = std::min(option->rect.width(), option->rect.height()) - 2*ItemMargin;
+						painter->setRenderHint(QPainter::Antialiasing);
+						auto center = option->rect.toRectF().center();
+						painter->drawPolygon(QList<QPointF>{
+								center + QPointF{0.0, -size/2.0},
+								center + QPointF{size/3.0, 0.0},
+								center + QPointF{0.0, size/2.0},
+								center + QPointF{-size/3.0, 0.0},
+								});
+					}
+					else if (rating >= 0.05) {
+						// Draw square proportional to rating
+						int size = (std::min(option->rect.width(), option->rect.height()) - 3*ItemMargin) * rating + 0.5;
+						painter->drawRect(option->rect.adjusted(
+								(option->rect.width()-size+1)/2,
+								(option->rect.height()-size+1)/2,
+								-(option->rect.width()-size+1)/2,
+								-(option->rect.height()-size+1)/2));
+					}
+					break;
+				case RatingDisplay::Text:
+					painter->setFont(item->font);
+					proxy()->drawItemText(painter, option->rect, Qt::AlignCenter,
+							palette, option->state & QStyle::State_Enabled,
+							item->text, text_role);
+					break;
 				}
-				else if (rating >= 0.05) {
-					// Draw square proportional to rating
-					int size = (std::min(option->rect.width(), option->rect.height()) - 3*ItemMargin) * rating + 0.5;
-					painter->drawRect(option->rect.adjusted(
-							(option->rect.width()-size+1)/2,
-							(option->rect.height()-size+1)/2,
-							-(option->rect.width()-size+1)/2,
-							-(option->rect.height()-size+1)/2));
-				}
-
 			}
 			else { // Text content
 				PainterSaver ps(*painter);

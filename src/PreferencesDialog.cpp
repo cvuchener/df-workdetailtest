@@ -31,10 +31,20 @@ PreferencesDialog::PreferencesDialog(QWidget *parent):
 	_ui->host_port->setValidator(settings.host_port.validator());
 	connect(_ui->reset_defaults_button, &QAbstractButton::clicked,
 		this, &PreferencesDialog::loadDefaultSettings);
+	_ui->rating_display_cb->addItem(tr("Text"), QVariant::fromValue(RatingDisplay::Text));
+	_ui->rating_display_cb->addItem(tr("Growing box"), QVariant::fromValue(RatingDisplay::GrowingBox));
 }
 
 PreferencesDialog::~PreferencesDialog()
 {
+}
+
+template <typename T>
+static void setComboBoxFromValue(QComboBox *cb, T value)
+{
+	auto variant = QVariant::fromValue(value);
+	auto index = cb->findData(variant);
+	cb->setCurrentIndex(index);
 }
 
 void PreferencesDialog::loadSettings()
@@ -49,6 +59,7 @@ void PreferencesDialog::loadSettings()
 	_ui->bypass_work_detail_protection->setChecked(settings.bypass_work_detail_protection());
 	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by());
 	_ui->gridview_perview_filters->setChecked(settings.per_view_filters());
+	setComboBoxFromValue(_ui->rating_display_cb, settings.rating_display_mode());
 }
 
 void PreferencesDialog::loadDefaultSettings()
@@ -63,6 +74,7 @@ void PreferencesDialog::loadDefaultSettings()
 	_ui->bypass_work_detail_protection->setChecked(settings.bypass_work_detail_protection.defaultValue());
 	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by.defaultValue());
 	_ui->gridview_perview_filters->setChecked(settings.per_view_filters.defaultValue());
+	setComboBoxFromValue(_ui->rating_display_cb, settings.rating_display_mode.defaultValue());
 }
 
 void PreferencesDialog::saveSettings() const
@@ -77,4 +89,5 @@ void PreferencesDialog::saveSettings() const
 	settings.bypass_work_detail_protection = _ui->bypass_work_detail_protection->isChecked();
 	settings.per_view_group_by = _ui->gridview_perview_groups->isChecked();
 	settings.per_view_filters = _ui->gridview_perview_filters->isChecked();
+	settings.rating_display_mode = _ui->rating_display_cb->currentData().value<RatingDisplay>();
 }
