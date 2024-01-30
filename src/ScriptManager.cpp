@@ -21,11 +21,10 @@
 #include "Application.h"
 #include "StandardPaths.h"
 #include "UnitScriptWrapper.h"
+#include "LogCategory.h"
 
 #include <QMetaProperty>
 #include <QMetaMethod>
-
-Q_LOGGING_CATEGORY(ScriptLog, "script");
 
 static void printError(const QJSValue &error)
 {

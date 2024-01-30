@@ -22,6 +22,7 @@
 #include "ScriptManager.h"
 #include "Unit.h"
 #include "UnitScriptWrapper.h"
+#include "LogCategory.h"
 
 UnitNameFilter::UnitNameFilter(const QString &text):
 	_text(removeMarks(text))

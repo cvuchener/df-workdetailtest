@@ -19,6 +19,7 @@
 #include "DwarfFortressReader.h"
 
 #include <QLoggingCategory>
+Q_DECLARE_LOGGING_CATEGORY(StructuresLog);
 
 #include <dfs/Reader.h>
 

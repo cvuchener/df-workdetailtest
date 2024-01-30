@@ -20,7 +20,11 @@
 
 #include "DataRole.h"
 #include "DwarfFortressData.h"
+#include "LogCategory.h"
 
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QMetaEnum>
 #include <QVariant>
 
 using namespace Columns;
@@ -208,13 +212,6 @@ QString UnitFlagsColumn::countText(Unit::Flag flag, int count)
 	}
 	Q_UNREACHABLE();
 }
-
-#include "DwarfFortressData.h"
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QMetaEnum>
-#include <QLoggingCategory>
-Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
 Factory UnitFlagsColumn::makeFactory(const QJsonObject &json)
 {

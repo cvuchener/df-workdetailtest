@@ -21,6 +21,7 @@
 
 #include "GridViewModel.h"
 #include "StandardPaths.h"
+#include "LogCategory.h"
 
 #include <QJsonDocument>
 

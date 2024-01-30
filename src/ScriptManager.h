@@ -20,11 +20,8 @@
 #define SCRIPT_MANAGER_H
 
 #include <QJSEngine>
-#include <QLoggingCategory>
 #include <QStandardItemModel>
 #include <QCompleter>
-
-Q_DECLARE_LOGGING_CATEGORY(ScriptLog);
 
 class Unit;
 

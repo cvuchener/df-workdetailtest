@@ -29,6 +29,7 @@
 
 #include "Application.h"
 #include "StandardPaths.h"
+#include "LogCategory.h"
 
 #include "DwarfFortressData.h"
 #include "DwarfFortressReader.h"
@@ -36,10 +37,6 @@
 #include "df/types.h"
 
 #include <dfhack-client-qt/Basic.h>
-
-Q_LOGGING_CATEGORY(DFHackLog, "dfhack");
-Q_LOGGING_CATEGORY(StructuresLog, "structures");
-Q_LOGGING_CATEGORY(ProcessLog, "process");
 
 static void StructuresLogger(std::string_view msg)
 {

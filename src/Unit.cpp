@@ -22,6 +22,7 @@
 #include "ObjectList.h"
 #include <QCoroFuture>
 #include "df/utils.h"
+#include "LogCategory.h"
 
 #include <dfhack-client-qt/Function.h>
 #include "workdetailtest.pb.h"
@@ -447,7 +448,6 @@ void Unit::Properties::setArgs(dfproto::workdetailtest::UnitProperties &args) co
 	}
 }
 
-Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
 void Unit::setProperties(const Properties &properties, const dfproto::workdetailtest::UnitResult &results)
 {
 	if (properties.nickname) {

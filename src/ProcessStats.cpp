@@ -19,6 +19,7 @@
 #include "ProcessStats.h"
 
 #include "DwarfFortress.h"
+#include "LogCategory.h"
 
 ProcessStats::ProcessStats(std::unique_ptr<Process> &&p):
 	ProcessWrapper(std::move(p)),

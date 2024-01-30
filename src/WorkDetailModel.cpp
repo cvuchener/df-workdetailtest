@@ -22,9 +22,7 @@
 #include "IconProvider.h"
 #include "DwarfFortressData.h"
 #include "ModelMimeData.h"
-
-#include <QLoggingCategory>
-Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
+#include "LogCategory.h"
 
 #include <QCoroFuture>
 #include "workdetailtest.pb.h"

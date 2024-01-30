@@ -22,8 +22,12 @@
 #include "Unit.h"
 #include "DataRole.h"
 #include "df/utils.h"
+#include "LogCategory.h"
 
 #include <QColor>
+#include <QJsonObject>
+#include <QJsonArray>
+
 
 using namespace Columns;
 
@@ -118,12 +122,6 @@ void SkillsColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 {
 	_sort.makeSortMenu(menu);
 }
-
-
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QLoggingCategory>
-Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
 Factory SkillsColumn::makeFactory(const QJsonObject &json)
 {

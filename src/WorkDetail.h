@@ -25,10 +25,6 @@
 
 class QItemSelection;
 
-#include <QLoggingCategory>
-
-Q_DECLARE_LOGGING_CATEGORY(WorkDetailLog);
-
 class Unit;
 class DwarfFortressData;
 

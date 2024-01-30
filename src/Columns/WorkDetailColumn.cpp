@@ -26,7 +26,6 @@
 #include "Application.h"
 #include "IconProvider.h"
 #include "WorkDetailEditor.h"
-#include "LaborModel.h"
 #include "Settings.h"
 
 #include <QIcon>
@@ -34,7 +33,6 @@
 #include <QMenu>
 #include <QAction>
 #include <QMessageBox>
-
 
 using namespace Columns;
 

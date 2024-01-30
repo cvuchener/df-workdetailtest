@@ -19,13 +19,9 @@
 #ifndef DWARF_FORTRESS_READER_H
 #define DWARF_FORTRESS_READER_H
 
-#include <QLoggingCategory>
-
 #include <dfs/Reader.h>
 
 #include "df/time.h"
-
-Q_DECLARE_LOGGING_CATEGORY(StructuresLog);
 
 namespace df {
 struct creature_raw;

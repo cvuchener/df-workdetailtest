@@ -77,6 +77,7 @@ add_executable(workdetailtest
 	src/Groups/GroupByWorkDetailAssigned.cpp
 	src/IconProvider.cpp
 	src/LaborModel.cpp
+	src/LogCategory.cpp
 	src/LogDock.cpp
 	src/MainWindow.cpp
 	src/MessageHandler.cpp

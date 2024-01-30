@@ -21,6 +21,10 @@
 #include "Unit.h"
 #include "UnitDescriptors.h"
 #include "DataRole.h"
+#include "LogCategory.h"
+
+#include <QJsonObject>
+#include <QJsonArray>
 
 using namespace Columns;
 
@@ -101,11 +105,6 @@ QVariant AttributesColumn::unitData(int section, const Unit &unit, int role) con
 		return {};
 	}
 }
-
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QLoggingCategory>
-Q_DECLARE_LOGGING_CATEGORY(GridViewLog);
 
 Factory AttributesColumn::makeFactory(const QJsonObject &json)
 {

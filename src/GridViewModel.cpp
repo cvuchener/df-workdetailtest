@@ -29,8 +29,7 @@
 #include "Application.h"
 #include "ScriptManager.h"
 #include "Groups/Factory.h"
-
-Q_LOGGING_CATEGORY(GridViewLog, "gridview");
+#include "LogCategory.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>

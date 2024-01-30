@@ -18,6 +18,8 @@
 
 #include "DwarfFortress.h"
 
+#include "LogCategory.h"
+
 #include <dfs/Win32Process.h>
 
 extern "C" {

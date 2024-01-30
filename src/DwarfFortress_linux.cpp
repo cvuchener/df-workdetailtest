@@ -18,6 +18,8 @@
 
 #include "DwarfFortress.h"
 
+#include "LogCategory.h"
+
 #include <dfs/LinuxProcess.h>
 #include <dfs/WineProcess.h>
 

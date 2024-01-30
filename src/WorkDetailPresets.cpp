@@ -22,6 +22,7 @@
 #include "Application.h"
 #include "IconProvider.h"
 #include "ModelMimeData.h"
+#include "LogCategory.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>

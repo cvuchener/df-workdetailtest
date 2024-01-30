@@ -23,7 +23,6 @@
 #include <QTimer>
 
 #include <QCoroTask>
-#include <QLoggingCategory>
 
 #include <dfhack-client-qt/Client.h>
 #include "workdetailtest.pb.h"
@@ -36,9 +35,6 @@ namespace dfs {
 class Structures;
 class Process;
 }
-
-Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
-Q_DECLARE_LOGGING_CATEGORY(ProcessLog);
 
 class DwarfFortressData;
 

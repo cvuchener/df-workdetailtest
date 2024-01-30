@@ -21,6 +21,7 @@
 #include <QJsonObject>
 
 #include "GridViewModel.h"
+#include "LogCategory.h"
 
 #include "WorkDetailColumn.h"
 #include "UnitFlagsColumn.h"

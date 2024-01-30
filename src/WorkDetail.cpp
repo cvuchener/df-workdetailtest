@@ -22,13 +22,12 @@
 #include "DwarfFortressData.h"
 #include "Unit.h"
 #include "WorkDetailModel.h"
+#include "LogCategory.h"
 #include <QCoroFuture>
 
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-
-Q_LOGGING_CATEGORY(WorkDetailLog, "workdetail");
 
 #include "workdetailtest.pb.h"
 #include <dfhack-client-qt/Function.h>
@@ -233,8 +232,6 @@ QCoro::Task<> WorkDetail::toggle(std::vector<int> units)
 {
 	return changeAssignments(std::move(units), [](bool assign) { return !assign; });
 }
-
-Q_DECLARE_LOGGING_CATEGORY(DFHackLog);
 
 template<typename F>
 QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign)
