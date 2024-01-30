@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Clement Vuchener
+ * Copyright 2024 Clement Vuchener
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,26 +16,25 @@
  *
  */
 
-#ifndef UNIT_INVENTORY_MODEL_H
-#define UNIT_INVENTORY_MODEL_H
+#ifndef UNIT_DETAILS_SKILL_MODEL_H
+#define UNIT_DETAILS_SKILL_MODEL_H
 
-#include <QAbstractTableModel>
+#include "UnitDataModel.h"
 
-class DwarfFortressData;
-class Unit;
+namespace UnitDetails
+{
 
-class UnitInventoryModel: public QAbstractTableModel
+class SkillModel: public UnitDataModel
 {
 	Q_OBJECT
 public:
-	UnitInventoryModel(const DwarfFortressData &df, QObject *parent = nullptr);
-	~UnitInventoryModel() override;
-
-	void setUnit(const Unit *unit);
+	SkillModel(const DwarfFortressData &df, QObject *parent = nullptr);
+	~SkillModel() override;
 
 	enum class Column {
-		Item = 0,
-		Mode,
+		Skill = 0,
+		Level,
+		Progress,
 		Count,
 	};
 
@@ -43,10 +42,8 @@ public:
 	int columnCount(const QModelIndex &parent = {}) const override;
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-
-private:
-	const DwarfFortressData &_df;
-	const Unit *_u;
 };
+
+} // namespace UnitDetails
 
 #endif

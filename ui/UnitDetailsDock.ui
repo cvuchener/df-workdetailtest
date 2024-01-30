@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Unit details</string>
   </property>
-  <widget class="QWidget" name="dockWidgetContents">
+  <widget class="QWidget" name="contents">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QLabel" name="unit_name">
@@ -37,7 +37,11 @@
      </widget>
     </item>
     <item>
-     <widget class="QTreeView" name="inventory_view"/>
+     <widget class="QTabWidget" name="tabs">
+      <property name="currentIndex">
+       <number>-1</number>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

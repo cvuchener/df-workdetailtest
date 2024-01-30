@@ -30,7 +30,7 @@
 #include <QCoroCore>
 
 #include "Application.h"
-#include "UnitDetailsDock.h"
+#include "UnitDetails/Dock.h"
 #include "ObjectList.h"
 #include "Unit.h"
 #include "GridViewModel.h"
@@ -85,7 +85,7 @@ MainWindow::MainWindow(QWidget *parent):
 	const auto &settings = Application::settings();
 
 	// Setup dock
-	auto unit_details = new UnitDetailsDock(_df->data(), this);
+	auto unit_details = new UnitDetails::Dock(_df->data(), this);
 	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
 

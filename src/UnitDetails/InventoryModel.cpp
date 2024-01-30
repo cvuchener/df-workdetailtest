@@ -16,47 +16,26 @@
  *
  */
 
-#include "UnitInventoryModel.h"
+#include "InventoryModel.h"
 
-#include "ObjectList.h"
 #include "Unit.h"
 #include "df/items.h"
 #include "df/utils.h"
 #include "DwarfFortressData.h"
+#include "DataRole.h"
 
-UnitInventoryModel::UnitInventoryModel(const DwarfFortressData &df, QObject *parent):
-	QAbstractTableModel(parent),
-	_df(df),
-	_u(nullptr)
+using namespace UnitDetails;
+
+InventoryModel::InventoryModel(const DwarfFortressData &df, QObject *parent):
+	UnitDataModel(df, parent)
 {
 }
 
-UnitInventoryModel::~UnitInventoryModel()
+InventoryModel::~InventoryModel()
 {
 }
 
-void UnitInventoryModel::setUnit(const Unit *unit)
-{
-	beginResetModel();
-	if (_u) {
-		_u->disconnect(this);
-		_u = nullptr;
-	}
-	_u = unit;
-	if (_u) {
-		connect(_df.units.get(), &QAbstractItemModel::dataChanged,
-			this, [this](const QModelIndex &top_left, const QModelIndex &bottom_right, const QList<int> &roles) {
-				auto current = _df.units->find(*_u);
-				if (QItemSelectionRange(top_left, bottom_right).contains(current)) {
-					beginResetModel();
-					endResetModel();
-				}
-			});
-	}
-	endResetModel();
-}
-
-int UnitInventoryModel::rowCount(const QModelIndex &parent) const
+int InventoryModel::rowCount(const QModelIndex &parent) const
 {
 	if (_u)
 		return (*_u)->inventory.size();
@@ -64,7 +43,7 @@ int UnitInventoryModel::rowCount(const QModelIndex &parent) const
 		return 0;
 }
 
-int UnitInventoryModel::columnCount(const QModelIndex &parent) const
+int InventoryModel::columnCount(const QModelIndex &parent) const
 {
 	return static_cast<int>(Column::Count);
 }
@@ -143,13 +122,14 @@ struct ItemDescriptionGenerator
 	}
 };
 
-QVariant UnitInventoryModel::data(const QModelIndex &index, int role) const
+QVariant InventoryModel::data(const QModelIndex &index, int role) const
 {
 	auto item = (*_u)->inventory.at(index.row()).get();
 	switch (static_cast<Column>(index.column())) {
 	case Column::Item:
 		switch (role) {
 		case Qt::DisplayRole:
+		case DataRole::SortRole:
 			return df::visit_item(ItemDescriptionGenerator{_df}, *item->item);
 		default:
 			return {};
@@ -157,6 +137,7 @@ QVariant UnitInventoryModel::data(const QModelIndex &index, int role) const
 	case Column::Mode:
 		switch (role) {
 		case Qt::DisplayRole:
+		case DataRole::SortRole:
 			switch (item->mode) {
 			case df::unit_inventory_item_mode::Hauled: return tr("Hauled");
 			case df::unit_inventory_item_mode::Weapon: return tr("Weapon");
@@ -179,7 +160,7 @@ QVariant UnitInventoryModel::data(const QModelIndex &index, int role) const
 	}
 }
 
-QVariant UnitInventoryModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant InventoryModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if (orientation != Qt::Horizontal)
 		return {};

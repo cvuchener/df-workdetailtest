@@ -161,7 +161,7 @@ QVariant WorkDetailColumn::unitData(int section, const Unit &unit, int role) con
 			tooltip.append("<ul>");
 			for (auto skill: skills)
 				tooltip.append(tr("<li>%1 %2 (%3)</li>")
-						.arg(QString::fromLocal8Bit(caption(skill->rating)))
+						.arg(QString::fromLocal8Bit(caption(std::min(skill->rating, df::skill_rating::Legendary))))
 						.arg(QString::fromLocal8Bit(caption_noun(skill->id)))
 						.arg(int(skill->rating)));
 			tooltip.append("</ul>");

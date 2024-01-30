@@ -59,10 +59,41 @@ struct unit_skill
 {
 	job_skill_t id;
 	skill_rating_t rating;
+	int experience;
+	int rusty;
+
+	static constexpr int experience_for_next_level(int rating) {
+		return 500 + 100 * rating;
+	}
+
+	static constexpr int cumulated_experience(int rating) {
+		// sum of experience_for_next_level for 0..rating-1
+		return 50 * (rating + 9) * rating;
+	}
+
+	enum RustLevel {
+		NotRusty,
+		Rusty,
+		VeryRusty,
+	};
+
+	RustLevel rustLevel() const {
+		auto rusty_rating = std::max(rating - rusty, 0);
+		if (rusty_rating < rating) {
+			if (rating > 3 && rusty_rating <= rating/4)
+				return VeryRusty;
+			else if (rusty_rating <= rating/2)
+				return Rusty;
+		}
+		return NotRusty;
+	}
+
 
 	using reader_type = StructureReader<unit_skill, "unit_skill",
 		Field<&unit_skill::id, "id">,
-		Field<&unit_skill::rating, "rating">
+		Field<&unit_skill::rating, "rating">,
+		Field<&unit_skill::experience, "experience">,
+		Field<&unit_skill::rusty, "rusty">
 	>;
 };
 

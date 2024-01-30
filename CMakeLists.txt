@@ -88,9 +88,13 @@ add_executable(workdetailtest
 	src/StandardPaths.cpp
 	src/Unit.cpp
 	src/UnitDescriptors.cpp
-	src/UnitDetailsDock.cpp
+	src/UnitDetails/AttributeModel.cpp
+	src/UnitDetails/Dock.cpp
+	src/UnitDetails/InventoryModel.cpp
+	src/UnitDetails/ProgressDelegate.cpp
+	src/UnitDetails/SkillModel.cpp
+	src/UnitDetails/UnitDataModel.cpp
 	src/UnitFilterProxyModel.cpp
-	src/UnitInventoryModel.cpp
 	src/UnitScriptWrapper.cpp
 	src/UserUnitFilters.cpp
 	src/WorkDetail.cpp

@@ -21,16 +21,23 @@
 
 #include <QDockWidget>
 
-#include "UnitInventoryModel.h"
+class DwarfFortressData;
+class Unit;
+class QTreeView;
 
 namespace Ui { class UnitDetailsDock; }
 
-class UnitDetailsDock: public QDockWidget
+namespace UnitDetails
+{
+
+class UnitDataModel;
+
+class Dock: public QDockWidget
 {
 	Q_OBJECT
 public:
-	UnitDetailsDock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent = nullptr);
-	~UnitDetailsDock() override;
+	Dock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent = nullptr);
+	~Dock() override;
 
 public slots:
 	void setUnit(const Unit *unit);
@@ -38,9 +45,11 @@ public slots:
 private:
 	std::unique_ptr<Ui::UnitDetailsDock> _ui;
 	std::shared_ptr<const DwarfFortressData> _df;
-	UnitInventoryModel _inventory_model;
+	std::vector<UnitDataModel *> _models;
+	std::vector<QTreeView *> _views;
 	QMetaObject::Connection _current_unit_destroyed;
 };
 
+} // namespace UnitDetails
 
 #endif

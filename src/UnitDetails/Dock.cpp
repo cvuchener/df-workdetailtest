@@ -16,33 +16,72 @@
  *
  */
 
-#include "UnitDetailsDock.h"
+#include "Dock.h"
+
+#include <QSortFilterProxyModel>
+#include <QTreeView>
+#include <QHeaderView>
 
 #include "ui_UnitDetailsDock.h"
 
 #include "DwarfFortressData.h"
 #include "Unit.h"
 
-static const char *NamePlaceholder = QT_TRANSLATE_NOOP(UnitDetailsDock, "Select a unit");
+#include "DataRole.h"
 
-UnitDetailsDock::UnitDetailsDock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent):
+#include "ProgressDelegate.h"
+
+#include "AttributeModel.h"
+#include "InventoryModel.h"
+#include "SkillModel.h"
+
+using namespace UnitDetails;
+
+static const char *NamePlaceholder = QT_TRANSLATE_NOOP(Dock, "Select a unit");
+
+Dock::Dock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent):
 	QDockWidget(tr("Unit details"), parent),
 	_ui(std::make_unique<Ui::UnitDetailsDock>()),
-	_df(std::move(df)),
-	_inventory_model(*_df)
+	_df(std::move(df))
 {
 	_ui->setupUi(this);
 	_ui->unit_name->setText(tr(NamePlaceholder));
 	_ui->unit_profession->setText({});
 	_ui->unit_age->setText({});
-	_ui->inventory_view->setModel(&_inventory_model);
+
+	auto make_view = [this](const QString &title, UnitDataModel *model) {
+		auto sort_model = new QSortFilterProxyModel(this);
+		sort_model->setSourceModel(model);
+		sort_model->setSortRole(DataRole::SortRole);
+		auto view = new QTreeView(this);
+		view->setSortingEnabled(true);
+		view->setRootIsDecorated(false);
+		view->setModel(sort_model);
+		_ui->tabs->addTab(view, title);
+		_models.push_back(model);
+		_views.push_back(view);
+		return view;
+	};
+
+	auto progress_delegate = new ProgressDelegate(this);
+
+	auto skill_model = new SkillModel(*_df, this);
+	[[maybe_unused]] auto skill_view = make_view(tr("Skills"), skill_model);
+	skill_view->sortByColumn(static_cast<int>(SkillModel::Column::Level), Qt::DescendingOrder);
+	skill_view->setItemDelegateForColumn(static_cast<int>(SkillModel::Column::Progress), progress_delegate);
+
+	auto attr_model = new AttributeModel(*_df, this);
+	[[maybe_unused]] auto attr_view = make_view(tr("Attributes"), attr_model);
+
+	auto inventory_model = new InventoryModel(*_df, this);
+	[[maybe_unused]] auto inventory_view = make_view(tr("Inventory"), inventory_model);
 }
 
-UnitDetailsDock::~UnitDetailsDock()
+Dock::~Dock()
 {
 }
 
-void UnitDetailsDock::setUnit(const Unit *unit)
+void Dock::setUnit(const Unit *unit)
 {
 	if (_current_unit_destroyed)
 		disconnect(_current_unit_destroyed);
@@ -67,6 +106,9 @@ void UnitDetailsDock::setUnit(const Unit *unit)
 		_ui->unit_profession->setText({});
 		_ui->unit_age->setText({});
 	}
-	_inventory_model.setUnit(unit);
+	for (auto model: _models)
+		model->setUnit(unit);
+	for (auto view: _views)
+		view->header()->resizeSections(QHeaderView::ResizeToContents);
 }
 
