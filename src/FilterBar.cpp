@@ -54,7 +54,6 @@ struct FilterBar::Ui
 
 	void setupUi(QToolBar *toolbar)
 	{
-		toolbar->setObjectName("FilterBar");
 		toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
 		auto title_action = new QWidgetAction(toolbar);
@@ -97,7 +96,7 @@ struct FilterBar::Ui
 };
 
 FilterBar::FilterBar(QWidget *parent):
-	QToolBar(tr("Filters"), parent),
+	QToolBar(parent),
 	_ui(std::make_unique<FilterBar::Ui>()),
 	_filters(std::make_shared<UserUnitFilters>())
 {

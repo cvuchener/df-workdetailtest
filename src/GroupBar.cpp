@@ -32,7 +32,6 @@ struct GroupBar::Ui
 
 	void setupUi(QToolBar *toolbar)
 	{
-		toolbar->setObjectName("GroupBar");
 		toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
 		auto title_action = new QWidgetAction(toolbar);
@@ -49,7 +48,7 @@ struct GroupBar::Ui
 };
 
 GroupBar::GroupBar(QWidget *parent):
-	QToolBar(tr("Groups"), parent),
+	QToolBar(parent),
 	_ui(std::make_unique<GroupBar::Ui>())
 {
 	_ui->setupUi(this);

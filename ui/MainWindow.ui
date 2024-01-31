@@ -85,7 +85,7 @@
   </widget>
   <widget class="GroupBar" name="groupbar">
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>Groups</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -96,7 +96,7 @@
   </widget>
   <widget class="FilterBar" name="filterbar">
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>Filters</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
