@@ -51,6 +51,7 @@ private slots:
 	void on_update_action_triggered();
 	void on_preferences_action_triggered();
 	void on_about_action_triggered();
+	void on_about_qt_action_triggered();
 	void on_workdetails_action_triggered();
 
 private:

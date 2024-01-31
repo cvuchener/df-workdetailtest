@@ -227,10 +227,12 @@ void MainWindow::on_about_action_triggered()
 	Ui::AboutDialog ui;
 	ui.setupUi(&dialog);
 	ui.version->setText(tr("Version %1").arg(Application::instance()->applicationVersion()));
-	ui.qt_version->setText(tr("Build with Qt %1, running with Qt %2")
-			.arg(QT_VERSION_STR)
-			.arg(qVersion()));
 	dialog.exec();
+}
+
+void MainWindow::on_about_qt_action_triggered()
+{
+	QMessageBox::aboutQt(this);
 }
 
 void MainWindow::on_workdetails_action_triggered()

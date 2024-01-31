@@ -51,6 +51,8 @@ Application::Application(int &argc, char **argv):
 		log_dir.rename(log_file, rotated_log_file.arg(1));
 		MessageHandler::instance().setLogFile(log_dir.filePath(log_file));
 	}
+	qInfo() << applicationDisplayName() << applicationVersion();
+	qInfo() << "Qt version" << QT_VERSION_STR << "(build)," << qVersion() << "(runtime)";
 
 	setIconTheme();
 
