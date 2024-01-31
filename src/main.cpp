@@ -20,11 +20,16 @@
 #include "MainWindow.h"
 #include "MessageHandler.h"
 
-int main(int argc, char *argv[])
+int main(int argc, char *argv[]) try
 {
 	MessageHandler::init();
 	Application app(argc, argv);
 	MainWindow window;
 	window.show();
 	return app.exec();
+}
+catch (std::exception &e)
+{
+	qCritical() << e.what();
+	return -1;
 }

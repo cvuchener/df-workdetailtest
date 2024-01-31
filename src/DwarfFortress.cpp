@@ -28,8 +28,8 @@
 #include "ProcessStats.h"
 
 #include "Application.h"
-#include "StandardPaths.h"
 #include "LogCategory.h"
+#include "StructuresManager.h"
 
 #include "DwarfFortressData.h"
 #include "DwarfFortressReader.h"
@@ -43,27 +43,6 @@ static void StructuresLogger(std::string_view msg)
 	qCWarning(StructuresLog) << msg;
 };
 
-struct DwarfFortress::StructuresInfo
-{
-	const dfs::Structures *structures;
-	const dfs::Structures::VersionInfo *version;
-	QString source;
-};
-
-bool DwarfFortress::IdLess::operator()(std::span<const uint8_t> lhs, std::span<const uint8_t> rhs) const
-{
-	return std::ranges::lexicographical_compare(lhs, rhs);
-}
-
-static std::string id_to_string(std::span<const uint8_t> id)
-{
-	std::string out;
-	out.reserve(2*id.size());
-	auto it = std::back_inserter(out);
-	for (auto byte: id)
-		it = std::format_to(it, "{:02x}", byte);
-	return out;
-}
 // DFHack API
 static const DFHack::Basic Basic;
 static const DFHack::Function<
@@ -83,54 +62,6 @@ DwarfFortress::DwarfFortress(QObject *parent):
 	_last_viewscreen(Viewscreen::Other)
 {
 	_data = std::make_shared<DwarfFortressData>(&_dfhack);
-	for (QDir data_dir: StandardPaths::data_locations()) {
-		QDir structs_dir = data_dir.filePath("structures");
-		if (!structs_dir.exists())
-			continue;
-		for (const auto &subdir: structs_dir.entryList({},
-					QDir::Dirs | QDir::NoDotAndDotDot,
-					QDir::Name  | QDir::Reversed)) {
-			QDir struct_dir = structs_dir.filePath(subdir);
-			qCInfo(StructuresLog) << "Loading structures from"
-				<< struct_dir.absolutePath();
-			try {
-				auto structures = std::make_unique<dfs::Structures>(
-						struct_dir.filesystemAbsolutePath(),
-						StructuresLogger);
-				if (!DwarfFortressReader::testStructures(*structures)) {
-					qCCritical(StructuresLog) << "Incompatible structures";
-					continue;
-				}
-				for (const auto &version: structures->allVersions()) {
-					auto [it, inserted] = _structures_by_id.try_emplace(
-							version.id,
-							StructuresInfo{
-								structures.get(),
-								&version,
-								struct_dir.absolutePath()
-							});
-					if (inserted) {
-						qCInfo(StructuresLog) << "Adding version"
-							<< version.version_name
-							<< id_to_string(version.id)
-							<< "from" << struct_dir.absolutePath();
-					}
-					else {
-						qCInfo(StructuresLog) << "Version already added"
-							<< version.version_name
-							<< id_to_string(version.id)
-							<< "from" << it->second.source
-							<< "as" << it->second.version->version_name;
-					}
-				}
-				_structures.push_back(std::move(structures));
-			}
-			catch (std::exception &e) {
-				qCCritical(StructuresLog) << "Failed to load structures from"
-					<< struct_dir.absolutePath() << e.what();
-			}
-		}
-	}
 
 	const auto &settings = Application::settings();
 	connect(&_dfhack, &DFHack::Client::connectionChanged,
@@ -224,14 +155,14 @@ QCoro::Task<bool> DwarfFortress::connectToDF(const QString &host, quint16 port)
 		});
 		if (!_process)
 			throw tr("Failed to open DF process");
-		qCInfo(ProcessLog) << "Process id" << id_to_string(_process->id());
-		auto it = _structures_by_id.find(_process->id());
-		if (it == _structures_by_id.end())
+		qCInfo(ProcessLog) << "Process id" << StructuresManager::idToString(_process->id());
+		auto structures_info = Application::structures().findVersion(_process->id());
+		if (!structures_info)
 			throw tr("Unsupported DF version");
-		auto structures = it->second.structures;
-		auto version = it->second.version;
+		auto structures = structures_info->structures;
+		auto version = structures_info->version;
 		qCInfo(StructuresLog) << "Version found as" << version->version_name
-				<< "from" << it->second.source;
+				<< "from" << structures_info->source;
 		_reader_factory = std::make_unique<dfs::ReaderFactory>(*structures, *version);
 		_reader_factory->log = StructuresLogger;
 

@@ -32,7 +32,6 @@
 #include <dfs/Reader.h>
 
 namespace dfs {
-class Structures;
 class Process;
 }
 
@@ -93,12 +92,6 @@ private:
 
 	// Process info
 	static std::unique_ptr<dfs::Process> findNativeProcess(const dfproto::workdetailtest::ProcessInfo &info);
-	std::vector<std::unique_ptr<dfs::Structures>> _structures;
-	struct StructuresInfo;
-	struct IdLess {
-		bool operator()(std::span<const uint8_t>, std::span<const uint8_t>) const;
-	};
-	std::map<std::span<const uint8_t>, StructuresInfo, IdLess> _structures_by_id;
 	std::unique_ptr<dfs::Process> _process;
 	std::unique_ptr<dfs::ReaderFactory> _reader_factory;
 	uintptr_t _world_loaded;

@@ -26,6 +26,7 @@
 class IconProvider;
 class ScriptManager;
 class GridViewManager;
+class StructuresManager;
 
 class Application: public QApplication
 {
@@ -38,10 +39,14 @@ public:
 		return static_cast<Application *>(QCoreApplication::instance());
 	}
 
+	// Must be called before other accessors below
+	bool loadData(QWidget *parent);
+
 	static Settings &settings() { return *instance()->_settings; }
 	static const IconProvider &icons() { return *instance()->_icons; }
 	static ScriptManager &scripts() { return *instance()->_scripts; }
 	static GridViewManager &gridviews() { return *instance()->_gridviews; }
+	static StructuresManager &structures() { return *instance()->_structures; }
 
 protected:
 	bool event(QEvent *e) override;
@@ -51,8 +56,7 @@ private:
 	std::unique_ptr<IconProvider> _icons;
 	std::unique_ptr<ScriptManager> _scripts;
 	std::unique_ptr<GridViewManager> _gridviews;
-
-	void setIconTheme();
+	std::unique_ptr<StructuresManager> _structures;
 };
 
 #endif

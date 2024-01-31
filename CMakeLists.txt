@@ -88,6 +88,7 @@ add_executable(workdetailtest
 	src/ScriptManager.cpp
 	src/Settings.cpp
 	src/StandardPaths.cpp
+	src/StructuresManager.cpp
 	src/Unit.cpp
 	src/UnitDescriptors.cpp
 	src/UnitDetails/AttributeModel.cpp

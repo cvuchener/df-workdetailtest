@@ -48,7 +48,7 @@ struct df_game_data {
 	std::vector<std::unique_ptr<df::historical_figure>> histfigs;
 	std::vector<std::unique_ptr<df::identity>> identities;
 	std::vector<std::unique_ptr<df::work_detail>> work_details;
-	std::unique_ptr<df::viewscreen> viewscreen = std::make_unique<df::viewscreen>();
+	std::unique_ptr<df::viewscreen> viewscreen;
 	uintptr_t map_block_index;
 };
 

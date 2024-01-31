@@ -22,8 +22,21 @@
 #include "IconProvider.h"
 #include "ScriptManager.h"
 #include "GridViewManager.h"
+#include "StructuresManager.h"
 
 #include <QPalette>
+#include <QProgressDialog>
+#include <QtConcurrent>
+#include <QCoroFuture>
+
+static void setIconTheme()
+{
+	auto p = QApplication::palette();
+	if (p.window().color().lightness() > p.windowText().color().lightness())
+		QIcon::setFallbackThemeName("breeze");
+	else
+		QIcon::setFallbackThemeName("breeze-dark");
+}
 
 Application::Application(int &argc, char **argv):
 	QApplication(argc, argv)
@@ -34,6 +47,7 @@ Application::Application(int &argc, char **argv):
 	setApplicationName("WorkDetailTest");
 #endif
 	//setOrganizationName("WorkDetailTest");
+	setApplicationDisplayName("Work Detail Test");
 	setApplicationVersion("0.1");
 
 	StandardPaths::init_paths();
@@ -56,10 +70,34 @@ Application::Application(int &argc, char **argv):
 
 	setIconTheme();
 
-	_settings = std::make_unique<Settings>();
-	_icons = std::make_unique<IconProvider>();
-	_scripts = std::make_unique<ScriptManager>();
-	_gridviews = std::make_unique<GridViewManager>();
+	auto make_initializer = []<typename T>(std::unique_ptr<T> &member) -> std::function<void()> {
+		return [&]() { member = std::make_unique<T>(); };
+	};
+	auto steps = {
+		std::pair{ tr("Loading settings..."), make_initializer(_settings) },
+		std::pair{ tr("Loading icons..."), make_initializer(_icons) },
+		std::pair{ tr("Loading scripts..."), make_initializer(_scripts) },
+		std::pair{ tr("Loading grid views..."), make_initializer(_gridviews) },
+		std::pair{ tr("Loading structures..."), make_initializer(_structures) },
+	};
+	QProgressDialog progress;
+	progress.setLabelText(tr("Loading data..."));
+	progress.setCancelButtonText(tr("Quit"));
+	progress.setRange(0, steps.size()+1);
+	int i = 0;
+	progress.setValue(i);
+	progress.show();
+	QCoro::waitFor([&]() -> QCoro::Task<> {
+		for (const auto &[text, action]: steps) {
+			progress.setLabelText(text);
+			co_await QtConcurrent::run(action);
+			if (progress.wasCanceled()) {
+				qInfo() << "Loading was cancelled";
+				throw std::runtime_error("loading was cancelled");
+			}
+			progress.setValue(++i);
+		}
+	}());
 }
 
 Application::~Application()
@@ -72,13 +110,4 @@ bool Application::event(QEvent *e)
 		setIconTheme();
 	}
 	return QApplication::event(e);
-}
-
-void Application::setIconTheme()
-{
-	auto p = palette();
-	if (p.window().color().lightness() > p.windowText().color().lightness())
-		QIcon::setFallbackThemeName("breeze");
-	else
-		QIcon::setFallbackThemeName("breeze-dark");
 }

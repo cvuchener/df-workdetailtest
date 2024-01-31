@@ -180,6 +180,7 @@ struct reads<df_game_data>
 std::unique_ptr<df_game_data> DwarfFortressReader::loadGameData()
 {
 	auto data = std::make_unique<df_game_data>();
+	data->viewscreen = std::make_unique<df::viewscreen>();
 	if (!read_all(session, *data))
 		throw std::runtime_error("Error while reading game data");
 	return data;
