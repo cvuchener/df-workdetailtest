@@ -98,7 +98,7 @@ GridViewTabs::GridViewTabs(QWidget *parent):
 	// Add button for adding new grid views
 	auto add_button = new QToolButton(this);
 	add_button->setText(tr("Add"));
-	add_button->setIcon(QIcon::fromTheme("list-add"));
+	add_button->setIcon(QIcon::fromTheme("tab-new"));
 	add_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	add_button->setPopupMode(QToolButton::InstantPopup);
 	auto add_menu = new QMenu(this);

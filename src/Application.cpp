@@ -23,6 +23,8 @@
 #include "ScriptManager.h"
 #include "GridViewManager.h"
 
+#include <QPalette>
+
 Application::Application(int &argc, char **argv):
 	QApplication(argc, argv)
 {
@@ -50,6 +52,8 @@ Application::Application(int &argc, char **argv):
 		MessageHandler::instance().setLogFile(log_dir.filePath(log_file));
 	}
 
+	setIconTheme();
+
 	_settings = std::make_unique<Settings>();
 	_icons = std::make_unique<IconProvider>();
 	_scripts = std::make_unique<ScriptManager>();
@@ -58,4 +62,21 @@ Application::Application(int &argc, char **argv):
 
 Application::~Application()
 {
+}
+
+bool Application::event(QEvent *e)
+{
+	if (e->type() == QEvent::ApplicationPaletteChange) {
+		setIconTheme();
+	}
+	return QApplication::event(e);
+}
+
+void Application::setIconTheme()
+{
+	auto p = palette();
+	if (p.window().color().lightness() > p.windowText().color().lightness())
+		QIcon::setFallbackThemeName("breeze");
+	else
+		QIcon::setFallbackThemeName("breeze-dark");
 }

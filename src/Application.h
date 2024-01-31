@@ -43,11 +43,16 @@ public:
 	static ScriptManager &scripts() { return *instance()->_scripts; }
 	static GridViewManager &gridviews() { return *instance()->_gridviews; }
 
+protected:
+	bool event(QEvent *e) override;
+
 private:
 	std::unique_ptr<Settings> _settings;
 	std::unique_ptr<IconProvider> _icons;
 	std::unique_ptr<ScriptManager> _scripts;
 	std::unique_ptr<GridViewManager> _gridviews;
+
+	void setIconTheme();
 };
 
 #endif

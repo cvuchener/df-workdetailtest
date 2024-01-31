@@ -175,6 +175,37 @@ target_link_libraries(workdetailtest
 	DFHackClientQt::dfhack-client-qt
 	protobuf::libprotobuf
 )
+file(GLOB_RECURSE ICON_THEME_FILES
+	FOLLOW_SYMLINKS
+	RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+	CONFIGURE_DEPENDS
+	icons/*/index.theme
+	icons/*/configure.svg
+	icons/*/document-edit.svg
+	icons/*/document-export.svg
+	icons/*/document-import.svg
+	icons/*/document-new.svg
+	icons/*/edit-delete.svg
+	icons/*/edit-table-insert-column-left.svg
+	icons/*/edit-table-insert-column-right.svg
+	icons/*/go-bottom.svg
+	icons/*/go-down.svg
+	icons/*/go-top.svg
+	icons/*/go-up.svg
+	icons/*/help-about.svg
+	icons/*/list-add.svg
+	icons/*/network-connect.svg
+	icons/*/network-disconnect.svg
+	icons/*/object-locked.svg
+	icons/*/tab-new.svg
+	icons/*/view-filter.svg
+	icons/*/view-refresh.svg
+)
+qt_add_resources(workdetailtest "icons"
+	PREFIX "/icons"
+	BASE "icons"
+	FILES ${ICON_THEME_FILES}
+)
 
 install(TARGETS workdetailtest
 	COMPONENT Runtime)

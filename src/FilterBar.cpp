@@ -87,7 +87,7 @@ struct FilterBar::Ui
 		add_filter_menu = new QMenu(add_filter_button);
 		add_filter_button->setMenu(add_filter_menu);
 		add_filter_action->setText(tr("Add"));
-		add_filter_action->setIcon(QIcon::fromTheme("list-add"));
+		add_filter_action->setIcon(QIcon::fromTheme("view-filter"));
 		add_filter_button->setDefaultAction(add_filter_action);
 		add_filter_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
 		add_filter_button->setPopupMode(QToolButton::InstantPopup);

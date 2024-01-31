@@ -105,6 +105,9 @@
    </attribute>
   </widget>
   <action name="connect_action">
+   <property name="icon">
+    <iconset theme="network-connect"/>
+   </property>
    <property name="text">
     <string>Connect</string>
    </property>
@@ -113,6 +116,9 @@
    </property>
   </action>
   <action name="advanced_connection_action">
+   <property name="icon">
+    <iconset theme="network-connect"/>
+   </property>
    <property name="text">
     <string>Advanced connection...</string>
    </property>
@@ -121,6 +127,9 @@
    </property>
   </action>
   <action name="disconnect_action">
+   <property name="icon">
+    <iconset theme="network-disconnect"/>
+   </property>
    <property name="text">
     <string>Disconnect</string>
    </property>

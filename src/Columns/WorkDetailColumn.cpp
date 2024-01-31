@@ -319,11 +319,11 @@ void WorkDetailColumn::makeHeaderMenu(int section, QMenu *menu, QWidget *parent)
 			tr("Remove %1").arg(wd->displayName()),
 			menu);
 	auto insert_before_action = new QAction(
-			QIcon::fromTheme("arrow-left"),
+			QIcon::fromTheme("edit-table-insert-column-left"),
 			tr("Insert new work detail before..."),
 			menu);
 	auto insert_after_action = new QAction(
-			QIcon::fromTheme("arrow-right"),
+			QIcon::fromTheme("edit-table-insert-column-right"),
 			tr("Insert new work detail after..."),
 			menu);
 	menu->addActions({edit_action, remove_action, insert_before_action, insert_after_action});
