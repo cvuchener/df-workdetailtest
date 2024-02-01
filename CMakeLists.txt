@@ -219,7 +219,11 @@ install(DIRECTORY data/structures
 	PATTERN .* EXCLUDE
 	PATTERN tools EXCLUDE
 )
-install(DIRECTORY data/icons
+install(DIRECTORY
+		data/icons
+		data/gridviews
+		data/unit_filters
+		data/workdetails
 	TYPE DATA
 	COMPONENT Runtime
 )
