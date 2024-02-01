@@ -466,7 +466,9 @@ void Unit::setProperties(const Properties &properties, const dfproto::workdetail
 			continue;
 		}
 		if (!flag_result.result().success()) {
-			qCWarning(DFHackLog) << "Unit change failed" << flag_result.result().error();
+			qCCritical(DFHackLog) << "Cannot change unit flag"
+				<< *flag
+				<< flag_result.result().error();
 			continue;
 		}
 		switch (*flag) {
@@ -510,11 +512,11 @@ QCoro::Task<> Unit::edit(Properties changes)
 	auto r = co_await EditUnit(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
+		qCCritical(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
 		co_return;
 	}
 	if (!r->unit().success()) {
-		qCWarning(DFHackLog) << "EditUnit failed" << r->unit().error();
+		qCCritical(DFHackLog) << "EditUnit failed" << r->unit().error();
 		co_return;
 	}
 	setProperties(changes, *r);
@@ -538,13 +540,13 @@ QCoro::Task<> Unit::edit(std::shared_ptr<DwarfFortressData> df, std::vector<std:
 	auto r = co_await EditUnits(*df->dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
+		qCCritical(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
 		co_return;
 	}
 	for (std::size_t i = 0; i < units.size(); ++i) {
 		auto unit_result = r->results(i);
 		if (!unit_result.unit().success()) {
-			qCWarning(DFHackLog) << "EditUnit failed" << unit_result.unit().error();
+			qCCritical(DFHackLog) << "EditUnit failed" << unit_result.unit().error();
 			co_return;
 		}
 		units[i]->setProperties(changes, unit_result);
@@ -571,13 +573,13 @@ QCoro::Task<> Unit::toggle(std::shared_ptr<DwarfFortressData> df, std::vector<st
 	auto r = co_await EditUnits(*df->dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
+		qCCritical(DFHackLog) << "EditUnit failed" << make_error_code(r.cr).message();
 		co_return;
 	}
 	for (std::size_t i = 0; i < units.size(); ++i) {
 		auto unit_result = r->results(i);
 		if (!unit_result.unit().success()) {
-			qCWarning(DFHackLog) << "EditUnit failed" << unit_result.unit().error();
+			qCCritical(DFHackLog) << "EditUnit failed" << unit_result.unit().error();
 			co_return;
 		}
 		units[i]->setProperties(changes[i], unit_result);

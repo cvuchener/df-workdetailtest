@@ -52,6 +52,8 @@ public:
 	~LogDock() override;
 
 private:
+	void onNewMessages(const QModelIndex &parent, int first, int last);
+
 	std::unique_ptr<Ui::LogDock> _ui;
 	LogFilter _filter;
 };

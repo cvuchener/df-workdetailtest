@@ -204,12 +204,12 @@ QCoro::Task<> WorkDetailModel::add_impl(const WorkDetail::Properties &properties
 	auto r = co_await AddWorkDetail(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "AddWorkDetail failed" << make_error_code(r.cr).message();
+		qCCritical(DFHackLog) << "AddWorkDetail failed" << make_error_code(r.cr).message();
 		co_return;
 	}
 	const auto &wd_result = r->work_detail();
 	if (!wd_result.success()) {
-		qCWarning(DFHackLog) << "AddWorkDetail failed" << wd_result.error();
+		qCCritical(DFHackLog) << "AddWorkDetail failed" << wd_result.error();
 		co_return;
 	}
 	// Apply changes
@@ -244,11 +244,11 @@ QCoro::Task<> WorkDetailModel::remove(QList<QPersistentModelIndex> indexes)
 		auto r = co_await RemoveWorkDetail(*_df.dfhack, args).first;
 		// Check results
 		if (!r) {
-			qCWarning(DFHackLog) << "RemoveWorkDetail failed" << make_error_code(r.cr).message();
+			qCCritical(DFHackLog) << "RemoveWorkDetail failed" << make_error_code(r.cr).message();
 			co_return;
 		}
 		if (!r->success()) {
-			qCWarning(DFHackLog) << "RemoveWorkDetail failed" << r->error();
+			qCCritical(DFHackLog) << "RemoveWorkDetail failed" << r->error();
 			co_return;
 		}
 		// Apply changes
@@ -275,11 +275,11 @@ QCoro::Task<> WorkDetailModel::move(QList<QPersistentModelIndex> indexes, int ro
 				break;
 			auto r = co_await MoveWorkDetail(*_df.dfhack, args).first;
 			if (!r) {
-				qCWarning(DFHackLog) << "MoveWorkDetail failed" << make_error_code(r.cr).message();
+				qCCritical(DFHackLog) << "MoveWorkDetail failed" << make_error_code(r.cr).message();
 				co_return;
 			}
 			if (!r->success()) {
-				qCWarning(DFHackLog) << "MoveWorkDetail failed" << r->error();
+				qCCritical(DFHackLog) << "MoveWorkDetail failed" << r->error();
 				co_return;
 			}
 			beginMoveRows({}, old_row, old_row, {}, row);

@@ -36,7 +36,7 @@ MessageHandler::~MessageHandler()
 void MessageHandler::init()
 {
 #ifdef QT_MESSAGELOGCONTEXT
-	qSetMessagePattern("%{time yyyy-MM-ddTHH:mm:ss.zzz}\t%{type}\t%{category}\t%{message} (in %{function}, %{file}:%{line})%{if-fatal}\n%{backtrace}%{endif}");
+	qSetMessagePattern("%{time yyyy-MM-ddTHH:mm:ss.zzz}\t%{type}\t%{category}\t%{message} (in %{function}, %{file}:%{line})");
 #else
 	qSetMessagePattern("%{time yyyy-MM-ddTHH:mm:ss.zzz}\t%{type}\t%{category}\t%{message}%{if-fatal}\n%{backtrace}%{endif}");
 #endif
@@ -107,6 +107,7 @@ QVariant MessageHandler::data(const QModelIndex &index, int role) const
 	const auto &msg = _messages.at(index.row());
 	switch (role) {
 	case Qt::DisplayRole:
+	case Qt::ToolTipRole:
 		switch (column) {
 		case Columns::Time:
 			return msg.time;

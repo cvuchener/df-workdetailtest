@@ -262,7 +262,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	auto r = co_await EditWorkDetail(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
+		qCCritical(DFHackLog) << "editWorkDetail failed" << make_error_code(r.cr).message();
 		for (std::size_t i = 0; i < units.size(); ++i)
 			setAssignment(units[i], old_assignment[i], WorkDetail::Failed);
 		unitDataChanged(_df.units->makeSelection(units));
@@ -270,7 +270,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	}
 	const auto &wd_result = r->work_detail();
 	if (!wd_result.success()) {
-		qCWarning(DFHackLog) << "editWorkDetail failed" << wd_result.error();
+		qCCritical(DFHackLog) << "editWorkDetail failed" << wd_result.error();
 		for (std::size_t i = 0; i < units.size(); ++i)
 			setAssignment(units[i], old_assignment[i], WorkDetail::Failed);
 		unitDataChanged(_df.units->makeSelection(units));
@@ -280,7 +280,7 @@ QCoro::Task<> WorkDetail::changeAssignments(std::vector<int> units, F get_assign
 	for (std::size_t i = 0; i < units.size(); ++i) {
 		const auto &assign_result = r->assignments(i);
 		if (!assign_result.success()) {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << assign_result.error();
+			qCCritical(DFHackLog) << "editWorkDetail failed" << assign_result.error();
 			setAssignment(units[i], old_assignment[i], WorkDetail::Failed);
 		}
 		else
@@ -311,7 +311,7 @@ void WorkDetail::setProperties(const Properties &properties, const dfproto::work
 			_wd->flags.bits.mode = *properties.mode;
 		}
 		else {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
+			qCCritical(DFHackLog) << "Cannot change work detail mode" << res.error();
 		}
 	}
 	if (properties.icon) {
@@ -320,7 +320,7 @@ void WorkDetail::setProperties(const Properties &properties, const dfproto::work
 			_wd->icon = *properties.icon;
 		}
 		else {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << res.error();
+			qCCritical(DFHackLog) << "Cannot change work detail icon" << res.error();
 		}
 	}
 	if (properties.no_modify)
@@ -334,7 +334,9 @@ void WorkDetail::setProperties(const Properties &properties, const dfproto::work
 			_wd->allowed_labors[labor] = enable;
 		}
 		else {
-			qCWarning(DFHackLog) << "editWorkDetail failed" << labor_result.error();
+			qCCritical(DFHackLog) << "Cannot change work detail labor"
+				<< to_string(static_cast<df::unit_labor_t>(labor))
+				<< labor_result.error();
 		}
 	}
 }
@@ -358,12 +360,12 @@ QCoro::Task<> WorkDetail::edit(Properties changes)
 	auto r = co_await EditWorkDetail(*_df.dfhack, args).first;
 	// Check results
 	if (!r) {
-		qCWarning(DFHackLog) << "EditWorkDetail failed" << make_error_code(r.cr).message();
+		qCCritical(DFHackLog) << "EditWorkDetail failed" << make_error_code(r.cr).message();
 		co_return;
 	}
 	const auto &wd_result = r->work_detail();
 	if (!wd_result.success()) {
-		qCWarning(DFHackLog) << "EditWorkDetail failed" << wd_result.error();
+		qCCritical(DFHackLog) << "EditWorkDetail failed" << wd_result.error();
 		co_return;
 	}
 	// Apply changes

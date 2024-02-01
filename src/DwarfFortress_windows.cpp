@@ -89,7 +89,7 @@ static BOOL enum_windows_proc(HWND hwnd, LPARAM param)
 		return false;
 	}
 	catch (std::exception &e) {
-		qWarning(ProcessLog) << "Invalid process" << pid << e.what();
+		qCWarning(ProcessLog) << "Invalid process" << pid << e.what();
 		return true;
 	}
 }
