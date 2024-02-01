@@ -33,12 +33,19 @@ std::string_view df::world_raws::language_t::local_word(const df::language_name 
 	return *translations[name.language]->words[name.words[comp]];
 }
 
+static QString capitalize(QString &&str)
+{
+	if (!str.isEmpty())
+		str[0] = str[0].toUpper();
+	return str;
+}
+
 QString df::world_raws::language_t::translate_name(const df::language_name &name, bool english) const
 {
 	using namespace df::language_name_component;
 	QString str;
 	if (!name.first_name.empty()) {
-		str += fromCP437(name.first_name);
+		str += capitalize(fromCP437(name.first_name));
 		str += " ";
 	}
 	if (!name.nickname.empty()) {
@@ -47,47 +54,61 @@ QString df::world_raws::language_t::translate_name(const df::language_name &name
 		str += u"\u2019 "; // right single quote: ’
 	}
 	if (english) {
+		QString last_name;
 		if (name.words[FrontCompound] != -1)
-			str += fromCP437(english_word(name, FrontCompound));
+			last_name += fromCP437(english_word(name, FrontCompound));
 		if (name.words[RearCompound] != -1)
-			str += fromCP437(english_word(name, RearCompound));
+			last_name += fromCP437(english_word(name, RearCompound));
+		str += capitalize(std::move(last_name));
 		bool word_added = false;
 		for (int i = 2; i < 6; ++i) {
 			if (name.words[i] != -1) {
 				if (!word_added) {
-					str += " the ";
+					if (str.isEmpty())
+						str += "The ";
+					else
+						str += " the ";
 					word_added = true;
 				}
-				else if (i == 5 && name.words[4] != -1)
+				else if (i == TheX && name.words[HyphenCompound] != -1)
 					str += "-";
 				else
 					str += " ";
-				str += fromCP437(english_word(name, df::language_name_component_t(i)));
+				auto word = english_word(name, df::language_name_component_t(i));
+				str += capitalize(fromCP437(word));
 			}
 		}
 		if (name.words[OfX] != -1) {
-			str += " of ";
-			str += fromCP437(english_word(name, OfX));
+			if (str.isEmpty())
+				str += "Of ";
+			else
+				str += " of ";
+			str += capitalize(fromCP437(english_word(name, OfX)));
 		}
 	}
 	else {
+		QString last_name;
 		if (name.words[FrontCompound] != -1)
-			str += fromCP437(local_word(name, FrontCompound));
+			last_name += fromCP437(local_word(name, FrontCompound));
 		if (name.words[RearCompound] != -1)
-			str += fromCP437(local_word(name, RearCompound));
-		bool word_added = false;
+			last_name += fromCP437(local_word(name, RearCompound));
+		str += capitalize(std::move(last_name));
+		bool need_space = !str.isEmpty();
 		for (int i = 2; i < 6; ++i) {
 			if (name.words[i] != -1) {
-				if (!word_added) {
+				auto word = local_word(name, df::language_name_component_t(i));
+				if (need_space) {
 					str += " ";
-					word_added = true;
+					need_space = false;
+					str += capitalize(fromCP437(word));
 				}
-				str += fromCP437(local_word(name, df::language_name_component_t(i)));
+				else
+					str += fromCP437(word);
 			}
 		}
 		if (name.words[OfX] != -1) {
 			str += " ";
-			str += fromCP437(local_word(name, OfX));
+			str += capitalize(fromCP437(local_word(name, OfX)));
 		}
 	}
 	return str;
