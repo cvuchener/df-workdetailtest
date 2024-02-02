@@ -39,6 +39,13 @@ public:
 	GridViewModel &gridViewModel() { return *_model; };
 	QSortFilterProxyModel &sortModel() { return *_sort_model; }
 
+	// Map indexes and selections through both sort and grid view model
+	// (between view indexes and DwarfFortressData::units indexes)
+	QModelIndex mapToSource(const QModelIndex &index) const;
+	QItemSelection mapSelectionToSource(const QItemSelection &selection) const;
+	QModelIndex mapFromSource(const QModelIndex &index) const;
+	QItemSelection mapSelectionFromSource(const QItemSelection &selection) const;
+
 signals:
 
 protected:

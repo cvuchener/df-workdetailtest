@@ -108,6 +108,7 @@ struct Settings
 
 	SettingProperty<bool> per_view_group_by = {"gridview/per_view_group_by", false};
 	SettingProperty<bool> per_view_filters = {"gridview/per_view_filter", false};
+	SettingProperty<bool> sync_selection = {"gridview/sync_selection", true};
 
 	SettingProperty<bool> bypass_work_detail_protection = {"work_details/bypass_protection", false};
 

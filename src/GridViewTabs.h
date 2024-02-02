@@ -21,10 +21,12 @@
 
 #include <QTabWidget>
 #include <QPointer>
+#include <QItemSelectionModel>
 
 class GroupBar;
 class FilterBar;
 class DwarfFortress;
+class GridView;
 
 class GridViewTabs: public QTabWidget
 {
@@ -44,9 +46,18 @@ protected:
 	void tabRemoved(int index) override;
 
 private:
+	void onCurrentTabChanged(int index);
+	void onCurrentUnitChanged(GridView *view, const QModelIndex &current, const QModelIndex &prev);
+	void onSelectionChanged(GridView *view, const QItemSelection &selected, const QItemSelection &deselected);
+
 	QPointer<GroupBar> _group_bar;
 	QPointer<FilterBar> _filter_bar;
 	QPointer<DwarfFortress> _df;
+
+	// For syncing unit selection across tabs, indexes from _df->units
+	QPersistentModelIndex _current_unit;
+	QItemSelectionModel _unit_selection;
+	QWidget *_controlling_view = nullptr;
 };
 
 #endif

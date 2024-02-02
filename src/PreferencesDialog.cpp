@@ -59,6 +59,7 @@ void PreferencesDialog::loadSettings()
 	_ui->bypass_work_detail_protection->setChecked(settings.bypass_work_detail_protection());
 	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by());
 	_ui->gridview_perview_filters->setChecked(settings.per_view_filters());
+	_ui->gridview_sync_selection->setChecked(settings.sync_selection());
 	setComboBoxFromValue(_ui->rating_display_cb, settings.rating_display_mode());
 }
 
@@ -74,6 +75,7 @@ void PreferencesDialog::loadDefaultSettings()
 	_ui->bypass_work_detail_protection->setChecked(settings.bypass_work_detail_protection.defaultValue());
 	_ui->gridview_perview_groups->setChecked(settings.per_view_group_by.defaultValue());
 	_ui->gridview_perview_filters->setChecked(settings.per_view_filters.defaultValue());
+	_ui->gridview_sync_selection->setChecked(settings.sync_selection.defaultValue());
 	setComboBoxFromValue(_ui->rating_display_cb, settings.rating_display_mode.defaultValue());
 }
 
@@ -89,5 +91,6 @@ void PreferencesDialog::saveSettings() const
 	settings.bypass_work_detail_protection = _ui->bypass_work_detail_protection->isChecked();
 	settings.per_view_group_by = _ui->gridview_perview_groups->isChecked();
 	settings.per_view_filters = _ui->gridview_perview_filters->isChecked();
+	settings.sync_selection = _ui->gridview_sync_selection->isChecked();
 	settings.rating_display_mode = _ui->rating_display_cb->currentData().value<RatingDisplay>();
 }

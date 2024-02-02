@@ -286,6 +286,89 @@ const Unit *GridViewModel::unit(const QModelIndex &index) const
 		return _unit_filter.get(index.row());
 }
 
+QModelIndex GridViewModel::mapToSource(const QModelIndex &index) const
+{
+	if (!index.isValid())
+		return {};
+	if (_group_by) {
+		if (index.internalId() == NoParent)
+			return {};
+		else
+			return _df->units->find(*findGroup(index.internalId())->units[index.row()]);
+	}
+	else
+		return _unit_filter.mapToSource(_unit_filter.index(index.row(), 0));
+}
+
+QItemSelection GridViewModel::mapSelectionToSource(const QItemSelection &selection) const
+{
+	QItemSelection source_selection;
+	if (_group_by) {
+		for (const auto &index: selection.indexes()) {
+			auto source_index = mapToSource(index);
+			source_selection.select(source_index, source_index);
+		}
+	}
+	else {
+		for (const auto &range: selection) {
+			source_selection.merge(
+				_unit_filter.mapSelectionToSource({
+					_unit_filter.index(range.top(), 0),
+					_unit_filter.index(range.bottom(), 0)}),
+				QItemSelectionModel::Select);
+		}
+	}
+	return source_selection;
+}
+
+QModelIndex GridViewModel::mapFromSource(const QModelIndex &index) const
+{
+	if (!index.isValid())
+		return {};
+	if (_group_by) {
+		if (auto unit = _df->units->get(index.row())) {
+			auto unit_group_it = _unit_group.find((*unit)->id);
+			if (unit_group_it == _unit_group.end())
+				return {};
+			auto group_it = findGroup(unit_group_it->second);
+			auto unit_it = group_it->findUnit((*unit)->id);
+			return createIndex(
+					distance(group_it->units.begin(), unit_it),
+					0,
+					group_it->id
+			);
+		}
+		else
+			return {};
+	}
+	else {
+		auto filter_index = _unit_filter.mapFromSource(index);
+		if (filter_index.isValid())
+			return createIndex(filter_index.row(), 0, NoParent);
+		else
+			return {};
+	}
+}
+
+QItemSelection GridViewModel::mapSelectionFromSource(const QItemSelection &source_selection) const
+{
+	QItemSelection selection;
+	if (_group_by) {
+		for (const auto &index: source_selection.indexes()) {
+			auto source_index = mapFromSource(index);
+			selection.select(source_index, source_index);
+		}
+	}
+	else {
+		for (const auto &range: _unit_filter.mapSelectionFromSource(source_selection)) {
+			selection.select(
+					createIndex(range.top(), 0, NoParent),
+					createIndex(range.bottom(), 0, NoParent));
+		}
+	}
+	return selection;
+}
+
 void GridViewModel::makeColumnMenu(int section, QMenu *menu, QWidget *parent)
 {
 	auto [col, idx] = getColumn(section);
@@ -463,14 +546,8 @@ QModelIndex GridViewModel::unitIndex(int unit_id) const
 	if (_group_by) {
 		auto it = _unit_group.find(unit_id);
 		Q_ASSERT(it != _unit_group.end());
-		auto group_it = std::ranges::lower_bound(_groups, it->second, {}, &group_t::id);
-		Q_ASSERT(group_it != _groups.end() && group_it->id == it->second);
-		auto unit_it = std::ranges::lower_bound(
-				group_it->units,
-				unit_id,
-				{},
-				[](Unit *unit) { return (*unit)->id; });
-		Q_ASSERT(unit_it != group_it->units.end() && (**unit_it)->id == unit_id);
+		auto group_it = findGroup(it->second);
+		auto unit_it = group_it->findUnit(unit_id);
 		return createIndex(
 				distance(group_it->units.begin(), unit_it),
 				0,
@@ -772,4 +849,11 @@ std::pair<AbstractColumn *, int> GridViewModel::getColumn(int col)
 		return {nullptr, -1};
 	else
 		return { it->get(), col - (*it)->begin_column };
+}
+
+decltype(GridViewModel::group_t::units)::const_iterator GridViewModel::group_t::findUnit(int id) const
+{
+	auto it = std::ranges::lower_bound(units, id, {}, [](Unit *unit) { return (*unit)->id; });
+	Q_ASSERT(it != units.end() && (**it)->id == id);
+	return it;
 }

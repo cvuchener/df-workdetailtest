@@ -91,6 +91,26 @@ void GridView::setModel(QAbstractItemModel *model)
 	qFatal("GridView's model should only be set through the constructor");
 }
 
+QModelIndex GridView::mapToSource(const QModelIndex &index) const
+{
+	return _model->mapToSource(_sort_model->mapToSource(index));
+}
+
+QItemSelection GridView::mapSelectionToSource(const QItemSelection &selection) const
+{
+	return _model->mapSelectionToSource(_sort_model->mapSelectionToSource(selection));
+}
+
+QModelIndex GridView::mapFromSource(const QModelIndex &index) const
+{
+	return _sort_model->mapFromSource(_model->mapFromSource(index));
+}
+
+QItemSelection GridView::mapSelectionFromSource(const QItemSelection &selection) const
+{
+	return _sort_model->mapSelectionFromSource(_model->mapSelectionFromSource(selection));
+}
+
 void GridView::rowsInserted(const QModelIndex &index, int start, int end)
 {
 	QTreeView::rowsInserted(index, start, end);

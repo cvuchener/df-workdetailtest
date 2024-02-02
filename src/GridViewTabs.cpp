@@ -81,15 +81,7 @@ GridViewTabs::GridViewTabs(QWidget *parent):
 			});
 		}
 	});
-	connect(this, &QTabWidget::currentChanged, this, [this](int index) {
-		if (auto view = qobject_cast<GridView *>(widget(index))) {
-			const auto &settings = Application::settings();
-			if (settings.per_view_group_by() && _group_bar)
-				_group_bar->setGroup(view->gridViewModel().groupIndex());
-			if (settings.per_view_filters() && _filter_bar)
-				_filter_bar->setFilters(view->gridViewModel().userFilters());
-		}
-	});
+	connect(this, &QTabWidget::currentChanged, this, &GridViewTabs::onCurrentTabChanged);
 	connect(this, &QTabWidget::tabCloseRequested, this, [this](int index) {
 		Q_ASSERT(index != 0);
 		delete widget(index);
@@ -154,6 +146,7 @@ void GridViewTabs::init(GroupBar *group_bar, FilterBar *filter_bar, DwarfFortres
 	_filter_bar = filter_bar;
 
 	_df = df;
+	_unit_selection.setModel(_df->data()->units.get());
 
 	// Add previously saved grid views
 	auto qsettings = StandardPaths::settings();
@@ -183,11 +176,12 @@ void GridViewTabs::addView(const QString &name)
 		else
 			view->gridViewModel().setUserFilters(_filter_bar->filters());
 		connect(view->selectionModel(), &QItemSelectionModel::currentChanged,
-			this, [this, view, df = _df->data()](const QModelIndex &current, const QModelIndex &prev) {
-				auto source_index = view->sortModel().mapToSource(current);
-				auto unit = view->gridViewModel().unit(source_index);
-				auto unit_index = unit ? df->units->find(*unit) : QModelIndex{};
-				currentUnitChanged(unit_index);
+			this, [this, view](const QModelIndex &current, const QModelIndex &prev) {
+				onCurrentUnitChanged(view, current, prev);
+			});
+		connect(view->selectionModel(), &QItemSelectionModel::selectionChanged,
+			this, [this, view](const QItemSelection &selected, const QItemSelection &deselected) {
+				onSelectionChanged(view, selected, deselected);
 			});
 		addTab(view, params.title);
 		setTabVisible(0, false); // Hide placeholder tab
@@ -205,4 +199,56 @@ void GridViewTabs::tabRemoved(int index)
 		setTabsClosable(false);
 		setTabVisible(0, true);
 	}
+}
+
+void GridViewTabs::onCurrentTabChanged(int index)
+{
+	if (auto view = qobject_cast<GridView *>(widget(index))) {
+		const auto &settings = Application::settings();
+		if (settings.per_view_group_by() && _group_bar)
+			_group_bar->setGroup(view->gridViewModel().groupIndex());
+		if (settings.per_view_filters() && _filter_bar)
+			_filter_bar->setFilters(view->gridViewModel().userFilters());
+		if (settings.sync_selection()) {
+			auto current_index = view->mapFromSource(_current_unit);
+			auto current_selection = view->mapSelectionFromSource(_unit_selection.selection());
+			view->selectionModel()->select(current_selection,
+					QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+			view->selectionModel()->setCurrentIndex(current_index,
+					current_selection.isEmpty()
+						? QItemSelectionModel::Select
+						: QItemSelectionModel::NoUpdate);
+		}
+		else {
+			auto current_index = view->mapToSource(view->currentIndex());
+			if (_current_unit != current_index) {
+				_current_unit = current_index;
+				currentUnitChanged(current_index);
+			}
+		}
+		// Now that current index and selection are set, let the view
+		// change the saved selection and index.
+		_controlling_view = view;
+
+	}
+}
+
+void GridViewTabs::onCurrentUnitChanged(GridView *view, const QModelIndex &current, const QModelIndex &prev)
+{
+	if (_controlling_view != view)
+		return;
+	auto unit_index = view->mapToSource(current);
+	if (unit_index != _current_unit) {
+		_current_unit = unit_index;
+		currentUnitChanged(unit_index);
+	}
+}
+
+void GridViewTabs::onSelectionChanged(GridView *view, const QItemSelection &selected, const QItemSelection &deselected)
+{
+	if (_controlling_view != view)
+		return;
+	_unit_selection.select(
+			view->mapSelectionToSource(view->selectionModel()->selection()),
+			QItemSelectionModel::ClearAndSelect);
 }

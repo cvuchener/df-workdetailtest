@@ -64,6 +64,11 @@ public:
 
 	const Unit *unit(const QModelIndex &index) const;
 
+	QModelIndex mapToSource(const QModelIndex &index) const;
+	QItemSelection mapSelectionToSource(const QItemSelection &selection) const;
+	QModelIndex mapFromSource(const QModelIndex &index) const;
+	QItemSelection mapSelectionFromSource(const QItemSelection &selection) const;
+
 	void makeColumnMenu(int section, QMenu *menu, QWidget *parent);
 	void makeCellMenu(const QModelIndex &index, QMenu *menu, QWidget *parent);
 
@@ -102,6 +107,7 @@ private:
 	struct group_t {
 		quint64 id;
 		std::vector<Unit *> units; // sorted by id
+		decltype(units)::const_iterator findUnit(int id) const;
 	};
 	std::vector<group_t> _groups; // sorted by id
 	std::map<int, quint64> _unit_group; // unit id -> group id
