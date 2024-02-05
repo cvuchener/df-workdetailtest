@@ -144,12 +144,12 @@ void GridViewStyle::drawControl(ControlElement element, const QStyleOption *opti
 				auto rating = rating_data.toDouble();
 				QPalette palette = option->palette;
 				if (rating < 0.0)
-					palette.setColor(QPalette::Text, Qt::red);
+					palette.setColor(text_role, Qt::red);
 				PainterSaver ps(*painter);
 				switch (Application::settings().rating_display_mode()) {
 				case RatingDisplay::GrowingBox:
 					painter->setPen(Qt::NoPen);
-					painter->setBrush(palette.text());
+					painter->setBrush(palette.color(text_role));
 
 					rating = std::abs(rating);
 					if (rating >= 1.0) {
