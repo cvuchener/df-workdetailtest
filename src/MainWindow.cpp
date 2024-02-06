@@ -105,7 +105,7 @@ MainWindow::MainWindow(QWidget *parent):
 	// DFHack connection
 	connect(_df.get(), &DwarfFortress::error, this, [this](const QString &msg) {
 		QMessageBox::critical(this, tr("Connection error"), msg);
-	});
+	}, Qt::QueuedConnection);
 	connect(_df.get(), &DwarfFortress::connectionProgress, this, [this](const QString &msg) {
 		_sb_ui->loading_label->setText(msg);
 	});
