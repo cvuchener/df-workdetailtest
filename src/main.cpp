@@ -23,6 +23,9 @@
 int main(int argc, char *argv[]) try
 {
 	MessageHandler::init();
+#ifdef Q_OS_WIN
+	QApplication::setStyle("fusion");
+#endif
 	Application app(argc, argv);
 	MainWindow window;
 	window.show();

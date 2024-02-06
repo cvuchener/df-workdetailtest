@@ -57,6 +57,9 @@ GridView::GridView(std::unique_ptr<GridViewModel> &&model, QWidget *parent):
 		// stop painting cells
 		_last_index = QModelIndex{};
 	});
+	header()->setMinimumSectionSize(
+			2*_style->pixelMetric(QStyle::PM_HeaderMargin, nullptr, header())
+			+ _style->pixelMetric(QStyle::PM_SmallIconSize, nullptr, header()));
 	header()->setSectionResizeMode(QHeaderView::Fixed);
 	header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 
