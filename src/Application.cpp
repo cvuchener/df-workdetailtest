@@ -48,7 +48,7 @@ Application::Application(int &argc, char **argv):
 #endif
 	//setOrganizationName("WorkDetailTest");
 	setApplicationDisplayName("Work Detail Test");
-	setApplicationVersion("0.1");
+	setApplicationVersion("0.2");
 
 	StandardPaths::init_paths();
 
