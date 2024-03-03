@@ -66,43 +66,33 @@ void Unit::refresh()
 	else
 		_display_name = _df.raws->language.translate_name(_u->name);
 	if (_display_name.isEmpty()) {
-		const auto &caste = caste_raw();
+		const auto &c = caste();
 		if (isBaby())
-			_display_name = fromCP437(caste->baby_name[0]);
+			_display_name = fromCP437(c->baby_name[0]);
 		else if (isChild())
-			_display_name = fromCP437(caste->child_name[0]);
+			_display_name = fromCP437(c->child_name[0]);
 		else
-			_display_name = fromCP437(caste->caste_name[0]);
+			_display_name = fromCP437(c->caste_name[0]);
 	}
 	if (_display_name.isEmpty()) {
-		const auto &creature = creature_raw();
+		const auto &c = creature();
 		if (isBaby())
-			_display_name = fromCP437(creature->general_baby_name[0]);
+			_display_name = fromCP437(c->general_baby_name[0]);
 		else if (isChild())
-			_display_name = fromCP437(creature->general_child_name[0]);
+			_display_name = fromCP437(c->general_child_name[0]);
 		else
-			_display_name = fromCP437(creature->name[0]);
+			_display_name = fromCP437(c->name[0]);
 	}
 }
 
-const df::creature_raw *Unit::creature_raw() const
+const df::creature_raw *Unit::creature() const
 {
-	if (!_df.raws || _u->race < 0 || unsigned(_u->race) > _df.raws->creatures.all.size())
-		return nullptr;
-	else
-		return _df.raws->creatures.all[_u->race].get();
+	return _df.creature(_u->race);
 }
 
-const df::caste_raw *Unit::caste_raw() const
+const df::caste_raw *Unit::caste() const
 {
-	if (auto creature = creature_raw()) {
-		if (_u->caste < 0 || unsigned(_u->caste) > creature->caste.size())
-			return nullptr;
-		else
-			return creature->caste[_u->caste].get();
-	}
-	else
-		return nullptr;
+	return _df.caste(_u->race, _u->caste);
 }
 
 const df::identity *Unit::currentIdentity() const
@@ -189,8 +179,8 @@ template <typename T>
 int Unit::attributeCasteRating(T attr) const
 {
 	using traits = attribute_traits<T>;
-	if (auto caste = caste_raw())
-		return (attributeValue(attr) - (caste->*traits::caste_range)[attr][3]) / 10;
+	if (auto c = caste())
+		return (attributeValue(attr) - (c->*traits::caste_range)[attr][3]) / 10;
 	else
 		return 0;
 }

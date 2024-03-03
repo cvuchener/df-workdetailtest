@@ -32,7 +32,6 @@ class UnitProperties;
 class UnitResult;
 }
 
-
 class Unit: public QObject, public std::enable_shared_from_this<Unit>
 {
 	Q_OBJECT
@@ -51,15 +50,15 @@ public:
 
 	const QString &displayName() const { return _display_name; }
 
-	const df::creature_raw *creature_raw() const;
-	const df::caste_raw *caste_raw() const;
+	const df::creature_raw *creature() const;
+	const df::caste_raw *caste() const;
 	const df::identity *currentIdentity() const;
 
 	template <std::same_as<df::caste_raw_flags_t>... Args>
 	bool hasCasteFlag(Args... args) const
 	{
-		if (auto caste = caste_raw())
-			return (caste->flags.isSet(args) || ...);
+		if (auto c = caste())
+			return (c->flags.isSet(args) || ...);
 		else
 			return false;
 	}

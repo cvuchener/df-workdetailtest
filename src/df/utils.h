@@ -38,6 +38,17 @@ auto find(const Vector &vec, Id id)
 		return nullptr;
 }
 
+template <std::ranges::random_access_range Vector>
+auto get(const Vector &r, std::size_t index)
+	-> decltype(r[0].get())
+{
+	if (index < r.size())
+		return r[index].get();
+	else
+		return nullptr;
+}
+
+
 // String decoding/encoding
 QChar fromCP437(char);
 char toCP437(QChar);

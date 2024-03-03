@@ -36,73 +36,44 @@ DwarfFortressData::~DwarfFortressData()
 {
 }
 
-std::pair<const df::material *, DwarfFortressData::material_origin>
-DwarfFortressData::findMaterial(int type, int index) const
+const df::creature_raw *DwarfFortressData::creature(int creature_id) const noexcept
 {
-	static constexpr std::size_t CreatureBase = 19;
-	static constexpr std::size_t HistFigureBase = 219;
-	static constexpr std::size_t PlantBase = 419;
-	static constexpr std::size_t MaxMaterialType = 200;
+	if (raws)
+		return df::get(raws->creatures.all, creature_id);
+	else
+		return nullptr;
+}
 
-	if (!raws)
-		return {nullptr, {}};
+const df::caste_raw *DwarfFortressData::caste(int creature_id, int caste_id) const noexcept
+{
+	if (auto c = creature(creature_id))
+		return df::get(c->caste, caste_id);
+	return nullptr;
+}
 
-	auto check_index = [](const auto &vec, std::size_t index) -> decltype(vec[0].get()) {
-		if (index < vec.size())
-			return vec[index].get();
+QString DwarfFortressData::creatureName(int creature_id, bool plural, int caste_id) const noexcept
+{
+	if (auto crt = creature(creature_id)) {
+		if (auto cst = df::get(crt->caste, caste_id))
+			return df::fromCP437(cst->caste_name[plural ? 1 : 0]);
 		else
-			return nullptr;
-	};
-
-	std::size_t creature_mat = type - CreatureBase;
-	if (creature_mat < MaxMaterialType) {
-		auto default_creature_mat = raws->builtin_mats[CreatureBase].get();
-		if (auto creature = check_index(raws->creatures.all, index)) {
-			if (auto mat = check_index(creature->material, creature_mat))
-				return {mat, creature};
-			return {default_creature_mat, creature};
-		}
-		return {default_creature_mat, {}};
+			return df::fromCP437(crt->name[plural ? 1 : 0]);
 	}
+	return {};
+}
 
-	std::size_t histfig_mat = type - HistFigureBase;
-	if (histfig_mat < MaxMaterialType) {
-		auto default_creature_mat = raws->builtin_mats[CreatureBase].get();
-		if (auto histfig = df::find(histfigs, index)) {
-			if (auto creature = check_index(raws->creatures.all, histfig->race))
-				if (auto mat = check_index(creature->material, histfig_mat))
-					return {mat, histfig};
-			return {default_creature_mat, histfig};
-		}
-		return {default_creature_mat, {}};
-	}
-
-	std::size_t plant_mat = type - PlantBase;
-	if (plant_mat < MaxMaterialType) {
-		auto default_plant_mat = raws->builtin_mats[PlantBase].get();
-		if (auto plant = check_index(raws->plants.all, index)) {
-			if (auto mat = check_index(plant->material, plant_mat))
-				return {mat, plant};
-			return {default_plant_mat, plant};
-		}
-		return {default_plant_mat, {}};
-	}
-
-	if (type == df::builtin_mats::INORGANIC) {
-		if (auto inorganic = check_index(raws->inorganics, index))
-			return {&inorganic->material, inorganic};
-		return {raws->builtin_mats[df::builtin_mats::INORGANIC].get(), {}};
-	}
-
-	if (type >= 0 && unsigned(type) < raws->builtin_mats.size())
-		return {raws->builtin_mats[type].get(), {}};
-
-	return {nullptr, {}};
+const df::plant_raw *DwarfFortressData::plant(int plant_id) const noexcept
+{
+	if (raws)
+		return df::get(raws->plants.all, plant_id);
+	else
+		return nullptr;
 }
 
 void DwarfFortressData::updateRaws(std::unique_ptr<df::world_raws> &&new_raws)
 {
 	raws = std::move(new_raws);
+	rawsUpdated();
 }
 
 void DwarfFortressData::updateGameData(
@@ -121,13 +92,16 @@ void DwarfFortressData::updateGameData(
 	work_details->update(std::move(new_data->work_details), [this](auto &&wd) {
 		return std::make_shared<WorkDetail>(std::move(wd), *this);
 	});
+	gameDataUpdated();
 }
 
 void DwarfFortressData::clear()
 {
 	units->clear();
 	work_details->clear();
+	gameDataUpdated();
 
 	identities.clear();
 	raws.reset();
+	rawsUpdated();
 }

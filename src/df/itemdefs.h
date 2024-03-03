@@ -24,6 +24,8 @@
 #include <dfs/ItemReader.h>
 
 #include "df_enums.h"
+#include "df/FlagArray.h"
+#include "df/components.h"
 
 namespace df {
 
@@ -42,76 +44,78 @@ struct itemdef
 	>;
 };
 
-#define ITEMDEF_END_FIELDS(...)
-#define ITEMDEF_END_READER(...)
-
-#define ITEMDEF_NAME_FIELDS(next, ...) \
-	std::string name; \
-	ITEMDEF_##next##_FIELDS(__VA_ARGS__)
-#define ITEMDEF_NAME_READER(type, next, ...) \
-	, Field<&type::name, "name"> \
-	ITEMDEF_##next##_READER(type, __VA_ARGS__)
-
-#define ITEMDEF_PLURAL_FIELDS(next, ...) \
-	std::string name_plural; \
-	ITEMDEF_##next##_FIELDS(__VA_ARGS__)
-#define ITEMDEF_PLURAL_READER(type, next, ...) \
-	, Field<&type::name_plural, "name_plural"> \
-	ITEMDEF_##next##_READER(type, __VA_ARGS__)
-
-#define ITEMDEF_PREPLURAL_FIELDS(next, ...) \
-	std::string name_preplural; \
-	ITEMDEF_##next##_FIELDS(__VA_ARGS__)
-#define ITEMDEF_PREPLURAL_READER(type, next, ...) \
-	, Field<&type::name_preplural, "name_preplural"> \
-	ITEMDEF_##next##_READER(type, __VA_ARGS__)
-
-#define ITEMDEF_ADJ_FIELDS(next, ...) \
-	std::string adjective; \
-	ITEMDEF_##next##_FIELDS(__VA_ARGS__)
-#define ITEMDEF_ADJ_READER(type, next, ...) \
-	, Field<&type::adjective, "adjective"> \
-	ITEMDEF_##next##_READER(type, __VA_ARGS__)
-
-#define ITEMDEF_MAT_PH_FIELDS(next, ...) \
-	std::string material_placeholder; \
-	ITEMDEF_##next##_FIELDS(__VA_ARGS__)
-#define ITEMDEF_MAT_PH_READER(type, next, ...) \
-	, Field<&type::material_placeholder, "material_placeholder"> \
-	ITEMDEF_##next##_READER(type, __VA_ARGS__)
-
-#define MAKE_ITEMDEF_FIELDS(first, ...) \
-	ITEMDEF_##first##_FIELDS(__VA_ARGS__)
-#define MAKE_ITEMDEF_READER(type, first, ...) \
-	ITEMDEF_##first##_READER(type, __VA_ARGS__)
-
-#define MAKE_ITEMDEF_TYPE(type, ...) \
-struct type: itemdef \
-{ \
-	MAKE_ITEMDEF_FIELDS(__VA_ARGS__) \
-	using reader_type = StructureReader<type, #type, \
-		Base<itemdef> \
-		MAKE_ITEMDEF_READER(type, __VA_ARGS__) \
-	>; \
+struct itemdef_component_name {
+	std::string name;
+	using fields = std::tuple<Field<&itemdef_component_name::name, "name">>;
+};
+struct itemdef_component_name_plural {
+	std::string name_plural;
+	using fields = std::tuple<Field<&itemdef_component_name_plural::name_plural, "name_plural">>;
+};
+struct itemdef_component_name_preplural {
+	std::string name_preplural;
+	using fields = std::tuple<Field<&itemdef_component_name_preplural::name_preplural, "name_preplural">>;
+};
+struct itemdef_component_adjective {
+	std::string adjective;
+	using fields = std::tuple<Field<&itemdef_component_adjective::adjective, "adjective">>;
+};
+struct itemdef_component_material_placeholder {
+	std::string material_placeholder;
+	using fields = std::tuple<Field<&itemdef_component_material_placeholder::material_placeholder, "material_placeholder">>;
+};
+struct itemdef_component_armor_level {
+	int armorlevel;
+	using fields = std::tuple<Field<&itemdef_component_armor_level::armorlevel, "armorlevel">>;
+};
+struct itemdef_component_armor_props {
+	FlagArray<armor_general_flags_t> armor_flags;
+	using fields = std::tuple<Field<&itemdef_component_armor_props::armor_flags, "props.flags">>;
+};
+template <typename Flags>
+struct itemdef_component_flags {
+	FlagArray<Flags> flags;
+	using fields = std::tuple<Field<&itemdef_component_flags::flags, "flags">>;
 };
 
 #define FOR_ALL_ITEMDEFS(DO) \
-	DO(itemdef_ammost, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_armorst, NAME, PLURAL, PREPLURAL, MAT_PH, ADJ, END) \
-	DO(itemdef_foodst, NAME, END) \
-	DO(itemdef_glovesst, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_helmst, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_instrumentst, NAME, PLURAL, END) \
-	DO(itemdef_pantsst, NAME, PLURAL, PREPLURAL, MAT_PH, ADJ, END) \
-	DO(itemdef_shieldst, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_shoesst, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_siegeammost, NAME, PLURAL, END) \
-	DO(itemdef_toyst, NAME, PLURAL, END) \
-	DO(itemdef_trapcompst, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_weaponst, NAME, PLURAL, ADJ, END) \
-	DO(itemdef_toolst, NAME, PLURAL, ADJ, END)
+	DO(itemdef_ammost, NAME, PLURAL, ADJ, FLAGS(ammo)) \
+	DO(itemdef_armorst, NAME, PLURAL, PREPLURAL, MAT_PH, ADJ, ARMOR_LEVEL, ARMOR_PROPS, FLAGS(armor)) \
+	DO(itemdef_foodst, NAME) \
+	DO(itemdef_glovesst, NAME, PLURAL, ADJ, ARMOR_LEVEL, ARMOR_PROPS, FLAGS(gloves)) \
+	DO(itemdef_helmst, NAME, PLURAL, ADJ, ARMOR_LEVEL, ARMOR_PROPS, FLAGS(helm)) \
+	DO(itemdef_instrumentst, NAME, PLURAL, FLAGS(instrument)) \
+	DO(itemdef_pantsst, NAME, PLURAL, PREPLURAL, MAT_PH, ADJ, ARMOR_LEVEL, ARMOR_PROPS, FLAGS(pants)) \
+	DO(itemdef_shieldst, NAME, PLURAL, ADJ, ARMOR_LEVEL) \
+	DO(itemdef_shoesst, NAME, PLURAL, ADJ, ARMOR_LEVEL, ARMOR_PROPS, FLAGS(shoes)) \
+	DO(itemdef_siegeammost, NAME, PLURAL) \
+	DO(itemdef_toyst, NAME, PLURAL, FLAGS(toy)) \
+	DO(itemdef_trapcompst, NAME, PLURAL, ADJ, FLAGS(trapcomp)) \
+	DO(itemdef_weaponst, NAME, PLURAL, ADJ, FLAGS(weapon)) \
+	DO(itemdef_toolst, NAME, PLURAL, ADJ, FLAGS(tool))
 
+#define NAME itemdef_component_name
+#define PLURAL itemdef_component_name_plural
+#define PREPLURAL itemdef_component_name_preplural
+#define ADJ itemdef_component_adjective
+#define MAT_PH itemdef_component_material_placeholder
+#define ARMOR_LEVEL itemdef_component_armor_level
+#define ARMOR_PROPS itemdef_component_armor_props
+#define FLAGS(n) itemdef_component_flags<n##_flags_t>
+
+#define MAKE_ITEMDEF_TYPE(type, ...) \
+struct type: FromComponents<itemdef, #type, __VA_ARGS__> { };
 FOR_ALL_ITEMDEFS(MAKE_ITEMDEF_TYPE)
+#undef MAKE_ITEMDEF_TYPE
+
+#undef NAME
+#undef PLURAL
+#undef PREPLURAL
+#undef ADJ
+#undef MAT_PH
+#undef ARMOR_LEVEL
+#undef ARMOR_PROPS
+#undef FLAGS
 
 template <typename T>
 concept ItemDefHasName = std::derived_from<T, itemdef> &&
@@ -132,6 +136,10 @@ concept ItemDefHasAdjective = std::derived_from<T, itemdef> &&
 template <typename T>
 concept ItemDefHasMatPlaceholder = std::derived_from<T, itemdef> &&
 	std::same_as<decltype(T::material_placeholder), std::string>;
+
+template <typename T>
+concept ItemDefHasArmorFlags = std::derived_from<T, itemdef> &&
+	std::same_as<decltype(T::armor_flags), FlagArray<armor_general_flags_t>>;
 
 } // namespace df
 

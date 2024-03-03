@@ -55,6 +55,132 @@ struct unit_attribute
 	>;
 };
 
+struct unit_preference
+{
+	unit_preference_type_t type;
+	union id_t {
+		item_type_t item_type;
+		int creature_id;
+		int color_id;
+		int shape_id;
+		int plant_id;
+		int poetic_form_id;
+		int musical_form_id;
+		int dance_form_id;
+
+		using reader_type = UnionReader<id_t, "unit_preference.(item_type)",
+			Field<&id_t::item_type, "item_type">,
+			Field<&id_t::creature_id, "creature_id">,
+			Field<&id_t::color_id, "color_id">,
+			Field<&id_t::shape_id, "shape_id">,
+			Field<&id_t::plant_id, "plant_id">,
+			Field<&id_t::poetic_form_id, "poetic_form_id">,
+			Field<&id_t::musical_form_id, "musical_form_id">,
+			Field<&id_t::dance_form_id, "dance_form_id">
+		>;
+	} id;
+	std::size_t get_id_type() const {
+		switch (type) {
+		case unit_preference_type::LikeMaterial: return -1;
+		case unit_preference_type::LikeCreature: return 1;
+		case unit_preference_type::LikeFood: return 0;
+		case unit_preference_type::HateCreature: return 1;
+		case unit_preference_type::LikeItem: return 0;
+		case unit_preference_type::LikePlant: return 4;
+		case unit_preference_type::LikeTree: return 4;
+		case unit_preference_type::LikeColor: return 2;
+		case unit_preference_type::LikeShape: return 3;
+		case unit_preference_type::LikePoeticForm: return 5;
+		case unit_preference_type::LikeMusicalForm: return 6;
+		case unit_preference_type::LikeDanceForm: return 7;
+		default: return -1;
+		}
+	}
+
+	int item_subtype;
+	int mat_type;
+	int mat_index;
+	matter_state_t mat_state;
+
+	using reader_type = StructureReaderSeq<unit_preference, "unit_preference",
+		Field<&unit_preference::type, "type">,
+		Field<&unit_preference::id, "(item_type)", &unit_preference::get_id_type>,
+		Field<&unit_preference::item_subtype, "item_subtype">,
+		Field<&unit_preference::mat_type, "mattype">,
+		Field<&unit_preference::mat_index, "matindex">,
+		Field<&unit_preference::mat_state, "mat_state">
+	>;
+
+	template <unit_preference_type_t Type>
+	auto data() const noexcept {
+		if constexpr (Type == unit_preference_type_t::LikeMaterial)
+			return std::make_tuple(mat_type, mat_index, mat_state);
+		else if constexpr (Type == unit_preference_type::LikeCreature)
+			return id.creature_id;
+		else if constexpr (Type == unit_preference_type::LikeFood)
+			return std::make_tuple(id.item_type, item_subtype, mat_type, mat_index);
+		else if constexpr (Type == unit_preference_type::HateCreature)
+			return id.creature_id;
+		else if constexpr (Type == unit_preference_type::LikeItem)
+			return std::make_tuple(id.item_type, item_subtype);
+		else if constexpr (Type == unit_preference_type::LikePlant)
+			return id.plant_id;
+		else if constexpr (Type == unit_preference_type::LikeTree)
+			return id.plant_id;
+		else if constexpr (Type == unit_preference_type::LikeColor)
+			return id.color_id;
+		else if constexpr (Type == unit_preference_type::LikeShape)
+			return id.shape_id;
+		else if constexpr (Type == unit_preference_type::LikePoeticForm)
+			return id.poetic_form_id;
+		else if constexpr (Type == unit_preference_type::LikeMusicalForm)
+			return id.musical_form_id;
+		else if constexpr (Type == unit_preference_type::LikeDanceForm)
+			return id.dance_form_id;
+	}
+
+	std::strong_ordering operator<=>(const unit_preference &other) const
+	{
+		std::strong_ordering type_comp = type <=> other.type;
+		if (type_comp != std::strong_ordering::equal)
+			return type_comp;
+		auto comp = [&]<auto Type>() -> std::strong_ordering {
+			return data<Type>() <=> other.data<Type>();
+		};
+		switch (type) {
+		case unit_preference_type::LikeMaterial:
+			return comp.operator()<df::unit_preference_type::LikeMaterial>();
+		case unit_preference_type::LikeCreature:
+			return comp.operator()<df::unit_preference_type::LikeCreature>();
+		case unit_preference_type::LikeFood:
+			return comp.operator()<df::unit_preference_type::LikeFood>();
+		case unit_preference_type::HateCreature:
+			return comp.operator()<df::unit_preference_type::HateCreature>();
+		case unit_preference_type::LikeItem:
+			return comp.operator()<df::unit_preference_type::LikeItem>();
+		case unit_preference_type::LikePlant:
+			return comp.operator()<df::unit_preference_type::LikePlant>();
+		case unit_preference_type::LikeTree:
+			return comp.operator()<df::unit_preference_type::LikeTree>();
+		case unit_preference_type::LikeColor:
+			return comp.operator()<df::unit_preference_type::LikeColor>();
+		case unit_preference_type::LikeShape:
+			return comp.operator()<df::unit_preference_type::LikeShape>();
+		case unit_preference_type::LikePoeticForm:
+			return comp.operator()<df::unit_preference_type::LikePoeticForm>();
+		case unit_preference_type::LikeMusicalForm:
+			return comp.operator()<df::unit_preference_type::LikeMusicalForm>();
+		case unit_preference_type::LikeDanceForm:
+			return comp.operator()<df::unit_preference_type::LikeDanceForm>();
+		default:
+			return std::strong_ordering::equal;
+		}
+	}
+	bool operator==(const unit_preference &other) const {
+		return *this <=> other == std::strong_ordering::equal;
+	}
+};
+
 struct unit_skill
 {
 	job_skill_t id;
@@ -101,10 +227,12 @@ struct unit_soul
 {
 	std::array<unit_attribute, mental_attribute_type::Count> mental_attrs;
 	std::vector<std::unique_ptr<unit_skill>> skills;
+	std::vector<std::unique_ptr<unit_preference>> preferences;
 
 	using reader_type = StructureReader<unit_soul, "unit_soul",
 		Field<&unit_soul::mental_attrs, "mental_attrs">,
-		Field<&unit_soul::skills, "skills">
+		Field<&unit_soul::skills, "skills">,
+		Field<&unit_soul::preferences, "preferences">
 	>;
 };
 

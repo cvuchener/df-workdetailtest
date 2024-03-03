@@ -23,6 +23,7 @@
 #include <dfs/ItemReader.h>
 
 #include "df_enums.h"
+#include "df/FlagArray.h"
 #include "df/itemdefs.h"
 
 #include <QString>
@@ -31,23 +32,25 @@ namespace df {
 
 using namespace dfs;
 
-template <typename Enum>
-class FlagArray: public std::vector<bool>
-{
-public:
-	bool isSet(Enum n) const {
-		return n < size() && operator[](n);
-	}
-};
-
 struct material_common
 {
+	std::string gem_name1, gem_name2;
+	std::string stone_name;
 	std::array<std::string, 6> state_name;
 	std::array<std::string, 6> state_adj;
+	FlagArray<material_flags_t> flags;
+	std::array<std::string, 3> meat_name;
+	std::array<std::string, 2> block_name;
 
 	using reader_type = StructureReader<material_common, "material_common",
+		Field<&material_common::gem_name1, "gem_name1">,
+		Field<&material_common::gem_name2, "gem_name2">,
+		Field<&material_common::stone_name, "stone_name">,
 		Field<&material_common::state_name, "state_name">,
-		Field<&material_common::state_adj, "state_adj">
+		Field<&material_common::state_adj, "state_adj">,
+		Field<&material_common::flags, "flags">,
+		Field<&material_common::meat_name, "meat_name">,
+		Field<&material_common::block_name, "block_name">
 	>;
 };
 
@@ -64,11 +67,24 @@ struct material: material_common
 struct inorganic_raw
 {
 	std::string id;
+	FlagArray<inorganic_flags_t> flags;
 	df::material material;
 
 	using reader_type = StructureReader<inorganic_raw, "inorganic_raw",
 		Field<&inorganic_raw::id, "id">,
+		Field<&inorganic_raw::flags, "flags">,
 		Field<&inorganic_raw::material, "material">
+	>;
+};
+
+struct plant_growth
+{
+	std::string name;
+	std::string name_plural;
+
+	using reader_type = StructureReader<plant_growth, "plant_growth",
+		Field<&plant_growth::name, "name">,
+		Field<&plant_growth::name_plural, "name_plural">
 	>;
 };
 
@@ -78,14 +94,20 @@ struct plant_raw
 	std::string name;
 	std::string name_plural;
 	std::string adj;
+	std::string seed_singular;
+	std::string seed_plural;
 	std::vector<std::unique_ptr<df::material>> material;
+	std::vector<std::unique_ptr<plant_growth>> growths;
 
 	using reader_type = StructureReader<plant_raw, "plant_raw",
 	      Field<&plant_raw::id, "id">,
 	      Field<&plant_raw::name, "name">,
 	      Field<&plant_raw::name_plural, "name_plural">,
 	      Field<&plant_raw::adj, "adj">,
-	      Field<&plant_raw::material, "material">
+	      Field<&plant_raw::seed_singular, "seed_singular">,
+	      Field<&plant_raw::seed_plural, "seed_plural">,
+	      Field<&plant_raw::material, "material">,
+	      Field<&plant_raw::growths, "growths">
 	>;
 };
 
@@ -95,9 +117,11 @@ struct caste_raw
 	std::array<std::string, 3> caste_name;
 	std::array<std::string, 2> baby_name;
 	std::array<std::string, 2> child_name;
+	std::array<std::string, 2> remains;
 	FlagArray<caste_raw_flags_t> flags;
 	std::array<std::array<int, 7>, physical_attribute_type::Count> physical_att_range;
 	std::array<std::array<int, 7>, mental_attribute_type::Count> mental_att_range;
+	df::pronoun_type_t sex;
 
 	using reader_type = StructureReader<caste_raw, "caste_raw",
 		Field<&caste_raw::caste_id, "caste_id">,
@@ -106,7 +130,8 @@ struct caste_raw
 		Field<&caste_raw::child_name, "child_name">,
 		Field<&caste_raw::flags, "flags">,
 		Field<&caste_raw::physical_att_range, "attributes.phys_att_range">,
-		Field<&caste_raw::mental_att_range, "attributes.ment_att_range">
+		Field<&caste_raw::mental_att_range, "attributes.ment_att_range">,
+		Field<&caste_raw::sex, "sex">
 	>;
 };
 
@@ -196,6 +221,7 @@ struct world_raws
 	{
 		std::vector<std::shared_ptr<itemdef>> all;
 		std::vector<std::shared_ptr<itemdef_weaponst>> weapons;
+		std::vector<std::shared_ptr<itemdef_trapcompst>> trapcomps;
 		std::vector<std::shared_ptr<itemdef_toyst>> toys;
 		std::vector<std::shared_ptr<itemdef_toolst>> tools;
 		std::array<std::vector<std::shared_ptr<itemdef_toolst>>, tool_uses::Count> tools_by_type;
@@ -213,6 +239,7 @@ struct world_raws
 		using reader_type = StructureReader<itemdefs_t, "world.raws.itemdefs",
 			Field<&itemdefs_t::all, "all">,
 			Field<&itemdefs_t::weapons, "weapons">,
+			Field<&itemdefs_t::trapcomps, "trapcomps">,
 			Field<&itemdefs_t::toys, "toys">,
 			Field<&itemdefs_t::tools, "tools">,
 			Field<&itemdefs_t::tools_by_type, "tools_by_type">,

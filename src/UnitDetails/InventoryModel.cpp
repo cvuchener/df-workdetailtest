@@ -23,6 +23,8 @@
 #include "df/utils.h"
 #include "DwarfFortressData.h"
 #include "DataRole.h"
+#include "Material.h"
+#include "Item.h"
 
 using namespace UnitDetails;
 
@@ -48,80 +50,6 @@ int InventoryModel::columnCount(const QModelIndex &parent) const
 	return static_cast<int>(Column::Count);
 }
 
-struct ItemDescriptionGenerator
-{
-	const DwarfFortressData &df;
-
-	template <std::derived_from<df::item> T>
-	QString operator()(const T &item) const
-	{
-		using df::fromCP437;
-		QStringList out;
-
-		std::size_t stack_size = 1;
-		if constexpr (df::ItemHasStackSize<T>)
-			stack_size = item.stack_size;
-
-		df::matter_state_t state = df::matter_state::Solid;
-		if constexpr (std::derived_from<T, df::item_liquid>)
-			state = df::matter_state::Liquid;
-		if constexpr (std::derived_from<T, df::item_powder>)
-			state = df::matter_state::Powder;
-		if constexpr (std::derived_from<T, df::item_liquipowder>) {
-			if (item.mat_state.bits.pressed)
-				state = df::matter_state::Pressed;
-			else if (item.mat_state.bits.paste)
-				state = df::matter_state::Paste;
-		}
-
-		if constexpr (df::ItemHasItemDef<T>)
-			if constexpr (df::ItemDefHasPrePlural<df::item_itemdef_t<T>>)
-				if (stack_size > 1 && !item.subtype->name_preplural.empty()) {
-					out.append(fromCP437(item.subtype->name_preplural));
-				}
-		if constexpr (df::ItemHasItemDef<T>)
-			if constexpr (df::ItemDefHasAdjective<df::item_itemdef_t<T>>)
-				if (!item.subtype->adjective.empty()) {
-					out.append(fromCP437(item.subtype->adjective));
-				}
-		if constexpr (df::ItemHasMaterial<T>) {
-			auto [material, mat_origin] = df.findMaterial(item.mat_type, item.mat_index);
-			if (material) {
-				if (auto hf = get_if<const df::historical_figure *>(&mat_origin)) {
-					out.append(df.raws->language.translate_name((*hf)->name) + "'s");
-				}
-				if (!material->prefix.empty()) {
-					out.append(fromCP437(material->prefix));
-				}
-				out.append(fromCP437(material->state_adj[state]));
-			}
-			else {
-				if constexpr (df::ItemHasItemDef<T>)
-					if constexpr (df::ItemDefHasMatPlaceholder<df::item_itemdef_t<T>>)
-						if (!item.subtype->material_placeholder.empty())
-							out.append(fromCP437(item.subtype->material_placeholder));
-			}
-		}
-		if constexpr (df::ItemHasItemDef<T>) {
-			if constexpr (df::ItemDefHasName<df::item_itemdef_t<T>>) {
-				if constexpr (df::ItemDefHasPlural<df::item_itemdef_t<T>>) {
-					if (stack_size > 1)
-						out.append(fromCP437(item.subtype->name_plural));
-					else
-						out.append(fromCP437(item.subtype->name));
-				}
-				else
-					out.append(fromCP437(item.subtype->name));
-			}
-		}
-		else if constexpr (requires { { T::item_type } -> std::convertible_to<df::item_type_t>; })
-			out.append(QString::fromLocal8Bit(caption(T::item_type)));
-		else
-			out.append("item");
-		return out.join(' ');
-	}
-};
-
 QVariant InventoryModel::data(const QModelIndex &index, int role) const
 {
 	auto item = (*_u)->inventory.at(index.row()).get();
@@ -130,7 +58,7 @@ QVariant InventoryModel::data(const QModelIndex &index, int role) const
 		switch (role) {
 		case Qt::DisplayRole:
 		case DataRole::SortRole:
-			return df::visit_item(ItemDescriptionGenerator{_df}, *item->item);
+			return Item::toString(_df, *item->item);
 		default:
 			return {};
 		}

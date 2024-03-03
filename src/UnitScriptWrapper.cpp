@@ -61,7 +61,7 @@ QString UnitScriptWrapper::raceName() const
 {
 	if (!_unit)
 		return {};
-	if (auto creature = _unit->creature_raw())
+	if (auto creature = _unit->creature())
 		return df::fromCP437(creature->name[0]);
 	else
 		return {};
@@ -71,7 +71,7 @@ QString UnitScriptWrapper::casteName() const
 {
 	if (!_unit)
 		return {};
-	if (auto caste = _unit->caste_raw())
+	if (auto caste = _unit->caste())
 		return df::fromCP437(caste->caste_name[0]);
 	else
 		return {};
@@ -84,4 +84,3 @@ df::profession_t UnitScriptWrapper::profession() const
 	else
 		return (*_unit)->profession;
 }
-

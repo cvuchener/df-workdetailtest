@@ -30,6 +30,7 @@
 #include <QCoroCore>
 
 #include "Application.h"
+#include "Preferences/Dock.h"
 #include "UnitDetails/Dock.h"
 #include "ObjectList.h"
 #include "Unit.h"
@@ -88,6 +89,10 @@ MainWindow::MainWindow(QWidget *parent):
 	auto unit_details = new UnitDetails::Dock(_df->data(), this);
 	addDockWidget(Qt::LeftDockWidgetArea, unit_details);
 	_ui->view_menu->addAction(unit_details->toggleViewAction());
+
+	auto preferences = new Preferences::Dock(_df->data(), this);
+	addDockWidget(Qt::LeftDockWidgetArea, preferences);
+	_ui->view_menu->addAction(preferences->toggleViewAction());
 
 	auto log = new LogDock(this);
 	addDockWidget(Qt::BottomDockWidgetArea, log);

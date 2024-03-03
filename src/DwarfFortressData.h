@@ -21,6 +21,7 @@
 
 #include "DwarfFortressReader.h"
 
+#include <QObject>
 #include <QPointer>
 
 class Unit;
@@ -30,11 +31,24 @@ class ObjectList;
 
 namespace DFHack { class Client; }
 
-struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
+namespace df {
+struct creature_raw;
+struct caste_raw;
+}
+
+class DwarfFortressData: public QObject, public std::enable_shared_from_this<DwarfFortressData>
 {
+	Q_OBJECT
+public:
 	QPointer<DFHack::Client> dfhack;
 
 	std::unique_ptr<df::world_raws> raws;
+
+	const df::creature_raw *creature(int creature_id) const noexcept;
+	const df::caste_raw *caste(int creature_id, int caste_id) const noexcept;
+	const df::plant_raw *plant(int plant_id) const noexcept;
+
+	QString creatureName(int creature_id, bool plural, int caste_id = -1) const noexcept;
 
 	int current_civ_id;
 	int current_group_id;
@@ -45,14 +59,6 @@ struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
 	std::unique_ptr<ObjectList<Unit>> units;
 	std::unique_ptr<WorkDetailModel> work_details;
 
-	using material_origin = std::variant<std::monostate,
-			const df::inorganic_raw *,
-			const df::historical_figure *,
-			const df::creature_raw *,
-			const df::plant_raw *
-	>;
-	std::pair<const df::material *, material_origin> findMaterial(int type, int index) const;
-
 	DwarfFortressData(QPointer<DFHack::Client> dfhack);
 	~DwarfFortressData();
 
@@ -62,6 +68,10 @@ struct DwarfFortressData: public std::enable_shared_from_this<DwarfFortressData>
 			std::vector<std::unique_ptr<df::unit>> &&new_units);
 
 	void clear();
+
+signals:
+	void rawsUpdated();
+	void gameDataUpdated();
 };
 
 #endif

@@ -43,6 +43,7 @@ qt_wrap_ui(UI_SOURCES
 	ui/LogDock.ui
 	ui/MainWindow.ui
 	ui/PreferencesDialog.ui
+	ui/PreferencesDock.ui
 	ui/UnitDetailsDock.ui
 	ui/WorkDetailEditor.ui
 	ui/WorkDetailManager.ui
@@ -76,13 +77,18 @@ add_executable(workdetailtest
 	src/Groups/GroupByMigration.cpp
 	src/Groups/GroupByWorkDetailAssigned.cpp
 	src/IconProvider.cpp
+	src/Item.cpp
 	src/LaborModel.cpp
 	src/LogCategory.cpp
 	src/LogDock.cpp
 	src/MainWindow.cpp
+	src/Material.cpp
 	src/MessageHandler.cpp
 	src/ModelMimeData.cpp
 	src/ObjectList.cpp
+	src/Preference.cpp
+	src/Preferences/Dock.cpp
+	src/Preferences/Model.cpp
 	src/PreferencesDialog.cpp
 	src/ProcessStats.cpp
 	src/ScriptManager.cpp
@@ -94,6 +100,7 @@ add_executable(workdetailtest
 	src/UnitDetails/AttributeModel.cpp
 	src/UnitDetails/Dock.cpp
 	src/UnitDetails/InventoryModel.cpp
+	src/UnitDetails/PreferencesModel.cpp
 	src/UnitDetails/ProgressDelegate.cpp
 	src/UnitDetails/SkillModel.cpp
 	src/UnitDetails/UnitDataModel.cpp
@@ -153,6 +160,25 @@ dfs_generate_df_types(TARGET workdetailtest
 		identity_type
 		physical_attribute_type
 		mental_attribute_type
+		unit_preference.type --as unit_preference_type
+		craft_material_class
+		material_flags
+		armor_general_flags
+		ammo_flags
+		armor_flags
+		gloves_flags
+		helm_flags
+		instrument_flags
+		pants_flags
+		shoes_flags
+		tool_flags
+		toy_flags
+		trapcomp_flags
+		weapon_flags
+		inorganic_flags
+		pronoun_type
+		item_flags
+		item_flags2
 )
 set_property(SOURCE
 	${PROTO_SOURCES} ${PROTO_HEADERS}

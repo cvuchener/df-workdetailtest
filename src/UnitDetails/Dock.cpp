@@ -32,6 +32,7 @@
 #include "ProgressDelegate.h"
 
 #include "AttributeModel.h"
+#include "PreferencesModel.h"
 #include "InventoryModel.h"
 #include "SkillModel.h"
 
@@ -72,6 +73,9 @@ Dock::Dock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent):
 
 	auto attr_model = new AttributeModel(*_df, this);
 	[[maybe_unused]] auto attr_view = make_view(tr("Attributes"), attr_model);
+
+	auto preferences_model = new PreferencesModel(*_df, this);
+	[[maybe_unused]] auto preferences_view = make_view(tr("Preferences"), preferences_model);
 
 	auto inventory_model = new InventoryModel(*_df, this);
 	[[maybe_unused]] auto inventory_view = make_view(tr("Inventory"), inventory_model);

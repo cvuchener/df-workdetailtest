@@ -295,6 +295,37 @@ public:
 			dataChanged(range.topLeft(), range.bottomRight());
 	}
 
+	class const_iterator {
+		using It = std::vector<std::shared_ptr<T>>::const_iterator;
+		It it;
+		const_iterator(It it): it(it) {}
+		friend class ObjectList<T>;
+	public:
+		using difference_type = It::difference_type;
+		using value_type = T;
+		using pointer = const T *;
+		using reference = const T &;
+		using iterator_category = std::random_access_iterator_tag;
+
+		reference operator*() const { return **it; }
+		pointer operator->() const { return it->get(); }
+		const_iterator &operator++() { ++it; return *this; }
+		const_iterator operator++(int) { auto i = it; ++it; return i; }
+		const_iterator &operator+=(difference_type n) { it += n; return *this; }
+		const_iterator operator+(difference_type n) const { return it + n; }
+		friend const_iterator operator+(difference_type n, const const_iterator &rhs) { return n + rhs.it; }
+		const_iterator &operator--() { return --it; }
+		const_iterator operator--(int) { auto i = it; --it; return i; }
+		const_iterator &operator-=(difference_type n) { it -= n; return *this; }
+		const_iterator operator-(difference_type n) const { return it - n; }
+		const_iterator operator-(const const_iterator &rhs) const { return it - rhs.it; }
+		reference operator[](difference_type n) const { return *it[n]; }
+		auto operator<=>(const const_iterator &) const = default;
+	};
+
+	const_iterator begin() const { return _objects.begin(); }
+	const_iterator end() const { return _objects.end(); }
+
 protected:
 	std::vector<std::shared_ptr<T>> _objects;
 
