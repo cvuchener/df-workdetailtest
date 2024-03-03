@@ -24,6 +24,8 @@
 
 #include "DwarfFortressData.h"
 #include "Unit.h"
+#include "MainWindow.h"
+#include "UserUnitFilters.h"
 
 #include "Model.h"
 
@@ -39,8 +41,28 @@ Dock::Dock(std::shared_ptr<const DwarfFortressData> df, QWidget *parent):
 	auto sort_model = new QSortFilterProxyModel(this);
 	sort_model->setSourceModel(_model.get());
 	_ui->preferences->setModel(sort_model);
+
+	connect(_ui->preferences, &QAbstractItemView::activated,
+		this, [this, sort_model](const auto &index) {
+			if (auto main_window = qobject_cast<MainWindow *>(parentWidget())) {
+				if (auto filters = main_window->currentFilters()) {
+					setUnitPreferenceFilter(sort_model->mapToSource(index), *filters);
+				}
+			}
+		});
 }
 
 Dock::~Dock()
 {
+}
+
+void Dock::setUnitPreferenceFilter(const QModelIndex &index, UserUnitFilters &filters)
+{
+	filters.setAutoFilter(UserUnitFilters::AutoFilterID::Preferences,
+		[pref = _model->get(index)](const Unit &unit) {
+			if (!unit->current_soul)
+				return false;
+			return std::ranges::any_of(unit->current_soul->preferences,
+					[&](const auto &p) { return *p == pref; });
+		});
 }

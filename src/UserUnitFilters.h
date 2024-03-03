@@ -69,6 +69,13 @@ public:
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	bool removeRows(int row, int count, const QModelIndex &parent = {}) override;
 
+	enum class AutoFilterID {
+		Preferences,
+		Count
+	};
+	void setAutoFilter(AutoFilterID id, UnitFilter filter);
+	bool hasAutoFilter(AutoFilterID id) const;
+
 	void addFilter(const QString &name, UnitFilter filter);
 	void clear();
 
@@ -88,8 +95,10 @@ public:
 
 signals:
 	void invalidated();
+	void autoFilterChanged();
 
 private:
+	std::array<UnitFilter, static_cast<std::size_t>(AutoFilterID::Count)> _auto_filters;
 	std::vector<std::pair<QString, UnitFilter>> _filters;
 	UnitFilter _temporary_filter;
 	TemporaryType _temporary_type;

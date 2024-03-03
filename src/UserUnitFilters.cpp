@@ -105,6 +105,18 @@ bool UserUnitFilters::removeRows(int row, int count, const QModelIndex &parent)
 	return true;
 }
 
+void UserUnitFilters::setAutoFilter(AutoFilterID id, UnitFilter filter)
+{
+	_auto_filters[static_cast<std::size_t>(id)] = std::move(filter);
+	invalidated();
+	autoFilterChanged();
+}
+
+bool UserUnitFilters::hasAutoFilter(AutoFilterID id) const
+{
+	return bool(_auto_filters[static_cast<std::size_t>(id)]);
+}
+
 void UserUnitFilters::addFilter(const QString &name, UnitFilter filter)
 {
 	beginInsertRows({}, _filters.size(), _filters.size());
@@ -118,6 +130,7 @@ void UserUnitFilters::clear()
 	beginRemoveRows({}, 0, _filters.size()-1);
 	_filters.clear();
 	endRemoveRows();
+	std::ranges::fill(_auto_filters, UnitFilter{});
 	invalidated();
 }
 
@@ -156,6 +169,9 @@ QString UserUnitFilters::setTemporaryFilter(TemporaryType type, const QString &t
 
 bool UserUnitFilters::operator()(const Unit &unit) const
 {
+	for (const auto &filter: _auto_filters)
+		if (filter && !filter(unit))
+			return false;
 	for (const auto &[name, filter]: _filters)
 		if (filter && !filter(unit))
 			return false;

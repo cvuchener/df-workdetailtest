@@ -22,6 +22,7 @@
 #include <QDockWidget>
 
 class DwarfFortressData;
+class UserUnitFilters;
 
 namespace Ui { class PreferencesDock; }
 
@@ -41,6 +42,8 @@ private:
 	std::unique_ptr<Ui::PreferencesDock> _ui;
 	std::shared_ptr<const DwarfFortressData> _df;
 	std::unique_ptr<Model> _model;
+
+	void setUnitPreferenceFilter(const QModelIndex &index, UserUnitFilters &filters);
 };
 
 } // namespace Preferences

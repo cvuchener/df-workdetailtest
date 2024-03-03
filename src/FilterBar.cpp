@@ -33,6 +33,16 @@
 #include "UserUnitFilters.h"
 #include "Unit.h"
 
+template <typename Enum, std::invocable<Enum> F> requires requires {
+	requires std::is_enum_v<Enum>;
+	{ Enum::Count } -> std::same_as<Enum>;
+}
+void foreach_enum_value(F &&f)
+{
+	for (std::size_t i = 0; i < static_cast<std::size_t>(Enum::Count); ++i)
+		f(static_cast<Enum>(i));
+}
+
 static QStatusBar *findStatusBar(QWidget *widget)
 {
 	for (; widget; widget = widget->parentWidget())
@@ -51,6 +61,8 @@ struct FilterBar::Ui
 	std::vector<std::unique_ptr<QAction>> remove_filter_actions;
 	QWidgetAction *add_filter_action;
 	QMenu *add_filter_menu;
+	QWidgetAction *auto_filters_action;
+	QMenu *auto_filters_menu;
 
 	void setupUi(QToolBar *toolbar)
 	{
@@ -92,6 +104,27 @@ struct FilterBar::Ui
 		add_filter_button->setPopupMode(QToolButton::InstantPopup);
 		add_filter_action->setDefaultWidget(add_filter_button);
 		toolbar->addAction(add_filter_action);
+
+		auto_filters_action = new QWidgetAction(toolbar);
+		auto auto_filters_button = new QToolButton;
+		auto_filters_menu = new QMenu(auto_filters_button);
+		foreach_enum_value<UserUnitFilters::AutoFilterID>([&](auto id) {
+			switch (id) {
+			case UserUnitFilters::AutoFilterID::Preferences:
+				auto_filters_menu->addAction(
+						QIcon::fromTheme("edit-delete"),
+						tr("Remove preference filter"));
+				break;
+			default:
+				auto_filters_menu->addAction(tr("Remove unknown filter"));
+			}
+		});
+		auto_filters_button->setMenu(auto_filters_menu);
+		auto_filters_button->setDefaultAction(auto_filters_action);
+		auto_filters_button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+		auto_filters_button->setPopupMode(QToolButton::InstantPopup);
+		auto_filters_action->setDefaultWidget(auto_filters_button);
+		toolbar->addAction(auto_filters_action);
 	}
 };
 
@@ -144,6 +177,14 @@ FilterBar::FilterBar(QWidget *parent):
 	for (const auto &[name, filter]: Application::scripts().filters())
 		make_add_filter_action(name, filter);
 
+	foreach_enum_value<UserUnitFilters::AutoFilterID>([&](auto id) {
+		connect(_ui->auto_filters_menu->actions().at(static_cast<int>(id)), &QAction::triggered,
+			this, [this, id]() {
+				if (_filters)
+					_filters->setAutoFilter(id, {});
+			});
+	});
+
 	setupFilters();
 }
 
@@ -161,6 +202,7 @@ void FilterBar::setFilters(std::shared_ptr<UserUnitFilters> filters)
 	// clean up old filters
 	disconnect(_inserted_signal);
 	disconnect(_removed_signal);
+	disconnect(_auto_filter_signal);
 	_ui->remove_filter_actions.clear();
 
 	_filters = std::move(filters);
@@ -210,14 +252,33 @@ void FilterBar::setupFilters()
 	_removed_signal = connect(
 			_filters.get(), &QAbstractItemModel::rowsAboutToBeRemoved,
 			this, &FilterBar::filterRemoved);
+	_auto_filter_signal = connect(
+			_filters.get(), &UserUnitFilters::autoFilterChanged,
+			this, &FilterBar::updateAutoFilters);
 	if (_filters->rowCount() > 0)
 		insertFilterButtons(0, _filters->rowCount()-1);
+	updateAutoFilters();
 	// setup temporary filter ui
 	auto [type, text] = _filters->temporaryFilter();
 	auto cb_index = _ui->filter_type_cb->findData(QVariant::fromValue(type));
 	_ui->filter_type_cb->setCurrentIndex(cb_index);
 	_ui->filter_text->setText(text);
 	updateFilterUi();
+}
+
+void FilterBar::updateAutoFilters()
+{
+	int count = 0;
+	foreach_enum_value<UserUnitFilters::AutoFilterID>([&](auto id) {
+		auto action = _ui->auto_filters_menu->actions().at(static_cast<int>(id));
+		bool has_filter = _filters->hasAutoFilter(id);
+		action->setVisible(has_filter);
+		action->setEnabled(has_filter);
+		if (has_filter)
+			++count;
+	});
+	_ui->auto_filters_action->setText(tr("%n auto-filter(s)", "", count));
+	_ui->auto_filters_action->setVisible(count > 0);
 }
 
 void FilterBar::updateFilterUi()

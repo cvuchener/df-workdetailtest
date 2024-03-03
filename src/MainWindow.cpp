@@ -143,6 +143,11 @@ MainWindow::~MainWindow()
 	_df->disconnect(this);
 }
 
+UserUnitFilters *MainWindow::currentFilters()
+{
+	return _ui->tabs->currentFilters();
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
 	auto qsettings = StandardPaths::settings();

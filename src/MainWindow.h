@@ -22,10 +22,10 @@
 #include <QMainWindow>
 #include <QPersistentModelIndex>
 #include "DwarfFortress.h"
-#include "FilterBar.h"
 
 class GridViewModel;
 class QSortFilterProxyModel;
+class UserUnitFilters;
 
 namespace Ui { class MainWindow; }
 
@@ -37,6 +37,8 @@ class MainWindow: public QMainWindow
 public:
 	MainWindow(QWidget *parent = nullptr);
 	~MainWindow() override;
+
+	UserUnitFilters *currentFilters();
 
 protected:
 	void closeEvent(QCloseEvent *) override;

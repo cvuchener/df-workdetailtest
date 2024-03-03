@@ -27,6 +27,7 @@ class GroupBar;
 class FilterBar;
 class DwarfFortress;
 class GridView;
+class UserUnitFilters;
 
 class GridViewTabs: public QTabWidget
 {
@@ -38,6 +39,8 @@ public:
 	void init(GroupBar *group_bar, FilterBar *filter_bar, DwarfFortress *df);
 
 	void addView(const QString &name);
+
+	UserUnitFilters *currentFilters();
 
 signals:
 	void currentUnitChanged(const QModelIndex &);

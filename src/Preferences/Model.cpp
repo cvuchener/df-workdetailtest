@@ -102,6 +102,11 @@ QVariant Model::headerData(int section, Qt::Orientation orientation, int role) c
 	}
 }
 
+const df::unit_preference &Model::get(const QModelIndex &index) const
+{
+	return _preferences.at(index.row()).first;
+}
+
 void Model::rebuild()
 {
 	beginResetModel();

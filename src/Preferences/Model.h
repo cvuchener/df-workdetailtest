@@ -49,6 +49,8 @@ public:
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
+	const df::unit_preference &get(const QModelIndex &index) const;
+
 private:
 	std::shared_ptr<const DwarfFortressData> _df;
 	std::vector<std::pair<df::unit_preference, int>> _preferences;

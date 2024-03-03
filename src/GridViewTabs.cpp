@@ -252,3 +252,8 @@ void GridViewTabs::onSelectionChanged(GridView *view, const QItemSelection &sele
 			view->mapSelectionToSource(view->selectionModel()->selection()),
 			QItemSelectionModel::ClearAndSelect);
 }
+
+UserUnitFilters *GridViewTabs::currentFilters()
+{
+	return _filter_bar->filters().get();
+}

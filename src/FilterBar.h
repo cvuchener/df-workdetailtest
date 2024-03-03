@@ -39,6 +39,7 @@ private:
 	void filterRemoved(const QModelIndex &parent, int first, int last);
 
 	void setupFilters();
+	void updateAutoFilters();
 	void updateFilterUi();
 	void updateTemporaryFilter();
 	void filterEditChanged();
@@ -48,7 +49,7 @@ private:
 	struct Ui;
 	std::unique_ptr<Ui> _ui;
 	std::shared_ptr<UserUnitFilters> _filters;
-	QMetaObject::Connection _inserted_signal, _removed_signal;
+	QMetaObject::Connection _inserted_signal, _removed_signal, _auto_filter_signal;
 };
 
 #endif
