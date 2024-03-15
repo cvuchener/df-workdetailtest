@@ -13,3 +13,6 @@
 [submodule "dfhack/workdetailtest"]
 	path = dfhack/workdetailtest
 	url = ../../cvuchener/dfhack-plugin-workdetailtest.git
+[submodule "data/structures/50.12"]
+	path = data/structures/50.12
+	url = ../../DFHack/df-structures.git

@@ -118,7 +118,7 @@ else()
 	target_sources(workdetailtest PRIVATE src/DwarfFortress_unsupported_platform.cpp)
 endif()
 dfs_generate_df_types(TARGET workdetailtest
-	STRUCTURES ${CMAKE_CURRENT_SOURCE_DIR}/data/structures/50.11
+	STRUCTURES ${CMAKE_CURRENT_SOURCE_DIR}/data/structures/50.12
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/df_enums
 	NAMESPACE df
 	TYPES
